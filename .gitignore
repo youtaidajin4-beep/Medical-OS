@@ -10,3 +10,5 @@ coverage/
 apps/backend/prisma/*.db
 apps/backend/prisma/dev.db
 apps/backend/prisma/dev.db-journal
+apps/backend/prisma/prisma/
+apps/backend/storage/
