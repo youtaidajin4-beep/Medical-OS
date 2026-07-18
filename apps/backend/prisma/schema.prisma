@@ -1,0 +1,336 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  PHYSICIAN
+}
+
+enum ConsultationStatus {
+  DRAFT
+  RECORDING
+  PROCESSING
+  REVIEW
+  APPROVED
+  COMPLETED
+}
+
+enum SpeakerLabel {
+  PHYSICIAN
+  PATIENT
+  OTHER
+  UNKNOWN
+}
+
+enum DocumentType {
+  SOAP
+  CLINICAL_NOTE
+  TRANSCRIPT
+  REFERRAL
+  MEDICAL_CERTIFICATE
+  CARE_OPINION_1
+  CARE_OPINION_2
+  PRESCRIPTION_LIST
+  INFO_PROVIDE_COMBINED
+}
+
+enum GeneratedDocumentType {
+  REFERRAL
+  MEDICAL_CERTIFICATE
+  CARE_OPINION_1
+  CARE_OPINION_2
+  PRESCRIPTION_LIST
+  INFO_PROVIDE_COMBINED
+}
+
+enum WarningSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+model Clinic {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  users     User[]
+  patients  Patient[]
+  anonymousCases AnonymousCase[]
+
+  @@map("clinics")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  clinicId     String    @map("clinic_id")
+  name         String
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  role         UserRole  @default(PHYSICIAN)
+  status       String    @default("active")
+  lastLogin    DateTime? @map("last_login")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  clinic       Clinic    @relation(fields: [clinicId], references: [id])
+  consultations Consultation[] @relation("PhysicianConsultations")
+  revisions    RevisionHistory[]
+  auditLogs    AuditLog[]
+
+  @@map("users")
+}
+
+model Patient {
+  id          String   @id @default(uuid())
+  clinicId    String   @map("clinic_id")
+  patientCode String   @map("patient_code")
+  name        String
+  dateOfBirth DateTime? @map("date_of_birth")
+  sex         String?
+  phone       String?
+  email       String?
+  memo        String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  clinic      Clinic   @relation(fields: [clinicId], references: [id])
+  consultations Consultation[]
+
+  @@unique([clinicId, patientCode])
+  @@map("patients")
+}
+
+model AnonymousCase {
+  id          String   @id @default(uuid())
+  clinicId    String   @map("clinic_id")
+  caseCode    String   @map("case_code")
+  displayName String   @map("display_name")
+  age         Int?
+  sex         String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  clinic      Clinic   @relation(fields: [clinicId], references: [id])
+  consultations Consultation[]
+
+  @@unique([clinicId, caseCode])
+  @@map("anonymous_cases")
+}
+
+model Consultation {
+  id              String             @id @default(uuid())
+  clinicId        String             @map("clinic_id")
+  physicianId     String             @map("physician_id")
+  patientId       String?            @map("patient_id")
+  anonymousCaseId String?            @map("anonymous_case_id")
+  status          ConsultationStatus @default(DRAFT)
+  startedAt       DateTime?          @map("started_at")
+  endedAt         DateTime?          @map("ended_at")
+  approvedAt      DateTime?          @map("approved_at")
+  approvedById    String?            @map("approved_by_id")
+  copiedAt        DateTime?          @map("copied_at")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+  physician       User               @relation("PhysicianConsultations", fields: [physicianId], references: [id])
+  patient         Patient?           @relation(fields: [patientId], references: [id])
+  anonymousCase   AnonymousCase?     @relation(fields: [anonymousCaseId], references: [id])
+  audioChunks     AudioChunk[]
+  audioFiles      AudioFile[]
+  transcriptSegments TranscriptSegment[]
+  structuredData  StructuredClinicalData?
+  warnings        ClinicalWarning[]
+  soapDocuments   SoapDocument[]
+  clinicalNotes   ClinicalNote[]
+  generatedDocuments GeneratedDocument[]
+  revisions       RevisionHistory[]
+  aiExecutions    AIExecution[]
+
+  @@map("consultations")
+}
+
+model AudioChunk {
+  id             String   @id @default(uuid())
+  consultationId String   @map("consultation_id")
+  sequenceNumber Int      @map("sequence_number")
+  storageKey     String   @map("storage_key")
+  checksum       String?
+  uploadedAt     DateTime @default(now()) @map("uploaded_at")
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@unique([consultationId, sequenceNumber])
+  @@map("audio_chunks")
+}
+
+model AudioFile {
+  id             String    @id @default(uuid())
+  consultationId String    @map("consultation_id")
+  storageKey     String    @map("storage_key")
+  durationSec    Int?      @map("duration_sec")
+  deletedAt      DateTime? @map("deleted_at")
+  deleteStatus   String?   @map("delete_status")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@map("audio_files")
+}
+
+model TranscriptSegment {
+  id             String       @id @default(uuid())
+  consultationId String       @map("consultation_id")
+  sequenceNumber Int          @map("sequence_number")
+  text           String
+  normalizedText String?      @map("normalized_text")
+  speaker        SpeakerLabel @default(UNKNOWN)
+  confidence     Float?
+  isFinal        Boolean      @default(false) @map("is_final")
+  startMs        Int?         @map("start_ms")
+  endMs          Int?         @map("end_ms")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@map("transcript_segments")
+}
+
+model StructuredClinicalData {
+  id             String   @id @default(uuid())
+  consultationId String   @unique @map("consultation_id")
+  data           Json
+  version        Int      @default(1)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@map("structured_clinical_data")
+}
+
+model ClinicalWarning {
+  id             String          @id @default(uuid())
+  consultationId String          @map("consultation_id")
+  category       String
+  message        String
+  severity       WarningSeverity @default(WARNING)
+  resolved       Boolean         @default(false)
+  createdAt      DateTime        @default(now()) @map("created_at")
+  consultation   Consultation    @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@map("clinical_warnings")
+}
+
+model SoapDocument {
+  id             String   @id @default(uuid())
+  consultationId String   @map("consultation_id")
+  subjective     String   @default("")
+  objective      String   @default("")
+  assessment     String   @default("")
+  plan           String   @default("")
+  version        Int      @default(1)
+  isAiGenerated  Boolean  @default(true) @map("is_ai_generated")
+  approved       Boolean  @default(false)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@map("soap_documents")
+}
+
+model ClinicalNote {
+  id             String   @id @default(uuid())
+  consultationId String   @map("consultation_id")
+  content        String   @default("")
+  version        Int      @default(1)
+  isAiGenerated  Boolean  @default(true) @map("is_ai_generated")
+  approved       Boolean  @default(false)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@map("clinical_notes")
+}
+
+model GeneratedDocument {
+  id             String                @id @default(uuid())
+  consultationId String                @map("consultation_id")
+  type           GeneratedDocumentType
+  content        Json
+  version        Int                   @default(1)
+  isAiGenerated  Boolean               @default(true) @map("is_ai_generated")
+  approved       Boolean               @default(false)
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+  consultation   Consultation          @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@index([consultationId, type])
+  @@map("generated_documents")
+}
+
+model RevisionHistory {
+  id             String       @id @default(uuid())
+  consultationId String       @map("consultation_id")
+  documentType   DocumentType @map("document_type")
+  fieldName      String?      @map("field_name")
+  beforeValue    String?      @map("before_value")
+  afterValue     String?      @map("after_value")
+  changedById    String       @map("changed_by_id")
+  changedAt      DateTime     @default(now()) @map("changed_at")
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  changedBy      User         @relation(fields: [changedById], references: [id])
+
+  @@map("revision_history")
+}
+
+model AIExecution {
+  id             String   @id @default(uuid())
+  consultationId String   @map("consultation_id")
+  step           String
+  provider       String
+  promptVersion  String?  @map("prompt_version")
+  inputTokens    Int?     @map("input_tokens")
+  outputTokens   Int?     @map("output_tokens")
+  durationMs     Int?     @map("duration_ms")
+  status         String
+  errorMessage   String?  @map("error_message")
+  createdAt      DateTime @default(now()) @map("created_at")
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@map("ai_executions")
+}
+
+model PromptVersion {
+  id        String   @id @default(uuid())
+  name      String
+  version   String
+  content   String
+  isActive  Boolean  @default(false) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([name, version])
+  @@map("prompt_versions")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  action     String
+  resource   String
+  resourceId String?  @map("resource_id")
+  metadata   Json?
+  ipAddress  String?  @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at")
+  user       User?    @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model UserSettings {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  settings  Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("user_settings")
+}
