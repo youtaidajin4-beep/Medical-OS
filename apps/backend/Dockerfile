@@ -17,6 +17,7 @@ RUN pnpm --filter @medical-os/backend db:generate
 RUN pnpm --filter @medical-os/backend build
 
 FROM node:22-alpine AS runner
+RUN apk add --no-cache ffmpeg
 RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 WORKDIR /app
 ENV NODE_ENV=production

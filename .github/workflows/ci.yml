@@ -9,6 +9,20 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: medical_os
+          POSTGRES_PASSWORD: medical_os
+          POSTGRES_DB: medical_os
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U medical_os -d medical_os"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
 
@@ -29,5 +43,5 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
         env:
-          DATABASE_URL: file:./prisma/dev.db
+          DATABASE_URL: postgresql://medical_os:medical_os@localhost:5432/medical_os?schema=public
       - run: pnpm build
