@@ -13,7 +13,9 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:seed": "ts-node prisma/seed.ts",
-    "db:reset-pilot": "ts-node prisma/reset-pilot-data.ts"
+    "db:reset-pilot": "ts-node prisma/reset-pilot-data.ts",
+    "db:update-glossary": "ts-node prisma/update-physician-glossary.ts",
+    "db:suggest-replacements": "ts-node prisma/suggest-replacements.ts"
   },
   "dependencies": {
     "@medical-os/shared": "workspace:*",

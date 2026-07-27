@@ -231,6 +231,17 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ speaker }),
     }),
+  saveTranscript: (
+    consultationId: string,
+    segments: Array<{ id: string; text: string }>,
+  ) =>
+    request<{
+      segments: Array<{ id: string; text: string; speaker: string }>;
+      suggestedReplacements: Array<{ wrong: string; correct: string }>;
+    }>(`/consultations/${consultationId}/transcript`, {
+      method: 'PUT',
+      body: JSON.stringify({ segments }),
+    }),
   updateSoap: (id: string, soap: { subjective: string; objective: string; assessment: string; plan: string }) =>
     request(`/consultations/${id}/soap`, { method: 'PATCH', body: JSON.stringify(soap) }),
   updateNote: (id: string, content: string) =>
@@ -285,5 +296,14 @@ export const api = {
     request('/settings/physician-rules', {
       method: 'PUT',
       body: JSON.stringify(rules),
+    }),
+  getSuggestedReplacements: () =>
+    request<Array<{ wrong: string; correct: string; count: number }>>(
+      '/settings/suggested-replacements',
+    ),
+  addGlossaryReplacements: (replacements: Array<{ wrong: string; correct: string }>) =>
+    request('/settings/medical-glossary/replacements', {
+      method: 'POST',
+      body: JSON.stringify({ replacements }),
     }),
 };

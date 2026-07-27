@@ -47,6 +47,7 @@ postgresql://postgres.xxxx:password@aws-0-ap-northeast-1.pooler.supabase.com:654
 | `OPENAI_API_KEY` | 本番用キー |
 | `OPENAI_WHISPER_MODEL` | `whisper-1` |
 | `OPENAI_LLM_MODEL` | `gpt-4o-mini` |
+| `OPENAI_CORRECTION_MODEL` | `gpt-4o` |
 | `STORAGE_PROVIDER` | `local` |
 
 3. デプロイ完了後、公開 URL をメモ（例: `https://medical-os-production.up.railway.app`）

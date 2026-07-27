@@ -79,6 +79,7 @@ export class OpenAiSttProvider implements SttProvider {
     form.append('model', this.model);
     form.append('language', 'ja');
     form.append('response_format', 'verbose_json');
+    form.append('temperature', '0');
     if (whisperPrompt?.trim()) {
       form.append('prompt', whisperPrompt.trim());
     }

@@ -10,6 +10,7 @@ import { glossaryToLlmHint } from './medical-glossary';
 export interface OpenAiLlmConfig {
   apiKey: string;
   model?: string;
+  correctionModel?: string;
 }
 
 export type ChatResult = {
@@ -80,15 +81,18 @@ export class OpenAiLlmProvider implements LlmProvider {
   readonly name = 'openai';
   private readonly apiKey: string;
   private readonly model: string;
+  private readonly correctionModel: string;
 
   constructor(config: OpenAiLlmConfig) {
     this.apiKey = config.apiKey;
     this.model = config.model ?? 'gpt-4o-mini';
+    this.correctionModel = config.correctionModel ?? 'gpt-4o';
   }
 
   async correctTranscript(transcript: string, glossary?: MedicalGlossary, _consultationId?: string) {
     const hint = glossary ? `\n\nクリニック語彙:\n${glossaryToLlmHint(glossary)}` : '';
-    const result = await this.chat(
+    const result = await this.chatWithModel(
+      this.correctionModel,
       TRANSCRIPT_CORRECTION_SYSTEM,
       `文字起こし:\n${transcript}${hint}`,
       false,
@@ -164,8 +168,17 @@ export class OpenAiLlmProvider implements LlmProvider {
   }
 
   private async chat(system: string, user: string, jsonMode: boolean): Promise<ChatResult> {
+    return this.chatWithModel(this.model, system, user, jsonMode);
+  }
+
+  private async chatWithModel(
+    model: string,
+    system: string,
+    user: string,
+    jsonMode: boolean,
+  ): Promise<ChatResult> {
     this.assertApiKey();
-    const response = await this.requestChat(system, user, jsonMode);
+    const response = await this.requestChat(model, system, user, jsonMode);
     const content = response.content.trim();
     if (!content) {
       throw new Error('OpenAI LLM returned empty response');
@@ -181,6 +194,7 @@ export class OpenAiLlmProvider implements LlmProvider {
   }
 
   private async requestChat(
+    model: string,
     system: string,
     user: string,
     jsonMode: boolean,
@@ -193,7 +207,7 @@ export class OpenAiLlmProvider implements LlmProvider {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: this.model,
+        model,
         messages: [
           { role: 'system', content: system },
           { role: 'user', content: user },
@@ -207,7 +221,7 @@ export class OpenAiLlmProvider implements LlmProvider {
       const errorBody = await response.text();
       if ((response.status === 429 || response.status >= 500) && attempt < 1) {
         await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
-        return this.requestChat(system, user, jsonMode, attempt + 1);
+        return this.requestChat(model, system, user, jsonMode, attempt + 1);
       }
       throw new Error(`OpenAI LLM failed (${response.status}): ${errorBody}`);
     }

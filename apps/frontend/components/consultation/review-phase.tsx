@@ -81,6 +81,12 @@ export function ReviewPhase({
   onSaveSoap,
   onSaveNote,
   onSpeakerChange,
+  onTranscriptTextChange,
+  onSaveTranscript,
+  savingTranscript,
+  glossarySuggestions,
+  onAddGlossarySuggestions,
+  onDismissGlossarySuggestions,
   onApprove,
   onCopySoap,
   onCopyNote,
@@ -103,6 +109,12 @@ export function ReviewPhase({
   onSaveSoap: () => void;
   onSaveNote: () => void;
   onSpeakerChange: (segmentId: string, speaker: string) => void;
+  onTranscriptTextChange: (segmentId: string, text: string) => void;
+  onSaveTranscript: () => void;
+  savingTranscript?: boolean;
+  glossarySuggestions?: Array<{ wrong: string; correct: string }>;
+  onAddGlossarySuggestions?: (selected: Array<{ wrong: string; correct: string }>) => void;
+  onDismissGlossarySuggestions?: () => void;
   onApprove: () => void;
   onCopySoap: () => void;
   onCopyNote: () => void;
@@ -122,6 +134,7 @@ export function ReviewPhase({
 }) {
   const [tab, setTab] = useState<'soap' | 'note' | 'documents'>('soap');
   const [showRevisions, setShowRevisions] = useState(false);
+  const [selectedSuggestions, setSelectedSuggestions] = useState<Record<string, boolean>>({});
   const { toast, show } = useToast();
 
   useEffect(() => {
@@ -133,6 +146,16 @@ export function ReviewPhase({
     if (saveMsg) show(saveMsg, 'success');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saveMsg]);
+
+  useEffect(() => {
+    if (!glossarySuggestions?.length) {
+      setSelectedSuggestions({});
+      return;
+    }
+    setSelectedSuggestions(
+      Object.fromEntries(glossarySuggestions.map((s) => [`${s.wrong}→${s.correct}`, true])),
+    );
+  }, [glossarySuggestions]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -235,10 +258,64 @@ export function ReviewPhase({
                         </option>
                       ))}
                     </Select>
-                    <span className="leading-relaxed text-slate-700">{seg.text}</span>
+                    <Textarea
+                      value={seg.text}
+                      onChange={(e) => onTranscriptTextChange(seg.id, e.target.value)}
+                      rows={2}
+                      className="min-w-0 flex-1"
+                    />
                   </li>
                 ))}
               </ul>
+              <Button
+                variant="secondary"
+                icon={<Save />}
+                className="mt-3"
+                onClick={onSaveTranscript}
+                disabled={savingTranscript}
+              >
+                {savingTranscript ? '保存中…' : '文字起こしを保存'}
+              </Button>
+              {glossarySuggestions && glossarySuggestions.length > 0 && (
+                <div className="mt-4 space-y-3 rounded-lg border border-brand-200 bg-brand-50/50 p-4">
+                  <p className="text-sm font-medium text-slate-800">
+                    検出された修正を語彙に追加しますか？
+                  </p>
+                  {glossarySuggestions.map((item) => {
+                    const key = `${item.wrong}→${item.correct}`;
+                    return (
+                      <label key={key} className="flex items-center gap-2 text-sm text-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={selectedSuggestions[key] ?? false}
+                          onChange={(e) =>
+                            setSelectedSuggestions((prev) => ({
+                              ...prev,
+                              [key]: e.target.checked,
+                            }))
+                          }
+                        />
+                        {item.wrong} → {item.correct}
+                      </label>
+                    );
+                  })}
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => {
+                        const selected = glossarySuggestions.filter(
+                          (item) => selectedSuggestions[`${item.wrong}→${item.correct}`],
+                        );
+                        onAddGlossarySuggestions?.(selected);
+                      }}
+                    >
+                      選択した修正を語彙に追加
+                    </Button>
+                    <Button variant="ghost" onClick={onDismissGlossarySuggestions}>
+                      後で
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

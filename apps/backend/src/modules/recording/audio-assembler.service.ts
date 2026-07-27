@@ -19,25 +19,34 @@ export class AudioAssemblerService {
 
     if (chunkBuffers.length === 1) {
       const single = chunkBuffers[0]!;
-      const converted = await this.tryConvertToWav(single, 'chunk-0.webm');
-      if (converted) return converted;
-      return { buffer: single, mimeType: 'audio/webm', extension: 'webm' };
+      const converted = await this.convertToWavRequired(single, 'chunk-0.webm');
+      return converted;
     }
 
     const concatenated = await this.tryFfmpegConcat(chunkBuffers);
     if (concatenated) return concatenated;
 
-    this.logger.warn('ffmpeg unavailable or failed; falling back to raw WebM concat');
-    if (chunkBuffers.length > 1) {
+    throw new Error(
+      'ffmpeg が必要です。音声を WAV に変換できません。brew install ffmpeg を実行するか、本番環境の ffmpeg 設定を確認してください。',
+    );
+  }
+
+  private async convertToWavRequired(
+    buffer: Buffer,
+    filename: string,
+  ): Promise<{ buffer: Buffer; mimeType: string; extension: string }> {
+    if (!(await this.isFfmpegAvailable())) {
       throw new Error(
-        'ffmpeg が必要です。複数チャンクの音声を結合できません。brew install ffmpeg を実行してください。',
+        'ffmpeg がインストールされていません。Whisper 用に音声を WAV 変換できません。brew install ffmpeg を実行してください。',
       );
     }
-    return {
-      buffer: Buffer.concat(chunkBuffers),
-      mimeType: 'audio/webm',
-      extension: 'webm',
-    };
+    const converted = await this.tryConvertToWav(buffer, filename);
+    if (!converted) {
+      throw new Error(
+        '音声の WAV 変換に失敗しました。録音形式または ffmpeg 設定を確認してください。',
+      );
+    }
+    return converted;
   }
 
   private async isFfmpegAvailable(): Promise<boolean> {

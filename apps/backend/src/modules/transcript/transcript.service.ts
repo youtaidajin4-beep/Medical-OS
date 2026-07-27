@@ -1,9 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { SpeakerLabel } from '@prisma/client';
+import { DocumentType, SpeakerLabel } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { SttProvider, SttOptions } from '../../providers/ai/stt.provider';
 import { STT_PROVIDER } from '../../providers/ai/stt.tokens';
 import { TranscriptNormalizer } from '../ai/transcript-normalizer';
+import { extractReplacementCandidates } from '../../providers/ai/transcript-diff.util';
+import { MedicalGlossaryReplacement } from '../../providers/ai/medical-glossary.types';
 
 const SPEAKER_MAP: Record<string, SpeakerLabel> = {
   physician: SpeakerLabel.PHYSICIAN,
@@ -120,6 +122,44 @@ export class TranscriptService {
       where: { id: segmentId },
       data: { speaker },
     });
+  }
+
+  async saveTranscriptEdits(
+    consultationId: string,
+    physicianId: string,
+    segments: Array<{ id: string; text: string }>,
+  ): Promise<{ segments: Awaited<ReturnType<TranscriptService['getSegments']>>; suggestedReplacements: MedicalGlossaryReplacement[] }> {
+    const existing = await this.getSegments(consultationId, { final: true });
+    const beforeText = this.toFullText(existing);
+
+    await Promise.all(
+      segments.map((seg) =>
+        this.prisma.transcriptSegment.update({
+          where: { id: seg.id },
+          data: { text: seg.text, normalizedText: seg.text },
+        }),
+      ),
+    );
+
+    const updated = await this.getSegments(consultationId, { final: true });
+    const afterText = this.toFullText(updated);
+    if (beforeText !== afterText) {
+      await this.prisma.revisionHistory.create({
+        data: {
+          consultationId,
+          documentType: DocumentType.TRANSCRIPT,
+          fieldName: 'fullText',
+          beforeValue: beforeText,
+          afterValue: afterText,
+          changedById: physicianId,
+        },
+      });
+    }
+
+    return {
+      segments: updated,
+      suggestedReplacements: extractReplacementCandidates(beforeText, afterText),
+    };
   }
 
   async getSegments(consultationId: string, options?: { final?: boolean }) {

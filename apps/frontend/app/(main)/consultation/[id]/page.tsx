@@ -40,6 +40,10 @@ export default function ConsultationPage() {
   const [approved, setApproved] = useState(false);
   const [consentGiven, setConsentGiven] = useState(false);
   const [generatingDocs, setGeneratingDocs] = useState(false);
+  const [savingTranscript, setSavingTranscript] = useState(false);
+  const [glossarySuggestions, setGlossarySuggestions] = useState<
+    Array<{ wrong: string; correct: string }>
+  >([]);
   const [copyMsg, setCopyMsg] = useState('');
   const [saveMsg, setSaveMsg] = useState('');
   const [caseName, setCaseName] = useState('');
@@ -200,6 +204,43 @@ export default function ConsultationPage() {
     );
   }
 
+  function handleTranscriptTextChange(segmentId: string, text: string) {
+    setTranscript((prev) =>
+      prev.map((seg) => (seg.id === segmentId ? { ...seg, text } : seg)),
+    );
+  }
+
+  async function handleSaveTranscript() {
+    setSavingTranscript(true);
+    try {
+      const result = await api.saveTranscript(
+        id,
+        transcript.map((seg) => ({ id: seg.id, text: seg.text })),
+      );
+      setTranscript(result.segments);
+      setGlossarySuggestions(result.suggestedReplacements);
+      setSaveMsg('文字起こしを保存しました');
+      setTimeout(() => setSaveMsg(''), 3000);
+    } catch (error) {
+      setSaveMsg(error instanceof Error ? error.message : '文字起こしの保存に失敗しました');
+    } finally {
+      setSavingTranscript(false);
+    }
+  }
+
+  async function handleAddGlossarySuggestions(
+    selected: Array<{ wrong: string; correct: string }>,
+  ) {
+    if (!selected.length) {
+      setGlossarySuggestions([]);
+      return;
+    }
+    await api.addGlossaryReplacements(selected);
+    setGlossarySuggestions([]);
+    setSaveMsg('修正を語彙に追加しました');
+    setTimeout(() => setSaveMsg(''), 3000);
+  }
+
   async function handleGenerateAll() {
     setGeneratingDocs(true);
     try {
@@ -258,6 +299,12 @@ export default function ConsultationPage() {
       onSaveSoap={saveSoap}
       onSaveNote={saveNote}
       onSpeakerChange={handleSpeakerChange}
+      onTranscriptTextChange={handleTranscriptTextChange}
+      onSaveTranscript={handleSaveTranscript}
+      savingTranscript={savingTranscript}
+      glossarySuggestions={glossarySuggestions}
+      onAddGlossarySuggestions={handleAddGlossarySuggestions}
+      onDismissGlossarySuggestions={() => setGlossarySuggestions([])}
       onApprove={handleApprove}
       onCopySoap={handleCopySoap}
       onCopyNote={handleCopyNote}

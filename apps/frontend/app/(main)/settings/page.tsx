@@ -53,6 +53,9 @@ export default function SettingsPage() {
   const [passwordMsg, setPasswordMsg] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
+  const [suggestedReplacements, setSuggestedReplacements] = useState<
+    Array<{ wrong: string; correct: string; count: number }>
+  >([]);
 
   useEffect(() => {
     if (!getToken()) {
@@ -75,7 +78,26 @@ export default function SettingsPage() {
       }
     }).catch(() => {});
     void api.me().then((user) => setUserEmail(user.email)).catch(() => {});
+    void api.getSuggestedReplacements().then(setSuggestedReplacements).catch(() => {});
   }, [router]);
+
+  async function addSuggestedReplacement(item: { wrong: string; correct: string }) {
+    await api.addGlossaryReplacements([item]);
+    const data = await api.getPhysicianRules();
+    setRules({
+      ...data,
+      medicalGlossary: data.medicalGlossary ?? {
+        drugNames: [],
+        diagnoses: [],
+        customReplacements: [{ wrong: '', correct: '' }],
+      },
+    });
+    setSuggestedReplacements((prev) =>
+      prev.filter((s) => !(s.wrong === item.wrong && s.correct === item.correct)),
+    );
+    setSaveMsg(`「${item.wrong}→${item.correct}」を語彙に追加しました`);
+    setTimeout(() => setSaveMsg(''), 3000);
+  }
 
   async function saveRules() {
     const customReplacements = (rules.medicalGlossary?.customReplacements ?? [])
@@ -298,6 +320,38 @@ export default function SettingsPage() {
             )}
           </div>
           <Button onClick={saveRules}>語彙を保存</Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Settings2 className="h-4 w-4 text-brand-600" />
+            ログから提案された置換
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-slate-600">
+            音声認識パイプラインの辞書補正ログから、よく発生した誤認識ペアを提案します。
+          </p>
+          {suggestedReplacements.length === 0 ? (
+            <p className="text-sm text-slate-500">現在、提案はありません。</p>
+          ) : (
+            suggestedReplacements.map((item) => (
+              <div
+                key={`${item.wrong}-${item.correct}`}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 p-3 text-sm"
+              >
+                <span>
+                  {item.wrong} → {item.correct}
+                  <span className="ml-2 text-xs text-slate-400">({item.count}回)</span>
+                </span>
+                <Button variant="secondary" onClick={() => void addSuggestedReplacement(item)}>
+                  語彙に追加
+                </Button>
+              </div>
+            ))
+          )}
         </CardContent>
       </Card>
 

@@ -86,6 +86,7 @@ describe('OpenAiSttProvider', () => {
     const [, init] = (global.fetch as jest.Mock).mock.calls[0] as [string, RequestInit];
     const body = init.body as FormData;
     expect(body.get('prompt')).toBe('聴診、再診、ムコダイン');
+    expect(body.get('temperature')).toBe('0');
   });
 
   it('does not transcribe stream chunks', async () => {

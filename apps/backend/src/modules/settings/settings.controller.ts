@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Put, UseGuards } from '@nestjs/common';
 import { IsArray, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { SettingsService } from './settings.service';
@@ -69,6 +69,13 @@ class PhysicianRulesDto {
   medicalGlossary?: MedicalGlossaryDto;
 }
 
+class AddReplacementsDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => MedicalGlossaryReplacementDto)
+  replacements!: MedicalGlossaryReplacementDto[];
+}
+
 @Controller('settings')
 @UseGuards(JwtAuthGuard)
 export class SettingsController {
@@ -82,5 +89,18 @@ export class SettingsController {
   @Put('physician-rules')
   updatePhysicianRules(@CurrentUser() user: AuthUser, @Body() dto: PhysicianRulesDto) {
     return this.settingsService.updatePhysicianRules(user.sub, dto as PhysicianRules);
+  }
+
+  @Get('suggested-replacements')
+  getSuggestedReplacements(@CurrentUser() user: AuthUser) {
+    return this.settingsService.getSuggestedReplacements(user.sub);
+  }
+
+  @Post('medical-glossary/replacements')
+  addMedicalGlossaryReplacements(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: AddReplacementsDto,
+  ) {
+    return this.settingsService.addMedicalGlossaryReplacements(user.sub, dto.replacements);
   }
 }

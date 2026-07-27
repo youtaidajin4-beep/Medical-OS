@@ -43,10 +43,6 @@ export class RecordingService {
     verifyChecksum(buffer, checksum);
     const hash = checksum ?? computeSha256(buffer);
 
-    // #region agent log
-    fetch('http://127.0.0.1:7691/ingest/361a7d21-06dd-46cb-8e34-20e49f62c5c0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9009b6'},body:JSON.stringify({sessionId:'9009b6',location:'recording.service.ts:uploadChunk',message:'chunk received',data:{consultationId,sequenceNumber,bytes:buffer.length},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-    // #endregion
-
     const existing = await this.prisma.audioChunk.findUnique({
       where: {
         consultationId_sequenceNumber: { consultationId, sequenceNumber },
@@ -106,9 +102,6 @@ export class RecordingService {
     const chunks = await this.listChunks(consultationId);
     const file = await this.assembleAudioFile(consultationId);
     const buffer = await this.storage.get(file.storageKey);
-    // #region agent log
-    fetch('http://127.0.0.1:7691/ingest/361a7d21-06dd-46cb-8e34-20e49f62c5c0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9009b6'},body:JSON.stringify({sessionId:'9009b6',location:'recording.service.ts:getAssembledAudioBuffer',message:'audio assembled',data:{consultationId,chunkCount:chunks.length,assembledBytes:buffer.length,storageKey:file.storageKey},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-    // #endregion
     return buffer;
   }
 

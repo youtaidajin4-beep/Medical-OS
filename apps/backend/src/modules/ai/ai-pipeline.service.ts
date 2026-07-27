@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ConsultationStatus, WarningSeverity } from '@prisma/client';
+import { ConsultationStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { TranscriptService } from '../transcript/transcript.service';
 import { RecordingService } from '../recording/recording.service';
@@ -13,6 +13,7 @@ import { resolveMockScenario } from '../../providers/ai/mock-scenarios';
 import { localizeOpenAiError } from '../../providers/ai/openai-retry.util';
 import { buildWhisperPrompt, resolveMedicalGlossary } from '../../providers/ai/medical-glossary';
 import { correctMedicalTerms } from '../../providers/ai/medical-term-corrector';
+import { validateStructuredData } from '../../providers/ai/clinical-data-validator';
 import { logAiExecution } from './ai-execution.helper';
 
 const MOCK_PIPELINE_DELAY_MS = 2500;
@@ -172,7 +173,7 @@ export class AiPipelineService {
             consultation.patient?.patientCode,
             consultation.anonymousCase?.caseCode,
           ).warnings
-        : this.generateLegacyWarnings(structured);
+        : validateStructuredData(structured, glossary);
       await this.prisma.clinicalWarning.deleteMany({ where: { consultationId } });
       if (warnings.length) {
         await this.prisma.clinicalWarning.createMany({
@@ -251,18 +252,5 @@ export class AiPipelineService {
       getLastUsage?: () => { inputTokens?: number; outputTokens?: number };
     };
     return provider.getLastUsage?.() ?? {};
-  }
-
-  private generateLegacyWarnings(structured: Record<string, unknown>) {
-    const warnings: { category: string; message: string; severity: WarningSeverity }[] = [];
-    const meds = structured.medications as string[] | undefined;
-    if (meds?.some((m) => m.includes('要確認'))) {
-      warnings.push({
-        category: 'medication',
-        message: '要確認：薬剤名または用量を特定できません',
-        severity: WarningSeverity.WARNING,
-      });
-    }
-    return warnings;
   }
 }
