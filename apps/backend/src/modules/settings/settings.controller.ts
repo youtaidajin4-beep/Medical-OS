@@ -25,6 +25,32 @@ class FixedPhrasesDto {
   greeting?: string;
 }
 
+class MedicalGlossaryReplacementDto {
+  @IsString()
+  wrong!: string;
+
+  @IsString()
+  correct!: string;
+}
+
+class MedicalGlossaryDto {
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  drugNames?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  diagnoses?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => MedicalGlossaryReplacementDto)
+  customReplacements?: MedicalGlossaryReplacementDto[];
+}
+
 class PhysicianRulesDto {
   @IsArray()
   @ValidateNested({ each: true })
@@ -35,6 +61,12 @@ class PhysicianRulesDto {
   @ValidateNested()
   @Type(() => FixedPhrasesDto)
   fixedPhrases!: FixedPhrasesDto;
+
+  @IsOptional()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => MedicalGlossaryDto)
+  medicalGlossary?: MedicalGlossaryDto;
 }
 
 @Controller('settings')

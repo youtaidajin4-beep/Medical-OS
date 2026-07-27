@@ -70,6 +70,24 @@ describe('OpenAiSttProvider', () => {
     expect(segments[0]?.text).toBe('こんにちは');
   });
 
+  it('sends whisper prompt when provided', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        text: '気管支炎',
+      }),
+    });
+
+    const provider = new OpenAiSttProvider({ apiKey: 'test-key' });
+    await provider.transcribeFinal(Buffer.alloc(2048), undefined, {
+      whisperPrompt: '聴診、再診、ムコダイン',
+    });
+
+    const [, init] = (global.fetch as jest.Mock).mock.calls[0] as [string, RequestInit];
+    const body = init.body as FormData;
+    expect(body.get('prompt')).toBe('聴診、再診、ムコダイン');
+  });
+
   it('does not transcribe stream chunks', async () => {
     const provider = new OpenAiSttProvider({ apiKey: 'test-key' });
     const result = await provider.transcribeStream(Buffer.alloc(2048), 0);

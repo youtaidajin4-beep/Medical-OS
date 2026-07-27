@@ -9,6 +9,10 @@ export interface SttTranscriptSegment {
   endMs?: number;
 }
 
+export type SttOptions = {
+  whisperPrompt?: string;
+};
+
 export interface SttProvider {
   readonly name: string;
   transcribeStream?(
@@ -16,7 +20,11 @@ export interface SttProvider {
     sequenceNumber: number,
     consultationId?: string,
   ): Promise<SttTranscriptSegment | null>;
-  transcribeFinal(audio: Buffer, consultationId?: string): Promise<SttTranscriptSegment[]>;
+  transcribeFinal(
+    audio: Buffer,
+    consultationId?: string,
+    options?: SttOptions,
+  ): Promise<SttTranscriptSegment[]>;
 }
 
 export class MockSttProvider implements SttProvider {
@@ -47,7 +55,11 @@ export class MockSttProvider implements SttProvider {
     };
   }
 
-  async transcribeFinal(_audio: Buffer, consultationId?: string): Promise<SttTranscriptSegment[]> {
+  async transcribeFinal(
+    _audio: Buffer,
+    consultationId?: string,
+    _options?: SttOptions,
+  ): Promise<SttTranscriptSegment[]> {
     const scenario = this.resolveScenario(consultationId);
     return scenario.transcript;
   }

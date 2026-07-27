@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { SpeakerLabel } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
-import { SttProvider } from '../../providers/ai/stt.provider';
+import { SttProvider, SttOptions } from '../../providers/ai/stt.provider';
 import { STT_PROVIDER } from '../../providers/ai/stt.tokens';
 import { TranscriptNormalizer } from '../ai/transcript-normalizer';
 
@@ -50,8 +50,8 @@ export class TranscriptService {
     });
   }
 
-  async finalizeFromAudio(consultationId: string, audio: Buffer) {
-    const rawSegments = await this.sttProvider.transcribeFinal(audio, consultationId);
+  async finalizeFromAudio(consultationId: string, audio: Buffer, options?: SttOptions) {
+    const rawSegments = await this.sttProvider.transcribeFinal(audio, consultationId, options);
     const normalizedSegments = this.normalizer.normalize(rawSegments);
 
     await this.prisma.transcriptSegment.deleteMany({
@@ -77,6 +77,42 @@ export class TranscriptService {
     );
 
     return segments;
+  }
+
+  async replaceFinalTranscript(consultationId: string, correctedText: string) {
+    const existing = await this.prisma.transcriptSegment.findMany({
+      where: { consultationId, isFinal: true },
+      orderBy: { sequenceNumber: 'asc' },
+    });
+
+    if (!existing.length) {
+      return this.prisma.transcriptSegment.create({
+        data: {
+          consultationId,
+          sequenceNumber: 0,
+          text: correctedText,
+          normalizedText: correctedText,
+          speaker: SpeakerLabel.UNKNOWN,
+          isFinal: true,
+          startMs: 0,
+          endMs: 0,
+        },
+      });
+    }
+
+    const [first, ...rest] = existing;
+    await this.prisma.transcriptSegment.update({
+      where: { id: first!.id },
+      data: { text: correctedText, normalizedText: correctedText },
+    });
+    if (rest.length) {
+      await this.prisma.transcriptSegment.deleteMany({
+        where: { id: { in: rest.map((seg) => seg.id) } },
+      });
+    }
+    return this.prisma.transcriptSegment.findFirstOrThrow({
+      where: { id: first!.id },
+    });
   }
 
   async updateSegmentSpeaker(segmentId: string, speaker: SpeakerLabel) {

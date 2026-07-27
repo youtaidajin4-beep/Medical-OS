@@ -4,6 +4,8 @@ import {
   StructuredClinicalDataSchema,
 } from './llm.provider';
 import { GeneratedDocumentType } from '@prisma/client';
+import { MedicalGlossary } from './medical-glossary.types';
+import { glossaryToLlmHint } from './medical-glossary';
 
 export interface OpenAiLlmConfig {
   apiKey: string;
@@ -64,6 +66,16 @@ const NOTE_SYSTEM = `あなたは日本のクリニック向け診療記録作�
 構造化データに存在する情報のみを使用し、【主訴】【現病歴】【所見】【評価】【方針】などの見出しを適宜使用してください。
 推測や追加情報は禁止です。`;
 
+const TRANSCRIPT_CORRECTION_SYSTEM = `あなたは日本の内科クリニック向け文字起こし校正アシスタントです。
+音声認識の同音異義誤りを、診察文脈から修正してください。
+
+ルール:
+- 意味を追加・削除しない
+- 医師が言っていない診断・薬剤を創作しない
+- 明らかな同音異義のみ修正（例: 期間支援→気管支炎、無効団員→ムコダイン、調子んでは→聴診では）
+- 不明な場合は原文維持 + （要確認）を付ける
+- 出力は校正後の文字起こしテキストのみ`;
+
 export class OpenAiLlmProvider implements LlmProvider {
   readonly name = 'openai';
   private readonly apiKey: string;
@@ -72,6 +84,16 @@ export class OpenAiLlmProvider implements LlmProvider {
   constructor(config: OpenAiLlmConfig) {
     this.apiKey = config.apiKey;
     this.model = config.model ?? 'gpt-4o-mini';
+  }
+
+  async correctTranscript(transcript: string, glossary?: MedicalGlossary, _consultationId?: string) {
+    const hint = glossary ? `\n\nクリニック語彙:\n${glossaryToLlmHint(glossary)}` : '';
+    const result = await this.chat(
+      TRANSCRIPT_CORRECTION_SYSTEM,
+      `文字起こし:\n${transcript}${hint}`,
+      false,
+    );
+    return result.content.trim() || transcript;
   }
 
   async extractStructured(transcript: string, _consultationId?: string) {

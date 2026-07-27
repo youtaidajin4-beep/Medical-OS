@@ -2,9 +2,11 @@ import { ConsultationStatus } from '@prisma/client';
 import { AiPipelineService } from '../src/modules/ai/ai-pipeline.service';
 import { TranscriptService } from '../src/modules/transcript/transcript.service';
 import { RecordingService } from '../src/modules/recording/recording.service';
+import { SettingsService } from '../src/modules/settings/settings.service';
 import { PrismaService } from '../src/database/prisma.service';
 import { MockLlmProvider } from '../src/providers/ai/llm.provider';
 import { MockSttProvider } from '../src/providers/ai/stt.provider';
+import { DEFAULT_PHYSICIAN_RULES } from '../src/modules/settings/physician-rules.types';
 
 describe('AiPipelineService integration shape', () => {
   const prisma = {
@@ -16,6 +18,7 @@ describe('AiPipelineService integration shape', () => {
     consultation: {
       findUnique: jest.fn().mockResolvedValue({
         id: 'consultation-1',
+        physicianId: 'physician-1',
         patient: { patientCode: 'P-001' },
         anonymousCase: null,
       }),
@@ -28,6 +31,11 @@ describe('AiPipelineService integration shape', () => {
       { text: '3日前から咳が出て、少し息苦しいです。' },
       { text: '熱はありましたか？' },
     ]),
+    getSegments: jest.fn().mockResolvedValue([
+      { text: '3日前から咳が出て、少し息苦しいです。' },
+      { text: '熱はありましたか？' },
+    ]),
+    replaceFinalTranscript: jest.fn().mockResolvedValue({ id: 'seg-1' }),
     toFullText: jest.fn().mockReturnValue('3日前から咳が出て、少し息苦しいです。\n熱はありましたか？'),
   } as unknown as TranscriptService;
 
@@ -37,6 +45,10 @@ describe('AiPipelineService integration shape', () => {
     deleteAudioForConsultation: jest.fn().mockResolvedValue({ deleted: 1, chunks: 2 }),
   } as unknown as RecordingService;
 
+  const settingsService = {
+    getPhysicianRules: jest.fn().mockResolvedValue(DEFAULT_PHYSICIAN_RULES),
+  } as unknown as SettingsService;
+
   const llmProvider = new MockLlmProvider();
   const sttProvider = new MockSttProvider();
 
@@ -44,6 +56,7 @@ describe('AiPipelineService integration shape', () => {
     prisma,
     transcriptService,
     recordingService,
+    settingsService,
     llmProvider,
     sttProvider,
   );
@@ -65,6 +78,7 @@ describe('AiPipelineService integration shape', () => {
     expect(recordingService.listChunks).toHaveBeenCalledWith('consultation-1');
     expect(recordingService.getAssembledAudioBuffer).toHaveBeenCalledWith('consultation-1');
     expect(transcriptService.finalizeFromAudio).toHaveBeenCalled();
+    expect(transcriptService.replaceFinalTranscript).toHaveBeenCalled();
     expect(prisma.consultation.update).toHaveBeenCalledWith({
       where: { id: 'consultation-1' },
       data: { status: ConsultationStatus.REVIEW },
@@ -83,6 +97,7 @@ describe('AiPipelineService integration shape', () => {
     expect(transcriptService.finalizeFromAudio).toHaveBeenCalledWith(
       'consultation-1',
       expect.any(Buffer),
+      expect.objectContaining({ whisperPrompt: undefined }),
     );
     expect(result.status).toBe('REVIEW');
   });

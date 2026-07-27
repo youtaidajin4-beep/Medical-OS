@@ -25,13 +25,25 @@ export default function SettingsPage() {
   const [rules, setRules] = useState<{
     referralRules: Array<{ trigger: string; mustInclude: string[] }>;
     fixedPhrases: { closing?: string; greeting?: string };
+    medicalGlossary?: {
+      drugNames: string[];
+      diagnoses: string[];
+      customReplacements: Array<{ wrong: string; correct: string }>;
+    };
   }>({
     referralRules: [{ trigger: '脳梗塞疑い', mustInclude: ['紹介理由', '依頼事項', '経過'] }],
     fixedPhrases: {
       greeting: 'いつも大変お世話になっております。御多忙中誠に恐縮ですが、ご高診・ご加療を宜しくお願いいたします。',
       closing: 'ご高診のほどよろしくお願い申し上げます。',
     },
+    medicalGlossary: {
+      drugNames: [],
+      diagnoses: [],
+      customReplacements: [{ wrong: '', correct: '' }],
+    },
   });
+  const [drugNamesText, setDrugNamesText] = useState('');
+  const [diagnosesText, setDiagnosesText] = useState('');
   const [mustIncludeText, setMustIncludeText] = useState('紹介理由, 依頼事項, 経過');
   const [saveMsg, setSaveMsg] = useState('');
   const [userEmail, setUserEmail] = useState('');
@@ -48,7 +60,16 @@ export default function SettingsPage() {
       return;
     }
     void api.getPhysicianRules().then((data) => {
-      setRules(data);
+      setRules({
+        ...data,
+        medicalGlossary: data.medicalGlossary ?? {
+          drugNames: [],
+          diagnoses: [],
+          customReplacements: [{ wrong: '', correct: '' }],
+        },
+      });
+      setDrugNamesText((data.medicalGlossary?.drugNames ?? []).join(', '));
+      setDiagnosesText((data.medicalGlossary?.diagnoses ?? []).join(', '));
       if (data.referralRules[0]) {
         setMustIncludeText(data.referralRules[0].mustInclude.join(', '));
       }
@@ -57,6 +78,10 @@ export default function SettingsPage() {
   }, [router]);
 
   async function saveRules() {
+    const customReplacements = (rules.medicalGlossary?.customReplacements ?? [])
+      .map((r) => ({ wrong: r.wrong.trim(), correct: r.correct.trim() }))
+      .filter((r) => r.wrong && r.correct)
+      .slice(0, 3);
     const payload = {
       ...rules,
       referralRules: [
@@ -65,6 +90,11 @@ export default function SettingsPage() {
           mustInclude: mustIncludeText.split(',').map((s) => s.trim()).filter(Boolean),
         },
       ],
+      medicalGlossary: {
+        drugNames: drugNamesText.split(',').map((s) => s.trim()).filter(Boolean),
+        diagnoses: diagnosesText.split(',').map((s) => s.trim()).filter(Boolean),
+        customReplacements,
+      },
     };
     await api.updatePhysicianRules(payload);
     setRules(payload);
@@ -176,6 +206,98 @@ export default function SettingsPage() {
             />
           </div>
           <Button onClick={saveRules}>ルールを保存</Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Settings2 className="h-4 w-4 text-brand-600" />
+            常用薬・診断名（音声認識精度向上）
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-slate-600">
+            クリニックでよく使う薬剤名・診断名を登録すると、Whisper・辞書補正・AI校正の3段階で参照されます。
+          </p>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">常用薬（カンマ区切り）</label>
+            <Textarea
+              value={drugNamesText}
+              onChange={(e) => setDrugNamesText(e.target.value)}
+              placeholder="ムコダイン, アムロジピン, メトホルミン"
+              rows={2}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">常用診断名（カンマ区切り）</label>
+            <Textarea
+              value={diagnosesText}
+              onChange={(e) => setDiagnosesText(e.target.value)}
+              placeholder="気管支炎, 高血圧症, 2型糖尿病"
+              rows={2}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-700">誤認識 → 正しい表記（最大3件）</label>
+            {(rules.medicalGlossary?.customReplacements ?? [{ wrong: '', correct: '' }]).map((pair, index) => (
+              <div key={index} className="grid grid-cols-2 gap-2">
+                <Input
+                  value={pair.wrong}
+                  onChange={(e) => {
+                    const next = [...(rules.medicalGlossary?.customReplacements ?? [{ wrong: '', correct: '' }])];
+                    next[index] = { ...next[index]!, wrong: e.target.value };
+                    setRules({
+                      ...rules,
+                      medicalGlossary: {
+                        drugNames: rules.medicalGlossary?.drugNames ?? [],
+                        diagnoses: rules.medicalGlossary?.diagnoses ?? [],
+                        customReplacements: next,
+                      },
+                    });
+                  }}
+                  placeholder="誤認識例: 無効団員"
+                />
+                <Input
+                  value={pair.correct}
+                  onChange={(e) => {
+                    const next = [...(rules.medicalGlossary?.customReplacements ?? [{ wrong: '', correct: '' }])];
+                    next[index] = { ...next[index]!, correct: e.target.value };
+                    setRules({
+                      ...rules,
+                      medicalGlossary: {
+                        drugNames: rules.medicalGlossary?.drugNames ?? [],
+                        diagnoses: rules.medicalGlossary?.diagnoses ?? [],
+                        customReplacements: next,
+                      },
+                    });
+                  }}
+                  placeholder="正しい表記: ムコダイン"
+                />
+              </div>
+            ))}
+            {(rules.medicalGlossary?.customReplacements?.length ?? 0) < 3 && (
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  setRules({
+                    ...rules,
+                    medicalGlossary: {
+                      drugNames: rules.medicalGlossary?.drugNames ?? [],
+                      diagnoses: rules.medicalGlossary?.diagnoses ?? [],
+                      customReplacements: [
+                        ...(rules.medicalGlossary?.customReplacements ?? []),
+                        { wrong: '', correct: '' },
+                      ],
+                    },
+                  })
+                }
+              >
+                置換ルールを追加
+              </Button>
+            )}
+          </div>
+          <Button onClick={saveRules}>語彙を保存</Button>
         </CardContent>
       </Card>
 

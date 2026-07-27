@@ -45,7 +45,11 @@ export class OpenAiSttProvider implements SttProvider {
     return null;
   }
 
-  async transcribeFinal(audio: Buffer, _consultationId?: string): Promise<SttTranscriptSegment[]> {
+  async transcribeFinal(
+    audio: Buffer,
+    _consultationId?: string,
+    options?: { whisperPrompt?: string },
+  ): Promise<SttTranscriptSegment[]> {
     this.assertApiKey();
     if (audio.length < MIN_AUDIO_BYTES) {
       throw new Error(
@@ -55,7 +59,7 @@ export class OpenAiSttProvider implements SttProvider {
     const isWav = audio.length > 4 && audio.toString('ascii', 0, 4) === 'RIFF';
     const filename = isWav ? 'consultation.wav' : 'consultation.webm';
     const mimeType = isWav ? 'audio/wav' : 'audio/webm';
-    return this.transcribeBuffer(audio, filename, mimeType);
+    return this.transcribeBuffer(audio, filename, mimeType, options?.whisperPrompt);
   }
 
   private assertApiKey() {
@@ -68,12 +72,16 @@ export class OpenAiSttProvider implements SttProvider {
     audio: Buffer,
     filename: string,
     mimeType: string,
+    whisperPrompt?: string,
   ): Promise<SttTranscriptSegment[]> {
     const form = new FormData();
     form.append('file', new Blob([audio], { type: mimeType }), filename);
     form.append('model', this.model);
     form.append('language', 'ja');
     form.append('response_format', 'verbose_json');
+    if (whisperPrompt?.trim()) {
+      form.append('prompt', whisperPrompt.trim());
+    }
 
     const data = await this.requestWhisper(form);
     const segments = data.segments?.length
@@ -91,9 +99,6 @@ export class OpenAiSttProvider implements SttProvider {
     if (segments?.length) {
       const combined = segments.map((s) => s.text).join('');
       this.assertTranscriptQuality(audio.length, combined);
-      // #region agent log
-      fetch('http://127.0.0.1:7691/ingest/361a7d21-06dd-46cb-8e34-20e49f62c5c0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9009b6'},body:JSON.stringify({sessionId:'9009b6',location:'openai-stt.provider.ts:transcribeBuffer',message:'whisper segments',data:{audioBytes:audio.length,segmentCount:segments.length,combinedPreview:combined.slice(0,80)},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
-      // #endregion
       return segments;
     }
 

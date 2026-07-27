@@ -267,10 +267,20 @@ export const api = {
     request<{
       referralRules: Array<{ trigger: string; mustInclude: string[] }>;
       fixedPhrases: { closing?: string; greeting?: string };
+      medicalGlossary?: {
+        drugNames: string[];
+        diagnoses: string[];
+        customReplacements: Array<{ wrong: string; correct: string }>;
+      };
     }>('/settings/physician-rules'),
   updatePhysicianRules: (rules: {
     referralRules: Array<{ trigger: string; mustInclude: string[] }>;
     fixedPhrases: { closing?: string; greeting?: string };
+    medicalGlossary?: {
+      drugNames: string[];
+      diagnoses: string[];
+      customReplacements: Array<{ wrong: string; correct: string }>;
+    };
   }) =>
     request('/settings/physician-rules', {
       method: 'PUT',

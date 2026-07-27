@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { GeneratedDocumentType } from '@prisma/client';
+import { MedicalGlossary } from './medical-glossary.types';
 import { mockScenarioContext } from './mock-scenario-context';
 import { MOCK_SCENARIOS } from './mock-scenarios';
 
@@ -29,6 +30,11 @@ export type StructuredClinicalDataPayload = z.infer<typeof StructuredClinicalDat
 
 export interface LlmProvider {
   readonly name: string;
+  correctTranscript(
+    transcript: string,
+    glossary?: MedicalGlossary,
+    consultationId?: string,
+  ): Promise<string>;
   extractStructured(transcript: string, consultationId?: string): Promise<StructuredClinicalDataPayload>;
   generateSoap(
     data: StructuredClinicalDataPayload,
@@ -57,6 +63,10 @@ function getScenario(consultationId?: string) {
 
 export class MockLlmProvider implements LlmProvider {
   readonly name = 'mock';
+
+  async correctTranscript(transcript: string, _glossary?: MedicalGlossary, _consultationId?: string) {
+    return transcript;
+  }
 
   async extractStructured(_transcript: string, consultationId?: string): Promise<StructuredClinicalDataPayload> {
     return getScenario(consultationId).structured;

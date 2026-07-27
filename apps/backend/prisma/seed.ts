@@ -1,4 +1,5 @@
 import { PrismaClient, UserRole } from '@prisma/client';
+import { DEFAULT_MEDICAL_GLOSSARY } from '../src/providers/ai/medical-glossary.types';
 import * as argon2 from 'argon2';
 
 const prisma = new PrismaClient();
@@ -42,6 +43,7 @@ async function main() {
               'いつも大変お世話になっております。御多忙中誠に恐縮ですが、ご高診・ご加療を宜しくお願いいたします。',
             closing: 'ご高診のほどよろしくお願い申し上げます。',
           },
+          medicalGlossary: DEFAULT_MEDICAL_GLOSSARY,
         },
       },
     },

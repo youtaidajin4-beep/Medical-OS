@@ -3,6 +3,7 @@ import { ConsultationStatus, WarningSeverity } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { TranscriptService } from '../transcript/transcript.service';
 import { RecordingService } from '../recording/recording.service';
+import { SettingsService } from '../settings/settings.service';
 import { LlmProvider, StructuredClinicalDataSchema } from '../../providers/ai/llm.provider';
 import { LLM_PROVIDER } from '../../providers/ai/llm.tokens';
 import { STT_PROVIDER } from '../../providers/ai/stt.tokens';
@@ -10,6 +11,8 @@ import { SttProvider } from '../../providers/ai/stt.provider';
 import { mockScenarioContext } from '../../providers/ai/mock-scenario-context';
 import { resolveMockScenario } from '../../providers/ai/mock-scenarios';
 import { localizeOpenAiError } from '../../providers/ai/openai-retry.util';
+import { buildWhisperPrompt, resolveMedicalGlossary } from '../../providers/ai/medical-glossary';
+import { correctMedicalTerms } from '../../providers/ai/medical-term-corrector';
 import { logAiExecution } from './ai-execution.helper';
 
 const MOCK_PIPELINE_DELAY_MS = 2500;
@@ -26,6 +29,7 @@ export class AiPipelineService {
     private readonly prisma: PrismaService,
     private readonly transcriptService: TranscriptService,
     private readonly recordingService: RecordingService,
+    private readonly settingsService: SettingsService,
     @Inject(LLM_PROVIDER) private readonly llmProvider: LlmProvider,
     @Inject(STT_PROVIDER) private readonly sttProvider: SttProvider,
   ) {}
@@ -43,6 +47,10 @@ export class AiPipelineService {
       if (!consultation) {
         throw new Error('Consultation not found');
       }
+
+      const physicianRules = await this.settingsService.getPhysicianRules(consultation.physicianId);
+      const glossary = resolveMedicalGlossary(physicianRules);
+      const whisperPrompt = isMock ? undefined : buildWhisperPrompt(glossary);
 
       if (isMock) {
         const scenario = resolveMockScenario(
@@ -81,9 +89,6 @@ export class AiPipelineService {
         recordingDurationSec && recordingDurationSec > 5
           ? Math.min(8000, Math.floor(recordingDurationSec * 200))
           : 1024;
-      // #region agent log
-      fetch('http://127.0.0.1:7691/ingest/361a7d21-06dd-46cb-8e34-20e49f62c5c0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9009b6'},body:JSON.stringify({sessionId:'9009b6',location:'ai-pipeline.service.ts:pre-stt',message:'pipeline audio check',data:{consultationId,chunkCount:chunks.length,audioBytes:audio.length,recordingDurationSec,minExpectedBytes},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-      // #endregion
       if (!isMock && audio.length < minExpectedBytes) {
         throw new Error(
           `録音データが不完全です（${Math.round(recordingDurationSec ?? 0)}秒録音に対し音声${audio.length}バイト）。通信状況を確認して再度録音してください。`,
@@ -91,7 +96,9 @@ export class AiPipelineService {
       }
 
       const sttStart = Date.now();
-      const segments = await this.transcriptService.finalizeFromAudio(consultationId, audio);
+      await this.transcriptService.finalizeFromAudio(consultationId, audio, {
+        whisperPrompt,
+      });
       await logAiExecution(this.prisma, {
         consultationId,
         step: 'stt_complete',
@@ -101,19 +108,49 @@ export class AiPipelineService {
         promptVersion: isMock ? 'mock-v1' : 'openai-whisper-v1',
       });
 
-      const fullText = this.transcriptService.toFullText(segments);
+      const segments = await this.transcriptService.getSegments(consultationId, { final: true });
+      let fullText = this.transcriptService.toFullText(segments);
       if (!fullText.trim()) {
         throw new Error(
           '文字起こし結果が空です。マイク入力とSTT設定を確認してください。',
         );
       }
 
+      const dictStart = Date.now();
+      const dictResult = correctMedicalTerms(fullText, glossary);
+      fullText = dictResult.text;
+      await logAiExecution(this.prisma, {
+        consultationId,
+        step: 'dict_correction_complete',
+        provider: 'medical-term-corrector',
+        status: 'completed',
+        durationMs: Date.now() - dictStart,
+        promptVersion: 'dict-v1',
+        errorMessage:
+          dictResult.replacements.length > 0
+            ? JSON.stringify(dictResult.replacements)
+            : undefined,
+      });
+
+      if (!isMock) {
+        const llmCorrectStart = Date.now();
+        fullText = await this.llmProvider.correctTranscript(fullText, glossary, consultationId);
+        await logAiExecution(this.prisma, {
+          consultationId,
+          step: 'llm_correction_complete',
+          provider: this.llmProvider.name,
+          status: 'completed',
+          durationMs: Date.now() - llmCorrectStart,
+          promptVersion: 'transcript_medical_correction_v1',
+          ...this.getLlmUsage(),
+        });
+      }
+
+      await this.transcriptService.replaceFinalTranscript(consultationId, fullText);
+
       const extractStart = Date.now();
       const structured = await this.llmProvider.extractStructured(fullText, consultationId);
       StructuredClinicalDataSchema.parse(structured);
-      // #region agent log
-      fetch('http://127.0.0.1:7691/ingest/361a7d21-06dd-46cb-8e34-20e49f62c5c0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9009b6'},body:JSON.stringify({sessionId:'9009b6',location:'ai-pipeline.service.ts:extract',message:'structured extract ok',data:{consultationId,transcriptChars:fullText.length,keys:Object.keys(structured)},timestamp:Date.now(),hypothesisId:'H3'})}).catch(()=>{});
-      // #endregion
       await logAiExecution(this.prisma, {
         consultationId,
         step: 'extract_complete',
