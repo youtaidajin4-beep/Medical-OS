@@ -48,81 +48,8 @@ async function main() {
     update: {},
   });
 
-  await prisma.anonymousCase.upsert({
-    where: {
-      clinicId_caseCode: {
-        clinicId: clinic.id,
-        caseCode: 'ANON-001',
-      },
-    },
-    update: { displayName: '匿名症例 — 頭痛', age: 35, sex: 'F' },
-    create: {
-      clinicId: clinic.id,
-      caseCode: 'ANON-001',
-      displayName: '匿名症例 — 頭痛',
-      age: 35,
-      sex: 'F',
-    },
-  });
-
-  await prisma.patient.upsert({
-    where: {
-      clinicId_patientCode: {
-        clinicId: clinic.id,
-        patientCode: 'P-001',
-      },
-    },
-    update: { memo: '気管支炎（咳・発熱）', phone: '0957-50-1234' },
-    create: {
-      clinicId: clinic.id,
-      patientCode: 'P-001',
-      name: '山田 太郎',
-      dateOfBirth: new Date('1980-05-15'),
-      sex: 'M',
-      memo: '気管支炎（咳・発熱）',
-      phone: '0957-50-1234',
-    },
-  });
-
-  await prisma.patient.upsert({
-    where: {
-      clinicId_patientCode: {
-        clinicId: clinic.id,
-        patientCode: 'P-002',
-      },
-    },
-    update: { memo: '高血圧フォロー', phone: '0957-51-5678' },
-    create: {
-      clinicId: clinic.id,
-      patientCode: 'P-002',
-      name: '佐藤 花子',
-      dateOfBirth: new Date('1967-03-20'),
-      sex: 'F',
-      memo: '高血圧フォロー',
-      phone: '0957-51-5678',
-    },
-  });
-
-  await prisma.patient.upsert({
-    where: {
-      clinicId_patientCode: {
-        clinicId: clinic.id,
-        patientCode: 'P-003',
-      },
-    },
-    update: { memo: '頭痛', phone: '090-1234-5678' },
-    create: {
-      clinicId: clinic.id,
-      patientCode: 'P-003',
-      name: '鈴木 一郎',
-      dateOfBirth: new Date('1983-11-08'),
-      sex: 'M',
-      memo: '頭痛',
-      phone: '090-1234-5678',
-    },
-  });
-
   console.log('Seed complete: doctor@demo.clinic / password123');
+  console.log('Patients and anonymous cases are not seeded — add them from the app.');
 }
 
 main()

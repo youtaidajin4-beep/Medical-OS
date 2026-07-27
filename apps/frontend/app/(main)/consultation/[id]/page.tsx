@@ -73,7 +73,7 @@ export default function ConsultationPage() {
     const patientName = data.patient?.name ?? data.anonymousCase?.displayName ?? '症例';
     setCaseName(patientName);
 
-    const caseCode = data.patient?.patientCode ?? data.anonymousCase?.caseCode ?? 'P-001';
+    const caseCode = data.patient?.patientCode ?? data.anonymousCase?.caseCode ?? '—';
     const currentSoap = data.soapDocuments?.[0] ?? {
       subjective: '',
       objective: '',

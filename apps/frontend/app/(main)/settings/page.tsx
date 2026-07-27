@@ -34,6 +34,13 @@ export default function SettingsPage() {
   });
   const [mustIncludeText, setMustIncludeText] = useState('紹介理由, 依頼事項, 経過');
   const [saveMsg, setSaveMsg] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordMsg, setPasswordMsg] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
     if (!getToken()) {
@@ -46,12 +53,8 @@ export default function SettingsPage() {
         setMustIncludeText(data.referralRules[0].mustInclude.join(', '));
       }
     }).catch(() => {});
+    void api.me().then((user) => setUserEmail(user.email)).catch(() => {});
   }, [router]);
-
-  function logout() {
-    clearToken();
-    router.replace('/login');
-  }
 
   async function saveRules() {
     const payload = {
@@ -67,6 +70,37 @@ export default function SettingsPage() {
     setRules(payload);
     setSaveMsg('先生ルールを保存しました');
     setTimeout(() => setSaveMsg(''), 3000);
+  }
+
+  function logout() {
+    clearToken();
+    router.replace('/login');
+  }
+
+  async function handleChangePassword() {
+    setPasswordError('');
+    setPasswordMsg('');
+    if (newPassword.length < 8) {
+      setPasswordError('新しいパスワードは8文字以上にしてください');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('新しいパスワードが一致しません');
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      await api.changePassword(currentPassword, newPassword);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setPasswordMsg('パスワードを変更しました');
+      setTimeout(() => setPasswordMsg(''), 3000);
+    } catch (error) {
+      setPasswordError(error instanceof Error ? error.message : 'パスワードの変更に失敗しました');
+    } finally {
+      setChangingPassword(false);
+    }
   }
 
   return (
@@ -180,8 +214,48 @@ export default function SettingsPage() {
             </div>
             <div>
               <p className="text-sm font-medium text-slate-900">くしま内科</p>
-              <p className="text-xs text-slate-500">doctor@demo.clinic</p>
+              <p className="text-xs text-slate-500">{userEmail || 'doctor@demo.clinic'}</p>
             </div>
+          </div>
+          <div className="space-y-3 border-t border-slate-200 pt-4">
+            <p className="text-sm font-medium text-slate-700">パスワード変更</p>
+            {passwordMsg && <Alert variant="success">{passwordMsg}</Alert>}
+            {passwordError && <Alert variant="error">{passwordError}</Alert>}
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">現在のパスワード</label>
+              <Input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                autoComplete="current-password"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">新しいパスワード</label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                autoComplete="new-password"
+                placeholder="8文字以上"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">新しいパスワード（確認）</label>
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+            </div>
+            <Button
+              variant="secondary"
+              onClick={handleChangePassword}
+              disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
+            >
+              {changingPassword ? '変更中...' : 'パスワードを変更'}
+            </Button>
           </div>
           <Button variant="secondary" icon={<LogOut />} onClick={logout}>
             ログアウト

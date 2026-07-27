@@ -11,8 +11,8 @@ import { Spinner } from '@/components/ui/spinner';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('doctor@demo.clinic');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -95,11 +95,6 @@ export default function LoginPage() {
           >
             {loading ? 'ログイン中...' : 'ログイン'}
           </Button>
-
-          <div className="rounded-lg bg-slate-50 px-4 py-3 text-center text-xs text-slate-500">
-            デモ用アカウント: <span className="font-mono">doctor@demo.clinic</span> /{' '}
-            <span className="font-mono">password123</span>
-          </div>
         </form>
       </div>
     </main>

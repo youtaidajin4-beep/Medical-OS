@@ -86,6 +86,11 @@ export const api = {
       { method: 'POST', body: JSON.stringify({ email, password }) },
     ),
   me: () => requestWithNetworkCheck<{ id: string; name: string; email: string }>('/auth/me'),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    requestWithNetworkCheck<{ success: boolean }>('/auth/password', {
+      method: 'PATCH',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
   patients: () =>
     requestWithNetworkCheck<{
       patients: Array<{
@@ -106,6 +111,31 @@ export const api = {
         sex: string | null;
       }>;
     }>('/patients'),
+  createPatient: (data: {
+    name: string;
+    sex?: string;
+    dateOfBirth?: string;
+    phone?: string;
+    memo?: string;
+  }) =>
+    requestWithNetworkCheck<{
+      id: string;
+      type: 'patient';
+      code: string;
+      name: string;
+      age: number | null;
+      sex: string | null;
+      memo?: string | null;
+    }>('/patients', { method: 'POST', body: JSON.stringify(data) }),
+  createAnonymousCase: (data: { displayName: string; age?: number; sex?: string }) =>
+    requestWithNetworkCheck<{
+      id: string;
+      type: 'anonymous';
+      code: string;
+      name: string;
+      age: number | null;
+      sex: string | null;
+    }>('/patients/anonymous-cases', { method: 'POST', body: JSON.stringify(data) }),
   createConsultation: (data: { patientId?: string; anonymousCaseId?: string }) =>
     request<{ id: string }>('/consultations', { method: 'POST', body: JSON.stringify(data) }),
   consultations: () =>
