@@ -15,12 +15,19 @@ type RecordingState = 'idle' | 'recording' | 'paused' | 'stopped';
 const MAX_RECORDING_SECONDS = 60 * 60;
 const CHUNK_MS = 3000;
 
+function pickRecorderMimeType(): string | undefined {
+  const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
+  return candidates.find((type) => MediaRecorder.isTypeSupported(type));
+}
+
 export function useRecording(consultationId: string) {
   const [state, setState] = useState<RecordingState>('idle');
   const [seconds, setSeconds] = useState(0);
   const [pendingChunks, setPendingChunks] = useState(0);
   const [limitReached, setLimitReached] = useState(false);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
+  const localBlobs = useRef<Blob[]>([]);
+  const recorderMimeType = useRef('audio/webm');
   const sequence = useRef(0);
   const inFlightUploads = useRef<Promise<void>[]>([]);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -63,25 +70,42 @@ export function useRecording(consultationId: string) {
     [consultationId, refreshPendingCount],
   );
 
-  const flushPendingChunks = useCallback(async () => {
-    const pending = await listPendingChunks(consultationId);
-    for (const chunk of pending) {
-      const delayMs = Math.min(30_000, 1000 * 2 ** chunk.attempts);
-      if (Date.now() - chunk.createdAt < delayMs) continue;
-      try {
-        await api.uploadChunk(
-          chunk.consultationId,
-          chunk.sequenceNumber,
-          chunk.blob,
-          chunk.checksum,
-        );
-        await removeChunk(chunk.id);
-      } catch {
-        await updateChunkAttempts(chunk.id, chunk.attempts + 1);
+  const flushPendingChunks = useCallback(
+    async (force = false) => {
+      const pending = await listPendingChunks(consultationId);
+      for (const chunk of pending) {
+        if (!force) {
+          const delayMs = Math.min(30_000, 1000 * 2 ** chunk.attempts);
+          if (Date.now() - chunk.createdAt < delayMs) continue;
+        }
+        try {
+          await api.uploadChunk(
+            chunk.consultationId,
+            chunk.sequenceNumber,
+            chunk.blob,
+            chunk.checksum,
+          );
+          await removeChunk(chunk.id);
+        } catch {
+          await updateChunkAttempts(chunk.id, chunk.attempts + 1);
+        }
       }
-    }
-    await refreshPendingCount();
-  }, [consultationId, refreshPendingCount]);
+      await refreshPendingCount();
+    },
+    [consultationId, refreshPendingCount],
+  );
+
+  const uploadFinalBlob = useCallback(async () => {
+    const blobs = localBlobs.current;
+    if (!blobs.length) return;
+    const finalBlob = new Blob(blobs, { type: recorderMimeType.current });
+    if (finalBlob.size === 0) return;
+    const checksum = await sha256Hex(finalBlob);
+    await api.uploadFinalRecording(consultationId, finalBlob, checksum);
+    // #region agent log
+    fetch('http://127.0.0.1:7691/ingest/361a7d21-06dd-46cb-8e34-20e49f62c5c0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9009b6'},body:JSON.stringify({sessionId:'9009b6',location:'use-recording.ts:uploadFinalBlob',message:'final blob uploaded',data:{consultationId,partCount:blobs.length,finalBytes:finalBlob.size,seconds},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
+  }, [consultationId, seconds]);
 
   const stop = useCallback(async () => {
     return new Promise<void>((resolve) => {
@@ -95,25 +119,39 @@ export function useRecording(consultationId: string) {
         recorder.stream.getTracks().forEach((t) => t.stop());
         setState('stopped');
         await Promise.allSettled(inFlightUploads.current);
-        await flushPendingChunks();
+        await flushPendingChunks(true);
+        try {
+          await uploadFinalBlob();
+        } catch {
+          // #region agent log
+          fetch('http://127.0.0.1:7691/ingest/361a7d21-06dd-46cb-8e34-20e49f62c5c0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9009b6'},body:JSON.stringify({sessionId:'9009b6',location:'use-recording.ts:stop',message:'final blob upload failed',data:{consultationId,partCount:localBlobs.current.length},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+          // #endregion
+        }
         await api.stopRecording(consultationId);
         resolve();
       };
-      recorder.stop();
+      if (recorder.state !== 'inactive') {
+        recorder.requestData();
+        recorder.stop();
+      }
     });
-  }, [consultationId, flushPendingChunks]);
+  }, [consultationId, flushPendingChunks, uploadFinalBlob]);
 
   stopRef.current = stop;
 
   const start = useCallback(async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const recorder = new MediaRecorder(stream);
+    const mimeType = pickRecorderMimeType();
+    recorderMimeType.current = mimeType ?? 'audio/webm';
+    const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
     mediaRecorder.current = recorder;
+    localBlobs.current = [];
     sequence.current = 0;
     setLimitReached(false);
 
     recorder.ondataavailable = (e) => {
       if (e.data.size > 0) {
+        localBlobs.current.push(e.data);
         const seq = sequence.current++;
         void uploadChunk(e.data, seq);
       }
@@ -132,7 +170,7 @@ export function useRecording(consultationId: string) {
         return next;
       });
     }, 1000);
-    await flushPendingChunks();
+    await flushPendingChunks(true);
   }, [consultationId, uploadChunk, flushPendingChunks]);
 
   const pause = useCallback(() => {

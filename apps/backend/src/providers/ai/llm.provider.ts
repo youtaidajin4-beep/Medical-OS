@@ -3,16 +3,26 @@ import { GeneratedDocumentType } from '@prisma/client';
 import { mockScenarioContext } from './mock-scenario-context';
 import { MOCK_SCENARIOS } from './mock-scenarios';
 
+const optionalString = z.preprocess(
+  (value) => (value === null || value === '' ? undefined : value),
+  z.string().optional(),
+);
+
+const optionalStringArray = z.preprocess(
+  (value) => (value === null ? undefined : value),
+  z.array(z.string()).optional(),
+);
+
 export const StructuredClinicalDataSchema = z.object({
-  chiefComplaint: z.string().optional(),
-  presentIllness: z.string().optional(),
-  pastHistory: z.string().optional(),
-  medications: z.array(z.string()).optional(),
-  allergies: z.array(z.string()).optional(),
-  vitals: z.string().optional(),
-  physicalExam: z.string().optional(),
-  assessment: z.string().optional(),
-  plan: z.string().optional(),
+  chiefComplaint: optionalString,
+  presentIllness: optionalString,
+  pastHistory: optionalString,
+  medications: optionalStringArray,
+  allergies: optionalStringArray,
+  vitals: optionalString,
+  physicalExam: optionalString,
+  assessment: optionalString,
+  plan: optionalString,
 });
 
 export type StructuredClinicalDataPayload = z.infer<typeof StructuredClinicalDataSchema>;

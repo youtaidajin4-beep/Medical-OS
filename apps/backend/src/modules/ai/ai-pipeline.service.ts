@@ -73,6 +73,23 @@ export class AiPipelineService {
         throw new Error('録音データがありません。マイクの入力を確認して再度録音してください。');
       }
 
+      const recordingDurationSec =
+        consultation.endedAt && consultation.startedAt
+          ? (consultation.endedAt.getTime() - consultation.startedAt.getTime()) / 1000
+          : null;
+      const minExpectedBytes =
+        recordingDurationSec && recordingDurationSec > 5
+          ? Math.min(8000, Math.floor(recordingDurationSec * 200))
+          : 1024;
+      // #region agent log
+      fetch('http://127.0.0.1:7691/ingest/361a7d21-06dd-46cb-8e34-20e49f62c5c0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9009b6'},body:JSON.stringify({sessionId:'9009b6',location:'ai-pipeline.service.ts:pre-stt',message:'pipeline audio check',data:{consultationId,chunkCount:chunks.length,audioBytes:audio.length,recordingDurationSec,minExpectedBytes},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
+      if (!isMock && audio.length < minExpectedBytes) {
+        throw new Error(
+          `録音データが不完全です（${Math.round(recordingDurationSec ?? 0)}秒録音に対し音声${audio.length}バイト）。通信状況を確認して再度録音してください。`,
+        );
+      }
+
       const sttStart = Date.now();
       const segments = await this.transcriptService.finalizeFromAudio(consultationId, audio);
       await logAiExecution(this.prisma, {
@@ -94,6 +111,9 @@ export class AiPipelineService {
       const extractStart = Date.now();
       const structured = await this.llmProvider.extractStructured(fullText, consultationId);
       StructuredClinicalDataSchema.parse(structured);
+      // #region agent log
+      fetch('http://127.0.0.1:7691/ingest/361a7d21-06dd-46cb-8e34-20e49f62c5c0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9009b6'},body:JSON.stringify({sessionId:'9009b6',location:'ai-pipeline.service.ts:extract',message:'structured extract ok',data:{consultationId,transcriptChars:fullText.length,keys:Object.keys(structured)},timestamp:Date.now(),hypothesisId:'H3'})}).catch(()=>{});
+      // #endregion
       await logAiExecution(this.prisma, {
         consultationId,
         step: 'extract_complete',

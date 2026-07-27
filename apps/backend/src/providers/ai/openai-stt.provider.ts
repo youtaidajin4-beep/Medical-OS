@@ -7,6 +7,12 @@ export interface OpenAiSttConfig {
 }
 
 const MIN_AUDIO_BYTES = 1024;
+const WHISPER_HALLUCINATION_PATTERNS = [
+  /ご視聴ありがとうございました/,
+  /ご視聴ありがとうございます/,
+  /字幕/,
+  /チャンネル登録/,
+];
 
 type WhisperSegment = {
   id: number;
@@ -70,16 +76,25 @@ export class OpenAiSttProvider implements SttProvider {
     form.append('response_format', 'verbose_json');
 
     const data = await this.requestWhisper(form);
-    if (data.segments?.length) {
-      return data.segments
-        .map((seg) => ({
-          text: seg.text.trim(),
-          speaker: 'unknown' as const,
-          confidence: 0.85,
-          startMs: Math.round(seg.start * 1000),
-          endMs: Math.round(seg.end * 1000),
-        }))
-        .filter((seg) => seg.text.length > 0);
+    const segments = data.segments?.length
+      ? data.segments
+          .map((seg) => ({
+            text: seg.text.trim(),
+            speaker: 'unknown' as const,
+            confidence: 0.85,
+            startMs: Math.round(seg.start * 1000),
+            endMs: Math.round(seg.end * 1000),
+          }))
+          .filter((seg) => seg.text.length > 0)
+      : null;
+
+    if (segments?.length) {
+      const combined = segments.map((s) => s.text).join('');
+      this.assertTranscriptQuality(audio.length, combined);
+      // #region agent log
+      fetch('http://127.0.0.1:7691/ingest/361a7d21-06dd-46cb-8e34-20e49f62c5c0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9009b6'},body:JSON.stringify({sessionId:'9009b6',location:'openai-stt.provider.ts:transcribeBuffer',message:'whisper segments',data:{audioBytes:audio.length,segmentCount:segments.length,combinedPreview:combined.slice(0,80)},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
+      // #endregion
+      return segments;
     }
 
     const text = data.text?.trim();
@@ -88,7 +103,19 @@ export class OpenAiSttProvider implements SttProvider {
         '文字起こし結果が空です。マイク入力または音声形式を確認してください。',
       );
     }
+    this.assertTranscriptQuality(audio.length, text);
     return [{ text, speaker: 'unknown', confidence: 0.85, startMs: 0, endMs: 0 }];
+  }
+
+  private assertTranscriptQuality(audioBytes: number, text: string) {
+    if (
+      audioBytes < 50_000 &&
+      WHISPER_HALLUCINATION_PATTERNS.some((pattern) => pattern.test(text))
+    ) {
+      throw new Error(
+        '音声が正しく録音されていない可能性があります。マイクの距離・権限・音量を確認し、30秒以上話してから再試行してください。',
+      );
+    }
   }
 
   private async requestWhisper(form: FormData, attempt = 0): Promise<WhisperVerboseResponse> {

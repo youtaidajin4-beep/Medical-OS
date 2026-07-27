@@ -6,6 +6,7 @@ import {
   UseGuards,
   UseInterceptors,
   Body,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Transform } from 'class-transformer';
@@ -43,9 +44,31 @@ export class RecordingController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     await this.consultationAccess.assertPhysicianOwns(consultationId, user.sub);
+    if (!file?.buffer?.length) {
+      throw new BadRequestException('Audio chunk is empty or missing');
+    }
     return this.recordingService.uploadChunk(
       consultationId,
       dto.sequenceNumber,
+      file.buffer,
+      dto.checksum,
+    );
+  }
+
+  @Post('final')
+  @UseInterceptors(FileInterceptor('audio'))
+  async uploadFinal(
+    @Param('consultationId') consultationId: string,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: UploadChunkDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    await this.consultationAccess.assertPhysicianOwns(consultationId, user.sub);
+    if (!file?.buffer?.length) {
+      throw new BadRequestException('Audio file is empty or missing');
+    }
+    return this.recordingService.uploadFinalRecording(
+      consultationId,
       file.buffer,
       dto.checksum,
     );

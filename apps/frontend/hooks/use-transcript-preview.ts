@@ -19,9 +19,9 @@ export function useTranscriptPreview(consultationId: string, enabled: boolean) {
         if (cancelled) return;
         setSegments(data);
         const latest = data.slice(-2).map((s) => s.text);
-        setPreview(latest.join('\n') || '（文字起こし中…）');
+        setPreview(latest.join('\n') || '（OpenAIモード：停止後に文字起こしが表示されます）');
       } catch {
-        if (!cancelled) setPreview('（文字起こし中…）');
+        if (!cancelled) setPreview('（OpenAIモード：停止後に文字起こしが表示されます）');
       }
     };
 

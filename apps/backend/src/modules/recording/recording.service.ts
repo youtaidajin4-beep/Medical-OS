@@ -14,6 +14,26 @@ export class RecordingService {
     private readonly audioAssembler: AudioAssemblerService,
   ) {}
 
+  async uploadFinalRecording(consultationId: string, buffer: Buffer, checksum?: string) {
+    verifyChecksum(buffer, checksum);
+    const chunks = await this.listChunks(consultationId);
+    for (const chunk of chunks) {
+      await this.storage.delete(chunk.storageKey).catch(() => undefined);
+      await this.prisma.audioChunk.delete({ where: { id: chunk.id } });
+    }
+    const files = await this.prisma.audioFile.findMany({
+      where: { consultationId, deletedAt: null },
+    });
+    for (const file of files) {
+      await this.storage.delete(file.storageKey).catch(() => undefined);
+      await this.prisma.audioFile.update({
+        where: { id: file.id },
+        data: { deletedAt: new Date(), deleteStatus: 'deleted' },
+      });
+    }
+    return this.uploadChunk(consultationId, 0, buffer, checksum);
+  }
+
   async uploadChunk(
     consultationId: string,
     sequenceNumber: number,
@@ -22,6 +42,10 @@ export class RecordingService {
   ) {
     verifyChecksum(buffer, checksum);
     const hash = checksum ?? computeSha256(buffer);
+
+    // #region agent log
+    fetch('http://127.0.0.1:7691/ingest/361a7d21-06dd-46cb-8e34-20e49f62c5c0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9009b6'},body:JSON.stringify({sessionId:'9009b6',location:'recording.service.ts:uploadChunk',message:'chunk received',data:{consultationId,sequenceNumber,bytes:buffer.length},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
 
     const existing = await this.prisma.audioChunk.findUnique({
       where: {
@@ -79,8 +103,13 @@ export class RecordingService {
   }
 
   async getAssembledAudioBuffer(consultationId: string): Promise<Buffer> {
+    const chunks = await this.listChunks(consultationId);
     const file = await this.assembleAudioFile(consultationId);
-    return this.storage.get(file.storageKey);
+    const buffer = await this.storage.get(file.storageKey);
+    // #region agent log
+    fetch('http://127.0.0.1:7691/ingest/361a7d21-06dd-46cb-8e34-20e49f62c5c0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9009b6'},body:JSON.stringify({sessionId:'9009b6',location:'recording.service.ts:getAssembledAudioBuffer',message:'audio assembled',data:{consultationId,chunkCount:chunks.length,assembledBytes:buffer.length,storageKey:file.storageKey},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
+    return buffer;
   }
 
   async deleteAudioForConsultation(consultationId: string) {

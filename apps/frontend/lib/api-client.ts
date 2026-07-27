@@ -208,6 +208,18 @@ export const api = {
       body: form,
     });
   },
+  uploadFinalRecording: (consultationId: string, blob: Blob, checksum?: string) => {
+    const form = new FormData();
+    form.append('audio', blob, 'consultation-final.webm');
+    form.append('sequenceNumber', '0');
+    if (checksum) {
+      form.append('checksum', checksum);
+    }
+    return request(`/consultations/${consultationId}/recording/final`, {
+      method: 'POST',
+      body: form,
+    });
+  },
   getTranscript: (consultationId: string, final?: boolean) => {
     const query = final === undefined ? '' : `?final=${final}`;
     return request<Array<{ id: string; text: string; speaker: string }>>(
