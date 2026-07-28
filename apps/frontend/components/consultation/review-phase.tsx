@@ -469,6 +469,13 @@ export function ReviewPhase({
         onChange={setTab}
       />
 
+      <div className="no-print sticky top-2 z-10 rounded-xl border-2 border-brand-200 bg-white shadow-card">
+        <SubkarteChatPanel
+          consultationId={consultationId}
+          onResult={handleSubkarteResult}
+        />
+      </div>
+
       {tab === 'documents' ? (
         <DocumentsPanel
           consultationId={consultationId}
@@ -570,68 +577,51 @@ export function ReviewPhase({
             </CardContent>
           </Card>
 
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <ClipboardList className="h-4 w-4 text-brand-600" />
-                  {tab === 'soap' ? 'SOAP 下書き' : '通常診療記録'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {tab === 'soap' ? (
-                  <div className="space-y-4">
-                    {SOAP_FIELDS.map(({ key, label, name }) => (
-                      <div key={key}>
-                        <label className="mb-1.5 flex items-center gap-2 text-sm">
-                          <span className="flex h-6 w-6 items-center justify-center rounded bg-brand-600 text-xs font-bold text-white">
-                            {label}
-                          </span>
-                          <span className="text-slate-500">{name}</span>
-                        </label>
-                        <Textarea
-                          value={soap[key]}
-                          onChange={(e) => onSoapChange({ ...soap, [key]: e.target.value })}
-                          rows={3}
-                        />
-                      </div>
-                    ))}
-                    <Button variant="secondary" icon={<Save />} onClick={onSaveSoap}>
-                      SOAP を保存
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <Textarea
-                      value={note}
-                      onChange={(e) => onNoteChange(e.target.value)}
-                      rows={14}
-                    />
-                    <Button variant="secondary" icon={<Save />} onClick={onSaveNote}>
-                      診療記録を保存
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <SubkarteChatPanel
-              consultationId={consultationId}
-              onResult={handleSubkarteResult}
-            />
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ClipboardList className="h-4 w-4 text-brand-600" />
+                {tab === 'soap' ? 'SOAP 下書き' : '通常診療記録'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {tab === 'soap' ? (
+                <div className="space-y-4">
+                  {SOAP_FIELDS.map(({ key, label, name }) => (
+                    <div key={key}>
+                      <label className="mb-1.5 flex items-center gap-2 text-sm">
+                        <span className="flex h-6 w-6 items-center justify-center rounded bg-brand-600 text-xs font-bold text-white">
+                          {label}
+                        </span>
+                        <span className="text-slate-500">{name}</span>
+                      </label>
+                      <Textarea
+                        value={soap[key]}
+                        onChange={(e) => onSoapChange({ ...soap, [key]: e.target.value })}
+                        rows={3}
+                      />
+                    </div>
+                  ))}
+                  <Button variant="secondary" icon={<Save />} onClick={onSaveSoap}>
+                    SOAP を保存
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <Textarea
+                    value={note}
+                    onChange={(e) => onNoteChange(e.target.value)}
+                    rows={14}
+                  />
+                  <Button variant="secondary" icon={<Save />} onClick={onSaveNote}>
+                    診療記録を保存
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
-
-      {tab === 'documents' && (
-        <div className="no-print mx-auto max-w-xl">
-          <SubkarteChatPanel
-            consultationId={consultationId}
-            onResult={handleSubkarteResult}
-          />
-        </div>
-      )}
-
       {revisions.length > 0 && tab !== 'documents' && (
         <Card className="no-print">
           <CardHeader>
