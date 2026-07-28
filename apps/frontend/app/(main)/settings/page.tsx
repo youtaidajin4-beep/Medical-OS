@@ -13,7 +13,7 @@ import { isWeakPassword, WEAK_PASSWORD_MESSAGE } from '@/lib/password-policy';
 import { useUiMode } from '@/components/layout/ui-mode-provider';
 
 const COPY_STEPS = [
-  'CLINICS を全画面、Medical OS を右下の小ウィンドウ（幅約420×高さ約800）で開く',
+  'CLINICS を全画面にし、「パネルにする」で Medical OS を右下 1/4 に置く',
   'パネルで「診療を開始」→ 同意チェック → 録音',
   '診療終了後、SOAP を確認して「確認済みにする」',
   '「SOAP をコピー」して CLINICS に貼り付ける',

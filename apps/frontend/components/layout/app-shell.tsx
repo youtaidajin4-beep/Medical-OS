@@ -14,12 +14,13 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api, clearToken } from '@/lib/api-client';
+import { snapToPanelWindow, openAsPanelWindow } from '@/lib/panel-window';
 import { useUiMode } from './ui-mode-provider';
 import { DemoBanner } from './demo-banner';
 import { AiStatusBanner } from './ai-status-banner';
 
 const NAV = [
-  { href: '/panel', label: 'パネルに戻る', icon: PanelLeft, compact: true },
+  { href: '/panel', label: 'パネルにする', icon: PanelLeft, compact: true },
   { href: '/history', label: '履歴', icon: History },
   { href: '/settings', label: '設定', icon: Settings },
 ] as const;
@@ -129,7 +130,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   function backToPanel() {
     setMode('compact');
-    router.push('/panel');
+    const stayInThisWindow = openAsPanelWindow('/panel');
+    if (stayInThisWindow) {
+      snapToPanelWindow();
+      router.push('/panel');
+    }
   }
 
   return (

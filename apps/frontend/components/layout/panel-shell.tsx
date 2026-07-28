@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Expand, History, LogOut, Settings, Stethoscope } from 'lucide-react';
 import { api, clearToken } from '@/lib/api-client';
+import { expandToFullWindow, snapToPanelWindow } from '@/lib/panel-window';
 import { useUiMode } from './ui-mode-provider';
 import { DemoBanner } from './demo-banner';
 import { AiStatusBanner } from './ai-status-banner';
@@ -21,6 +22,14 @@ export function PanelShell({ children }: { children: React.ReactNode }) {
       .catch(() => setUserName(''));
   }, []);
 
+  // パネル表示に入ったら右下 1/4 に寄せる（戻る操作や直リンクでも揃える）
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !window.name) {
+      window.name = 'medicalOsPanel';
+    }
+    snapToPanelWindow();
+  }, []);
+
   function logout() {
     clearToken();
     router.replace('/login');
@@ -28,6 +37,7 @@ export function PanelShell({ children }: { children: React.ReactNode }) {
 
   function expandToFull() {
     setMode('full');
+    expandToFullWindow();
     router.push('/history');
   }
 

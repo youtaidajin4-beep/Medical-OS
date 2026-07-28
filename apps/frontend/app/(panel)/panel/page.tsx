@@ -81,7 +81,7 @@ export default function PanelIdlePage() {
       <div>
         <h1 className="text-lg font-bold tracking-tight text-slate-900">診療パネル</h1>
         <p className="mt-1 text-xs leading-relaxed text-slate-500">
-          CLINICS を全画面のまま、このウィンドウを右下に置いて使います。録音 → SOAP →
+          CLINICS を全画面のまま、このウィンドウ（画面右下 1/4）で使います。録音 → SOAP →
           コピーまでここで完結します。
         </p>
       </div>
