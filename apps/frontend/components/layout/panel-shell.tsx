@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Expand, History, LogOut, Settings, Stethoscope } from 'lucide-react';
+import { Expand, History, LogOut, PanelBottom, Settings, Stethoscope } from 'lucide-react';
 import { api, clearToken } from '@/lib/api-client';
-import { expandToFullWindow, snapToPanelWindow } from '@/lib/panel-window';
+import { expandToFullWindow, openAsPanelWindow, snapToPanelWindow } from '@/lib/panel-window';
 import { useUiMode } from './ui-mode-provider';
 import { DemoBanner } from './demo-banner';
 import { AiStatusBanner } from './ai-status-banner';
@@ -22,11 +22,7 @@ export function PanelShell({ children }: { children: React.ReactNode }) {
       .catch(() => setUserName(''));
   }, []);
 
-  // パネル表示に入ったら右下 1/4 に寄せる（戻る操作や直リンクでも揃える）
   useEffect(() => {
-    if (typeof window !== 'undefined' && !window.name) {
-      window.name = 'medicalOsPanel';
-    }
     snapToPanelWindow();
   }, []);
 
@@ -39,6 +35,12 @@ export function PanelShell({ children }: { children: React.ReactNode }) {
     setMode('full');
     expandToFullWindow();
     router.push('/history');
+  }
+
+  function resnapPanel() {
+    setMode('compact');
+    const stay = openAsPanelWindow(window.location.pathname + window.location.search);
+    if (stay) snapToPanelWindow();
   }
 
   return (
@@ -54,6 +56,15 @@ export function PanelShell({ children }: { children: React.ReactNode }) {
             <p className="truncate text-sm font-bold text-slate-900">Medical OS</p>
             <p className="truncate text-[11px] text-slate-500">{userName || 'くしま内科'}</p>
           </div>
+          <button
+            type="button"
+            onClick={resnapPanel}
+            className="rounded-lg p-2 text-slate-500 hover:bg-brand-50 hover:text-brand-700"
+            aria-label="右下パネルに固定"
+            title="右下 1/4 に固定"
+          >
+            <PanelBottom className="h-4 w-4" />
+          </button>
           <button
             type="button"
             onClick={expandToFull}

@@ -146,7 +146,19 @@ export const api = {
       name: string;
       age: number | null;
       sex: string | null;
+      visitCount?: number;
     }>('/patients/anonymous-cases', { method: 'POST', body: JSON.stringify(data) }),
+  promoteAnonymousToPatient: (anonymousCaseId: string, name?: string) =>
+    requestWithNetworkCheck<{
+      id: string;
+      type: 'patient';
+      code: string;
+      name: string;
+      visitCount: number;
+    }>(`/patients/anonymous-cases/${anonymousCaseId}/promote`, {
+      method: 'POST',
+      body: JSON.stringify(name ? { name } : {}),
+    }),
   createConsultation: (data: { patientId?: string; anonymousCaseId?: string }) =>
     request<{ id: string }>('/consultations', { method: 'POST', body: JSON.stringify(data) }),
   consultations: () =>
@@ -159,8 +171,14 @@ export const api = {
         endedAt?: string | null;
         approvedAt?: string | null;
         copiedAt?: string | null;
-        patient?: { name: string; patientCode: string; memo?: string | null } | null;
-        anonymousCase?: { displayName: string; caseCode: string } | null;
+        kind?: 'new' | 'repeater';
+        visitNumber?: number;
+        lane?: 'waiting' | 'done';
+        hasDocuments?: boolean;
+        patientId?: string | null;
+        anonymousCaseId?: string | null;
+        patient?: { id?: string; name: string; patientCode: string; memo?: string | null } | null;
+        anonymousCase?: { id?: string; displayName: string; caseCode: string } | null;
         soapDocuments?: Array<{ subjective: string; assessment: string }>;
         clinicalNotes?: Array<{ content: string }>;
       }>
@@ -328,7 +346,22 @@ export const api = {
       `/consultations/${consultationId}/chat`,
     ),
   askChat: (consultationId: string, content: string) =>
-    request<{ id: string; role: string; content: string }>(`/consultations/${consultationId}/chat`, {
+    request<{
+      message: { id: string; role: string; content: string; createdAt?: string };
+      soap?: {
+        subjective: string;
+        objective: string;
+        assessment: string;
+        plan: string;
+      };
+      note?: string;
+      documents?: Array<{
+        id?: string;
+        type: string;
+        content: Record<string, unknown>;
+        version?: number;
+      }>;
+    }>(`/consultations/${consultationId}/chat`, {
       method: 'POST',
       body: JSON.stringify({ content }),
     }),

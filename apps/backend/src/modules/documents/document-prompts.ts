@@ -3,8 +3,9 @@ import { rulesToPromptSection } from '../settings/physician-rules.types';
 import { DocumentGenerationContext } from './document-types';
 
 const BASE_RULES = `あなたは日本のクリニック向け医療書類作成アシスタントです。
-構造化診療データとSOAPに含まれる事実のみを使用してください。
-推測・新規診断・未記載の検査値や薬剤を追加しないでください。
+SOAP・構造化データ・医師サブカルテを使います。
+医師サブカルテに書かれた疑い・方針・処方意図は SOAP より優先してください。
+推測で新規診断や未記載の検査値を作らないでください（サブカルテに医師が書いた内容は採用可）。
 不明な項目は空文字または「要確認」としてください。
 診療文脈を理解し、単語の羅列ではなく読みやすい医学文書にしてください。
 文体は丁寧な紹介状・診療情報提供書として、カルテにそのまま使える表現を心がけてください。`;
@@ -14,13 +15,16 @@ function contextBlock(ctx: DocumentGenerationContext): string {
     ctx.referralPattern === 'complex'
       ? `\n紹介パターン: 複雑紹介。10年分の経過・複数疾患・不定愁訴・既往を、経過／既往／現症／依頼事項の順で A4 一枚に綺麗に要約すること。冗長な羅列は禁止。`
       : `\n紹介パターン: 簡単紹介。診断と依頼事項を短く明確に（例: 肺炎→入院お願いします）。`;
+  const subkarte = ctx.physicianSubkarte.trim()
+    ? `\n医師サブカルテ（処方・疑い・方針の正・SOAPより優先）:\n${ctx.physicianSubkarte}`
+    : `\n医師サブカルテ: （なし）`;
   return `患者: ${ctx.patientName}（${ctx.sex}、${ctx.age ?? '—'}歳）
 症例コード: ${ctx.caseCode}
 SOAP:
 S: ${ctx.soap.subjective}
 O: ${ctx.soap.objective}
 A: ${ctx.soap.assessment}
-P: ${ctx.soap.plan}
+P: ${ctx.soap.plan}${subkarte}
 構造化データ: ${JSON.stringify(ctx.structured, null, 2)}
 ${rulesToPromptSection(ctx.physicianRules)}
 ${ctx.revisionExamples ? `\n医師の過去の修正例（文体参考）:\n${ctx.revisionExamples}` : ''}${patternHint}`;
@@ -55,7 +59,7 @@ const PROMPTS: Record<GeneratedDocumentType, { system: string; schema: string }>
   },
   PRESCRIPTION_LIST: {
     system: `${BASE_RULES}
-現在の処方一覧を作成します。構造化データのmedicationsから処方を抽出してください。`,
+現在の処方一覧を作成します。構造化データのmedicationsと医師サブカルテの処方意図から処方を抽出してください。`,
     schema: `{
   "items": [{
     "index": 1,

@@ -83,6 +83,8 @@ export function DocumentsPanel({
   referralPattern,
   onReferralPatternChange,
   openTrigger,
+  pendingDocPatches,
+  onPendingDocPatchesApplied,
 }: {
   consultationId: string;
   documentInput: {
@@ -104,6 +106,9 @@ export function DocumentsPanel({
   onReferralPatternChange?: (pattern: 'simple' | 'complex') => void;
   /** Increment to force generate-all from parent (compact sticky) */
   openTrigger?: number;
+  /** サブカルテからの即時書類パッチ */
+  pendingDocPatches?: Array<{ type: string; content: Record<string, unknown> }>;
+  onPendingDocPatchesApplied?: () => void;
 }) {
   const [selected, setSelected] = useState<DocumentTypeId[]>(DEFAULT_SELECTED);
   const [docs, setDocs] = useState<GeneratedDocuments | null>(null);
@@ -156,6 +161,21 @@ export function DocumentsPanel({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openTrigger]);
+
+  useEffect(() => {
+    if (!pendingDocPatches?.length) return;
+    setDocs((prev) => {
+      const base = prev ?? mockFallback;
+      const next = apiDocsToGenerated(
+        pendingDocPatches.map((p) => ({ type: p.type, content: p.content })),
+        base,
+      );
+      return next;
+    });
+    setHasApiDocs(true);
+    onPendingDocPatchesApplied?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingDocPatches]);
 
   async function handleGenerateAll() {
     setGenerating(true);

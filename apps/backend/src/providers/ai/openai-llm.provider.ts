@@ -147,10 +147,44 @@ export class OpenAiLlmProvider implements LlmProvider {
       .join('\n');
     const result = await this.chat(
       system,
-      `${history ? `これまでの会話:\n${history}\n\n` : ''}医師の質問:\n${lastUser}`,
+      `${history ? `これまでの会話:\n${history}\n\n` : ''}医師の入力:\n${lastUser}`,
       false,
     );
     return result.content;
+  }
+
+  async subkarteChat(
+    system: string,
+    messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+    context: {
+      soap: { subjective: string; objective: string; assessment: string; plan: string };
+      note: string;
+      documents: Record<string, Record<string, unknown>>;
+    },
+  ) {
+    const lastUser = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
+    const history = messages
+      .slice(0, -1)
+      .map((m) => `${m.role === 'user' ? '医師' : 'AI'}: ${m.content}`)
+      .join('\n');
+    const result = await this.chatJson(
+      system,
+      `${history ? `これまでの会話:\n${history}\n\n` : ''}現在のSOAP:\n${JSON.stringify(context.soap, null, 2)}
+通常診療記録:\n${context.note || '（なし）'}
+既存書類:\n${JSON.stringify(context.documents, null, 2)}
+
+医師の入力:\n${lastUser}`,
+    );
+    try {
+      return JSON.parse(result.content) as {
+        reply: string;
+        soapPatch?: { subjective?: string; objective?: string; assessment?: string; plan?: string };
+        notePatch?: string;
+        documentPatches?: Array<{ type: string; content: Record<string, unknown> }>;
+      };
+    } catch {
+      return { reply: result.content || '記録しました。' };
+    }
   }
 
   async generateClinicalNote(data: StructuredClinicalDataPayload, _consultationId?: string) {

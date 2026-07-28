@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateAnonymousCaseDto } from './dto/create-anonymous-case.dto';
 import { CreatePatientDto } from './dto/create-patient.dto';
@@ -23,10 +23,12 @@ export class PatientsService {
       this.prisma.patient.findMany({
         where: { clinicId },
         orderBy: { updatedAt: 'desc' },
+        include: { _count: { select: { consultations: true } } },
       }),
       this.prisma.anonymousCase.findMany({
         where: { clinicId },
         orderBy: { updatedAt: 'desc' },
+        include: { _count: { select: { consultations: true } } },
       }),
     ]);
     return {
@@ -42,6 +44,7 @@ export class PatientsService {
           : null,
         sex: p.sex,
         memo: p.memo,
+        visitCount: p._count.consultations,
       })),
       anonymousCases: anonymousCases.map((c) => ({
         id: c.id,
@@ -50,6 +53,7 @@ export class PatientsService {
         name: c.displayName,
         age: c.age,
         sex: c.sex,
+        visitCount: c._count.consultations,
       })),
     };
   }
@@ -88,6 +92,7 @@ export class PatientsService {
         : null,
       sex: patient.sex,
       memo: patient.memo,
+      visitCount: 0,
     };
   }
 
@@ -118,6 +123,37 @@ export class PatientsService {
       name: anonymousCase.displayName,
       age: anonymousCase.age,
       sex: anonymousCase.sex,
+      visitCount: 0,
     };
+  }
+
+  /** 新規（匿名）→ リピーター（患者マスタ）へ昇格し、関連診療を付け替える */
+  async promoteAnonymousToPatient(
+    clinicId: string,
+    anonymousCaseId: string,
+    name?: string,
+  ) {
+    const anon = await this.prisma.anonymousCase.findFirst({
+      where: { id: anonymousCaseId, clinicId },
+    });
+    if (!anon) {
+      throw new NotFoundException('Anonymous case not found');
+    }
+
+    const patient = await this.createPatient(clinicId, {
+      name: (name?.trim() || anon.displayName).trim(),
+      sex: anon.sex === 'M' || anon.sex === 'F' ? anon.sex : undefined,
+    });
+
+    await this.prisma.consultation.updateMany({
+      where: { anonymousCaseId, clinicId },
+      data: { patientId: patient.id, anonymousCaseId: null },
+    });
+
+    const visitCount = await this.prisma.consultation.count({
+      where: { patientId: patient.id },
+    });
+
+    return { ...patient, visitCount };
   }
 }

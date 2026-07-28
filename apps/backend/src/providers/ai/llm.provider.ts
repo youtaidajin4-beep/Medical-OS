@@ -58,11 +58,26 @@ export interface LlmProvider {
     system: string,
     user: string,
   ): Promise<Record<string, unknown>>;
-  /** Optional physician consult chat (Phase 4). Default implementations may throw. */
+  /** Optional physician consult chat (legacy). Prefer subkarteChat. */
   consultChat?(
     system: string,
     messages: Array<{ role: 'user' | 'assistant'; content: string }>,
   ): Promise<string>;
+  /** Subkarte chat: returns JSON patches for SOAP / note / documents. */
+  subkarteChat?(
+    system: string,
+    messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+    context: {
+      soap: { subjective: string; objective: string; assessment: string; plan: string };
+      note: string;
+      documents: Record<string, Record<string, unknown>>;
+    },
+  ): Promise<{
+    reply: string;
+    soapPatch?: { subjective?: string; objective?: string; assessment?: string; plan?: string };
+    notePatch?: string;
+    documentPatches?: Array<{ type: string; content: Record<string, unknown> }>;
+  }>;
 }
 
 function getScenario(consultationId?: string) {
@@ -247,6 +262,49 @@ export class MockLlmProvider implements LlmProvider {
     messages: Array<{ role: 'user' | 'assistant'; content: string }>,
   ): Promise<string> {
     const last = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
-    return `（モック相談）「${last.slice(0, 40)}」について、診断は確定しません。関連する鑑別候補を臨床所見と照合し、必要なら精査目的の紹介を検討してください。`;
+    return `（モック）サブカルテに「${last.slice(0, 40)}」を記録しました。`;
+  }
+
+  async subkarteChat(
+    _system: string,
+    messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+    context: {
+      soap: { subjective: string; objective: string; assessment: string; plan: string };
+      note: string;
+      documents: Record<string, Record<string, unknown>>;
+    },
+  ) {
+    const last = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
+    const editLike = /修正|変更|追記|直して|にして|Assessment|assessment|Plan|plan|紹介状|宛先|処方/.test(
+      last,
+    );
+    if (!editLike) {
+      return {
+        reply: 'サブカルテに記録しました。書類を作るときに SOAP と合わせて反映します。',
+      };
+    }
+    if (/Assessment|assessment|評価/.test(last)) {
+      return {
+        reply: 'Assessment を更新しました。',
+        soapPatch: {
+          assessment: `${context.soap.assessment}\n${last}`.trim(),
+        },
+      };
+    }
+    if (/紹介状|宛先/.test(last)) {
+      const matches = [...last.matchAll(/([^\s「」をにへ]+(?:病院|クリニック|医院))/g)];
+      const recipientHospital = matches.at(-1)?.[1] ?? '要確認（紹介先）';
+      const existing = context.documents.referral ?? {};
+      return {
+        reply: `紹介状の宛先を「${recipientHospital}」に更新しました。`,
+        documentPatches: [{ type: 'referral', content: { ...existing, recipientHospital } }],
+      };
+    }
+    return {
+      reply: 'サブカルテに記録し、Plan に反映しました。',
+      soapPatch: {
+        plan: `${context.soap.plan}\n${last}`.trim(),
+      },
+    };
   }
 }

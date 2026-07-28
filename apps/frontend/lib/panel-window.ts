@@ -2,17 +2,20 @@
 
 export const PANEL_WINDOW_NAME = 'medicalOsPanel';
 
+type ScreenEx = Screen & { availLeft?: number; availTop?: number };
+
 export function getPanelWindowBounds() {
-  const availLeft = window.screen.availLeft ?? 0;
-  const availTop = window.screen.availTop ?? 0;
-  const availWidth = window.screen.availWidth || window.screen.width;
-  const availHeight = window.screen.availHeight || window.screen.height;
+  const screen = window.screen as ScreenEx;
+  const availLeft = screen.availLeft ?? 0;
+  const availTop = screen.availTop ?? 0;
+  const availWidth = screen.availWidth || screen.width;
+  const availHeight = screen.availHeight || screen.height;
 
   // 画面の右下 1/4（幅1/2 × 高さ1/2）
-  const width = Math.max(360, Math.round(availWidth / 2));
-  const height = Math.max(480, Math.round(availHeight / 2));
-  const left = availLeft + availWidth - width;
-  const top = availTop + availHeight - height;
+  const width = Math.max(380, Math.round(availWidth / 2));
+  const height = Math.max(520, Math.round(availHeight / 2));
+  const left = availLeft + Math.max(0, availWidth - width);
+  const top = availTop + Math.max(0, availHeight - height);
 
   return { width, height, left, top };
 }
@@ -30,26 +33,43 @@ function panelWindowFeatures() {
   ].join(',');
 }
 
-/** 現在のウィンドウを画面右下 1/4 にスナップする（ユーザー操作の直後に呼ぶ） */
-export function snapToPanelWindow(): boolean {
-  if (typeof window === 'undefined') return false;
+function applyBounds(target: Window) {
   const { width, height, left, top } = getPanelWindowBounds();
   try {
-    window.resizeTo(width, height);
-    window.moveTo(left, top);
-    return true;
+    target.resizeTo(width, height);
   } catch {
-    return false;
+    /* ignore */
   }
+  try {
+    target.moveTo(left, top);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** リサイズが効くまで短間隔で再試行（Chrome 対策） */
+export function snapToPanelWindow(target: Window = window): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    target.name = PANEL_WINDOW_NAME;
+  } catch {
+    /* ignore */
+  }
+  applyBounds(target);
+  [50, 150, 300, 600].forEach((ms) => {
+    window.setTimeout(() => applyBounds(target), ms);
+  });
+  return true;
 }
 
 /** フル画面作業用にウィンドウをほぼ全面に広げる */
 export function expandToFullWindow(): boolean {
   if (typeof window === 'undefined') return false;
-  const availLeft = window.screen.availLeft ?? 0;
-  const availTop = window.screen.availTop ?? 0;
-  const availWidth = window.screen.availWidth || window.screen.width;
-  const availHeight = window.screen.availHeight || window.screen.height;
+  const screen = window.screen as ScreenEx;
+  const availLeft = screen.availLeft ?? 0;
+  const availTop = screen.availTop ?? 0;
+  const availWidth = screen.availWidth || screen.width;
+  const availHeight = screen.availHeight || screen.height;
   try {
     window.moveTo(availLeft, availTop);
     window.resizeTo(availWidth, availHeight);
@@ -61,35 +81,59 @@ export function expandToFullWindow(): boolean {
 
 /**
  * 「パネルにする」用。
- * - 既にパネルウィンドウならリサイズのみ
- * - それ以外は右下 1/4 のポップアップで /panel を開き、元ウィンドウは閉じを試みる
- * 戻り値: パネル側で同じウィンドウを使い続けた場合 true（呼び出し側で router.push が必要）
+ * ユーザー操作の直後に右下 1/4 のポップアップを開く（通常タブの resize 制限を回避）。
+ * 戻り値: 同じウィンドウで続ける場合 true（router.push が必要）
  */
 export function openAsPanelWindow(path = '/panel'): boolean {
   if (typeof window === 'undefined') return true;
 
   const { width, height, left, top } = getPanelWindowBounds();
+  const absUrl = new URL(path, window.location.origin).toString();
 
-  if (window.name === PANEL_WINDOW_NAME) {
-    snapToPanelWindow();
+  // 名前付きウィンドウを features 付きで開く（既存ならフォーカス＋遷移）
+  const popup = window.open(absUrl, PANEL_WINDOW_NAME, panelWindowFeatures());
+
+  if (!popup) {
+    // ポップアップブロック時: 同一タブで遷移し、ベストエフォートでリサイズ
+    window.alert(
+      'ポップアップがブロックされました。ブラウザで許可するか、このウィンドウを手動で右下に配置してください。',
+    );
+    snapToPanelWindow(window);
     return true;
   }
 
-  const popup = window.open(path, PANEL_WINDOW_NAME, panelWindowFeatures());
-  if (popup) {
-    try {
-      popup.focus();
-      popup.resizeTo(width, height);
-      popup.moveTo(left, top);
-    } catch {
-      /* 一部ブラウザは open 時の features のみ有効 */
-    }
-    if (popup !== window) {
-      window.close();
-      return false;
-    }
+  try {
+    popup.name = PANEL_WINDOW_NAME;
+  } catch {
+    /* ignore */
   }
 
-  snapToPanelWindow();
-  return true;
+  snapToPanelWindow(popup);
+  try {
+    popup.focus();
+  } catch {
+    /* ignore */
+  }
+
+  // 同一ウィンドウ（すでにパネル名の場合など）
+  if (popup === window) {
+    try {
+      window.resizeTo(width, height);
+      window.moveTo(left, top);
+    } catch {
+      /* ignore */
+    }
+    return true;
+  }
+
+  // 別ウィンドウが開けた → 元タブは閉じを試みる（失敗しても可）
+  window.setTimeout(() => {
+    try {
+      window.close();
+    } catch {
+      /* ignore */
+    }
+  }, 100);
+
+  return false;
 }

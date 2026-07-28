@@ -1,8 +1,8 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Mic, Play } from 'lucide-react';
+import { Mic, RefreshCw, UserPlus, Users } from 'lucide-react';
 import { api, getToken, isUnauthorizedError } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,12 +10,20 @@ import { Alert } from '@/components/ui/alert';
 import { Spinner } from '@/components/ui/spinner';
 import { getConsultationStatusLabel } from '@/lib/consultation-status';
 import { useUiMode } from '@/components/layout/ui-mode-provider';
+import { snapToPanelWindow } from '@/lib/panel-window';
+import { cn } from '@/lib/utils';
 
-type RecentItem = {
+type BoardItem = {
   id: string;
   status: string;
-  label: string;
   createdAt: string;
+  kind: 'new' | 'repeater';
+  visitNumber: number;
+  lane: 'waiting' | 'done';
+  hasDocuments: boolean;
+  label: string;
+  patientId?: string | null;
+  anonymousCaseId?: string | null;
 };
 
 function defaultDisplayName() {
@@ -25,17 +33,156 @@ function defaultDisplayName() {
   return `本日の診療 ${hh}:${mm}`;
 }
 
+function BoardCard({
+  item,
+  onOpen,
+  onPromote,
+  promoting,
+}: {
+  item: BoardItem;
+  onOpen: () => void;
+  onPromote?: () => void;
+  promoting?: boolean;
+}) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-2.5 shadow-sm">
+      <button type="button" onClick={onOpen} className="w-full text-left">
+        <div className="flex items-start gap-2">
+          <span
+            className={cn(
+              'mt-0.5 flex h-7 min-w-7 shrink-0 items-center justify-center rounded-md px-1.5 text-[11px] font-bold',
+              item.kind === 'new'
+                ? 'bg-amber-100 text-amber-800'
+                : 'bg-brand-100 text-brand-800',
+            )}
+          >
+            {item.visitNumber}回目
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-semibold text-slate-900">{item.label}</span>
+            <span className="mt-0.5 block text-[10px] text-slate-500">
+              {item.kind === 'new' ? '新規' : 'リピーター'} · {getConsultationStatusLabel(item.status)}
+              {item.hasDocuments ? ' · 書類あり' : ''}
+            </span>
+          </span>
+        </div>
+      </button>
+      {item.kind === 'new' && item.anonymousCaseId && onPromote && (
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          className="mt-2 w-full"
+          icon={promoting ? <Spinner /> : <RefreshCw className="h-3.5 w-3.5" />}
+          disabled={promoting}
+          onClick={(e) => {
+            e.stopPropagation();
+            onPromote();
+          }}
+        >
+          {promoting ? '切替中…' : 'リピーターにする'}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function LaneColumn({
+  title,
+  hint,
+  items,
+  onOpen,
+  onPromote,
+  promotingId,
+}: {
+  title: string;
+  hint: string;
+  items: BoardItem[];
+  onOpen: (id: string) => void;
+  onPromote: (item: BoardItem) => void;
+  promotingId: string | null;
+}) {
+  const news = items.filter((i) => i.kind === 'new');
+  const repeaters = items.filter((i) => i.kind === 'repeater');
+
+  return (
+    <section className="flex min-w-0 flex-1 flex-col rounded-xl border border-slate-200 bg-slate-50/80">
+      <header className="border-b border-slate-200 px-2.5 py-2">
+        <h2 className="text-xs font-bold text-slate-800">{title}</h2>
+        <p className="text-[10px] text-slate-500">{hint}</p>
+        <p className="mt-0.5 text-[10px] font-medium text-slate-400">{items.length}件</p>
+      </header>
+      <div className="flex max-h-[50vh] flex-col gap-3 overflow-y-auto p-2">
+        <div className="space-y-1.5">
+          <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+            <UserPlus className="h-3 w-3" />
+            新規
+          </p>
+          {news.length === 0 ? (
+            <p className="text-[10px] text-slate-400">なし</p>
+          ) : (
+            news.map((item) => (
+              <BoardCard
+                key={item.id}
+                item={item}
+                onOpen={() => onOpen(item.id)}
+                onPromote={() => onPromote(item)}
+                promoting={promotingId === item.id}
+              />
+            ))
+          )}
+        </div>
+        <div className="space-y-1.5">
+          <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-brand-700">
+            <Users className="h-3 w-3" />
+            リピーター
+          </p>
+          {repeaters.length === 0 ? (
+            <p className="text-[10px] text-slate-400">なし</p>
+          ) : (
+            repeaters.map((item) => (
+              <BoardCard key={item.id} item={item} onOpen={() => onOpen(item.id)} />
+            ))
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function PanelIdlePage() {
   const router = useRouter();
   const { setMode } = useUiMode();
   const [displayName, setDisplayName] = useState('');
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState('');
-  const [recent, setRecent] = useState<RecentItem[]>([]);
-  const [loadingRecent, setLoadingRecent] = useState(true);
+  const [items, setItems] = useState<BoardItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [promotingId, setPromotingId] = useState<string | null>(null);
+
+  const loadBoard = useCallback(async () => {
+    const list = await api.consultations();
+    setItems(
+      list.map((c) => ({
+        id: c.id,
+        status: c.status,
+        createdAt: c.createdAt,
+        kind: c.kind ?? (c.patient ? 'repeater' : 'new'),
+        visitNumber: c.visitNumber ?? 1,
+        lane: c.lane ?? (c.approvedAt || c.copiedAt || c.status === 'APPROVED' || c.status === 'COMPLETED'
+          ? 'done'
+          : 'waiting'),
+        hasDocuments: Boolean(c.hasDocuments),
+        label: c.patient?.name ?? c.anonymousCase?.displayName ?? '診療',
+        patientId: c.patientId ?? c.patient?.id ?? null,
+        anonymousCaseId: c.anonymousCaseId ?? c.anonymousCase?.id ?? null,
+      })),
+    );
+  }, []);
 
   useEffect(() => {
     setMode('compact');
+    snapToPanelWindow();
   }, [setMode]);
 
   useEffect(() => {
@@ -43,23 +190,15 @@ export default function PanelIdlePage() {
       router.replace('/login');
       return;
     }
-    void api
-      .consultations()
-      .then((list) => {
-        setRecent(
-          list.slice(0, 3).map((c) => ({
-            id: c.id,
-            status: c.status,
-            label: c.patient?.name ?? c.anonymousCase?.displayName ?? '診療',
-            createdAt: c.createdAt,
-          })),
-        );
-      })
+    void loadBoard()
       .catch((err) => {
         if (isUnauthorizedError(err)) router.replace('/login');
       })
-      .finally(() => setLoadingRecent(false));
-  }, [router]);
+      .finally(() => setLoading(false));
+  }, [router, loadBoard]);
+
+  const waiting = useMemo(() => items.filter((i) => i.lane === 'waiting'), [items]);
+  const done = useMemo(() => items.filter((i) => i.lane === 'done'), [items]);
 
   async function handleStart(e: FormEvent) {
     e.preventDefault();
@@ -76,85 +215,78 @@ export default function PanelIdlePage() {
     }
   }
 
+  async function handlePromote(item: BoardItem) {
+    if (!item.anonymousCaseId) return;
+    setPromotingId(item.id);
+    setError('');
+    try {
+      await api.promoteAnonymousToPatient(item.anonymousCaseId, item.label);
+      await loadBoard();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'リピーターへの切替に失敗しました');
+    } finally {
+      setPromotingId(null);
+    }
+  }
+
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-5">
+    <div className="mx-auto flex max-w-lg flex-col gap-4">
       <div>
-        <h1 className="text-lg font-bold tracking-tight text-slate-900">診療パネル</h1>
+        <h1 className="text-lg font-bold tracking-tight text-slate-900">診療ボード</h1>
         <p className="mt-1 text-xs leading-relaxed text-slate-500">
-          CLINICS を全画面のまま、このウィンドウ（画面右下 1/4）で使います。録音 → SOAP →
-          コピーまでここで完結します。
+          左がこれから診療、右が SOAP・書類後。新規とリピーターを分け、回数が一目で分かります。
         </p>
       </div>
 
       <form
         onSubmit={handleStart}
-        className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+        className="space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
       >
-        <div>
-          <label htmlFor="displayName" className="mb-1 block text-xs font-medium text-slate-600">
-            表示名（任意）
-          </label>
+        <label htmlFor="displayName" className="block text-xs font-medium text-slate-600">
+          新規の表示名（任意）
+        </label>
+        <div className="flex gap-2">
           <Input
             id="displayName"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="例: 午前1人目 / 空欄可"
+            placeholder="例: 午前の新規"
             autoComplete="off"
+            className="flex-1"
           />
-          <p className="mt-1 text-[11px] text-slate-400">
-            空欄の場合は「本日の診療 HH:mm」で開始します。患者マスタは CLINICS 側です。
-          </p>
+          <Button
+            type="submit"
+            icon={starting ? <Spinner className="text-white" /> : <Mic />}
+            disabled={starting}
+          >
+            {starting ? '…' : '開始'}
+          </Button>
         </div>
-
         {error && <Alert variant="error">{error}</Alert>}
-
-        <Button
-          type="submit"
-          size="lg"
-          className="w-full"
-          icon={starting ? <Spinner className="text-white" /> : <Mic />}
-          disabled={starting}
-        >
-          {starting ? '開始中...' : '診療を開始'}
-        </Button>
       </form>
 
-      <div className="space-y-2">
-        <p className="text-xs font-medium text-slate-500">直近の診療</p>
-        {loadingRecent ? (
-          <p className="text-xs text-slate-400">読み込み中...</p>
-        ) : recent.length === 0 ? (
-          <p className="text-xs text-slate-400">まだ診療がありません</p>
-        ) : (
-          <ul className="space-y-1.5">
-            {recent.map((item) => (
-              <li key={item.id}>
-                <button
-                  type="button"
-                  onClick={() => router.push(`/panel/${item.id}`)}
-                  className="flex w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-left hover:border-brand-200 hover:bg-brand-50/40"
-                >
-                  <Play className="h-3.5 w-3.5 shrink-0 text-brand-600" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-slate-800">
-                      {item.label}
-                    </span>
-                    <span className="text-[11px] text-slate-400">
-                      {getConsultationStatusLabel(item.status)} ·{' '}
-                      {new Date(item.createdAt).toLocaleString('ja-JP', {
-                        month: 'numeric',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {loading ? (
+        <p className="text-xs text-slate-400">読み込み中...</p>
+      ) : (
+        <div className="flex gap-2">
+          <LaneColumn
+            title="これから診療"
+            hint="録音〜確認前"
+            items={waiting}
+            onOpen={(id) => router.push(`/panel/${id}`)}
+            onPromote={handlePromote}
+            promotingId={promotingId}
+          />
+          <LaneColumn
+            title="診療後"
+            hint="SOAP・書類済み"
+            items={done}
+            onOpen={(id) => router.push(`/panel/${id}`)}
+            onPromote={handlePromote}
+            promotingId={promotingId}
+          />
+        </div>
+      )}
     </div>
   );
 }

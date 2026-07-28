@@ -24,7 +24,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { Toast, useToast } from '@/components/ui/toast';
 import { DocumentsPanel } from '@/components/documents/documents-panel';
-import { ConsultChatPanel } from '@/components/consultation/consult-chat-panel';
+import {
+  SubkarteChatPanel,
+  type SubkarteAskResult,
+} from '@/components/consultation/subkarte-chat-panel';
 import { PaperCapturePanel } from '@/components/consultation/paper-capture-panel';
 import { cn } from '@/lib/utils';
 import type { SoapData } from '@/lib/mock-documents/types';
@@ -144,10 +147,32 @@ export function ReviewPhase({
   const [showDocuments, setShowDocuments] = useState(false);
   const [docsTrigger, setDocsTrigger] = useState(0);
   const [referralPattern, setReferralPattern] = useState<'simple' | 'complex'>('simple');
-  const [panelTab, setPanelTab] = useState<'soap' | 'consult' | 'docs' | 'paper'>('soap');
+  const [panelTab, setPanelTab] = useState<'soap' | 'docs' | 'paper'>('soap');
+  const [pendingDocPatches, setPendingDocPatches] = useState<
+    Array<{ type: string; content: Record<string, unknown> }> | undefined
+  >();
   const [selectedSuggestions, setSelectedSuggestions] = useState<Record<string, boolean>>({});
   const { toast, show } = useToast();
   const compact = density === 'compact';
+
+  function handleSubkarteResult(result: SubkarteAskResult) {
+    if (result.soap) onSoapChange(result.soap);
+    if (result.note != null) onNoteChange(result.note);
+    if (result.documents?.length) {
+      setPendingDocPatches(
+        result.documents.map((d) => ({
+          type: d.type,
+          content: d.content,
+        })),
+      );
+      if (compact) {
+        setPanelTab('docs');
+        setShowDocuments(true);
+      } else {
+        setTab('documents');
+      }
+    }
+  }
 
   useEffect(() => {
     if (copyMsg) show(copyMsg, 'success');
@@ -199,7 +224,7 @@ export function ReviewPhase({
 
   if (compact) {
     return (
-      <div className="mx-auto max-w-md space-y-4 pb-24">
+      <div className="mx-auto max-w-md space-y-4 pb-52">
         <Toast toast={toast} />
 
         <div className="no-print flex items-start justify-between gap-2">
@@ -237,7 +262,6 @@ export function ReviewPhase({
           {(
             [
               { id: 'soap' as const, label: 'SOAP' },
-              { id: 'consult' as const, label: '相談' },
               { id: 'docs' as const, label: '書類' },
               { id: 'paper' as const, label: '紙資料' },
             ] as const
@@ -263,97 +287,90 @@ export function ReviewPhase({
 
         {panelTab === 'soap' && (
           <>
-        <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-3">
-          {SOAP_FIELDS.map(({ key, label, name }) => (
-            <div key={key}>
-              <label className="mb-1 flex items-center gap-2 text-xs">
-                <span className="flex h-5 w-5 items-center justify-center rounded bg-brand-600 text-[10px] font-bold text-white">
-                  {label}
-                </span>
-                <span className="text-slate-500">{name}</span>
-              </label>
-              <Textarea
-                value={soap[key]}
-                onChange={(e) => onSoapChange({ ...soap, [key]: e.target.value })}
-                rows={2}
-              />
-            </div>
-          ))}
-          <Button variant="secondary" size="sm" icon={<Save />} onClick={onSaveSoap}>
-            SOAP を保存
-          </Button>
-        </div>
-
-        <div className="no-print space-y-2">
-          <button
-            type="button"
-            className="text-xs font-medium text-brand-600"
-            onClick={() => setShowTranscript((v) => !v)}
-          >
-            {showTranscript ? '文字起こしを閉じる' : '文字起こしを表示'}
-          </button>
-          {showTranscript && (
-            <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
-              <ul className="max-h-48 space-y-2 overflow-y-auto text-sm">
-                {transcript.map((seg) => (
-                  <li key={seg.id} className="space-y-1 rounded-lg border border-slate-100 p-2">
-                    <Select
-                      value={seg.speaker}
-                      onChange={(e) => onSpeakerChange(seg.id, e.target.value)}
-                    >
-                      {SPEAKER_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </Select>
-                    <Textarea
-                      value={seg.text}
-                      onChange={(e) => onTranscriptTextChange(seg.id, e.target.value)}
-                      rows={2}
-                    />
-                  </li>
-                ))}
-              </ul>
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={<Save />}
-                onClick={onSaveTranscript}
-                disabled={savingTranscript}
-              >
-                {savingTranscript ? '保存中…' : '文字起こしを保存'}
+            <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-3">
+              {SOAP_FIELDS.map(({ key, label, name }) => (
+                <div key={key}>
+                  <label className="mb-1 flex items-center gap-2 text-xs">
+                    <span className="flex h-5 w-5 items-center justify-center rounded bg-brand-600 text-[10px] font-bold text-white">
+                      {label}
+                    </span>
+                    <span className="text-slate-500">{name}</span>
+                  </label>
+                  <Textarea
+                    value={soap[key]}
+                    onChange={(e) => onSoapChange({ ...soap, [key]: e.target.value })}
+                    rows={2}
+                  />
+                </div>
+              ))}
+              <Button variant="secondary" size="sm" icon={<Save />} onClick={onSaveSoap}>
+                SOAP を保存
               </Button>
             </div>
-          )}
-        </div>
 
-        <div className="no-print space-y-2 rounded-xl border border-slate-200 bg-white p-3">
-          <p className="text-xs font-medium text-slate-600">通常診療記録</p>
-          <Textarea value={note} onChange={(e) => onNoteChange(e.target.value)} rows={4} />
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" size="sm" icon={<Save />} onClick={onSaveNote}>
-              保存
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={<ClipboardCopy />}
-              disabled={!approved}
-              onClick={onCopyNote}
-            >
-              コピー
-            </Button>
-          </div>
-        </div>
+            <div className="no-print space-y-2">
+              <button
+                type="button"
+                className="text-xs font-medium text-brand-600"
+                onClick={() => setShowTranscript((v) => !v)}
+              >
+                {showTranscript ? '文字起こしを閉じる' : '文字起こしを表示'}
+              </button>
+              {showTranscript && (
+                <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+                  <ul className="max-h-48 space-y-2 overflow-y-auto text-sm">
+                    {transcript.map((seg) => (
+                      <li key={seg.id} className="space-y-1 rounded-lg border border-slate-100 p-2">
+                        <Select
+                          value={seg.speaker}
+                          onChange={(e) => onSpeakerChange(seg.id, e.target.value)}
+                        >
+                          {SPEAKER_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </Select>
+                        <Textarea
+                          value={seg.text}
+                          onChange={(e) => onTranscriptTextChange(seg.id, e.target.value)}
+                          rows={2}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={<Save />}
+                    onClick={onSaveTranscript}
+                    disabled={savingTranscript}
+                  >
+                    {savingTranscript ? '保存中…' : '文字起こしを保存'}
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="no-print space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+              <p className="text-xs font-medium text-slate-600">通常診療記録</p>
+              <Textarea value={note} onChange={(e) => onNoteChange(e.target.value)} rows={4} />
+              <div className="flex flex-wrap gap-2">
+                <Button variant="secondary" size="sm" icon={<Save />} onClick={onSaveNote}>
+                  保存
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={<ClipboardCopy />}
+                  disabled={!approved}
+                  onClick={onCopyNote}
+                >
+                  コピー
+                </Button>
+              </div>
+            </div>
           </>
-        )}
-
-        {panelTab === 'consult' && (
-          <ConsultChatPanel
-            consultationId={consultationId}
-            onAppendToPlan={(text) => onSoapChange({ ...soap, plan: `${soap.plan}\n${text}`.trim() })}
-          />
         )}
 
         {panelTab === 'docs' && (
@@ -366,15 +383,24 @@ export function ReviewPhase({
             referralPattern={referralPattern}
             onReferralPatternChange={setReferralPattern}
             openTrigger={docsTrigger}
+            pendingDocPatches={pendingDocPatches}
+            onPendingDocPatchesApplied={() => setPendingDocPatches(undefined)}
           />
         )}
 
-        {panelTab === 'paper' && (
-          <PaperCapturePanel consultationId={consultationId} />
-        )}
+        {panelTab === 'paper' && <PaperCapturePanel consultationId={consultationId} />}
 
-        <div className="no-print fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 p-3 backdrop-blur">
-          <div className="mx-auto max-w-md">{panelTab === 'soap' ? primaryAction : null}</div>
+        <div className="no-print fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 backdrop-blur">
+          <div className="mx-auto max-w-md space-y-2 p-3">
+            {(panelTab === 'soap' || panelTab === 'docs') && (
+              <SubkarteChatPanel
+                consultationId={consultationId}
+                compact
+                onResult={handleSubkarteResult}
+              />
+            )}
+            {panelTab === 'soap' ? primaryAction : null}
+          </div>
         </div>
       </div>
     );
@@ -450,6 +476,8 @@ export function ReviewPhase({
           approved={approved}
           onBack={() => setTab('soap')}
           autoGenerate
+          pendingDocPatches={pendingDocPatches}
+          onPendingDocPatchesApplied={() => setPendingDocPatches(undefined)}
         />
       ) : (
         <div className="grid gap-6 lg:grid-cols-2">
@@ -542,49 +570,65 @@ export function ReviewPhase({
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <ClipboardList className="h-4 w-4 text-brand-600" />
-                {tab === 'soap' ? 'SOAP 下書き' : '通常診療記録'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {tab === 'soap' ? (
-                <div className="space-y-4">
-                  {SOAP_FIELDS.map(({ key, label, name }) => (
-                    <div key={key}>
-                      <label className="mb-1.5 flex items-center gap-2 text-sm">
-                        <span className="flex h-6 w-6 items-center justify-center rounded bg-brand-600 text-xs font-bold text-white">
-                          {label}
-                        </span>
-                        <span className="text-slate-500">{name}</span>
-                      </label>
-                      <Textarea
-                        value={soap[key]}
-                        onChange={(e) => onSoapChange({ ...soap, [key]: e.target.value })}
-                        rows={3}
-                      />
-                    </div>
-                  ))}
-                  <Button variant="secondary" icon={<Save />} onClick={onSaveSoap}>
-                    SOAP を保存
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <Textarea
-                    value={note}
-                    onChange={(e) => onNoteChange(e.target.value)}
-                    rows={14}
-                  />
-                  <Button variant="secondary" icon={<Save />} onClick={onSaveNote}>
-                    診療記録を保存
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <ClipboardList className="h-4 w-4 text-brand-600" />
+                  {tab === 'soap' ? 'SOAP 下書き' : '通常診療記録'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {tab === 'soap' ? (
+                  <div className="space-y-4">
+                    {SOAP_FIELDS.map(({ key, label, name }) => (
+                      <div key={key}>
+                        <label className="mb-1.5 flex items-center gap-2 text-sm">
+                          <span className="flex h-6 w-6 items-center justify-center rounded bg-brand-600 text-xs font-bold text-white">
+                            {label}
+                          </span>
+                          <span className="text-slate-500">{name}</span>
+                        </label>
+                        <Textarea
+                          value={soap[key]}
+                          onChange={(e) => onSoapChange({ ...soap, [key]: e.target.value })}
+                          rows={3}
+                        />
+                      </div>
+                    ))}
+                    <Button variant="secondary" icon={<Save />} onClick={onSaveSoap}>
+                      SOAP を保存
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <Textarea
+                      value={note}
+                      onChange={(e) => onNoteChange(e.target.value)}
+                      rows={14}
+                    />
+                    <Button variant="secondary" icon={<Save />} onClick={onSaveNote}>
+                      診療記録を保存
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <SubkarteChatPanel
+              consultationId={consultationId}
+              onResult={handleSubkarteResult}
+            />
+          </div>
+        </div>
+      )}
+
+      {tab === 'documents' && (
+        <div className="no-print mx-auto max-w-xl">
+          <SubkarteChatPanel
+            consultationId={consultationId}
+            onResult={handleSubkarteResult}
+          />
         </div>
       )}
 

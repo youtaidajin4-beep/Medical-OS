@@ -24,6 +24,8 @@ export type DocumentGenerationContext = {
   physicianRules: PhysicianRules;
   revisionExamples: string;
   referralPattern?: 'simple' | 'complex';
+  /** 医師サブカルテ（チャットの user 発話）。書類生成時は SOAP より優先。 */
+  physicianSubkarte: string;
 };
 
 export const GENERATED_DOCUMENT_TYPES: GeneratedDocumentType[] = [

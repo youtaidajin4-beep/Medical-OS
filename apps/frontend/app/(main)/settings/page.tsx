@@ -15,9 +15,10 @@ import { useUiMode } from '@/components/layout/ui-mode-provider';
 const COPY_STEPS = [
   'CLINICS を全画面にし、「パネルにする」で Medical OS を右下 1/4 に置く',
   'パネルで「診療を開始」→ 同意チェック → 録音',
-  '診療終了後、SOAP を確認して「確認済みにする」',
+  '診療終了後、SOAP を確認し、サブカルテに疑い・処方意図を書く',
+  '確認済みにしたら「書類を全部作る」（SOAP＋サブカルテで完成）',
+  '修正もサブカルテで指示（例: 紹介状の宛先を〇〇病院に）',
   '「SOAP をコピー」して CLINICS に貼り付ける',
-  '必要なときだけ「書類が必要なら開く」から紹介状などを作成',
 ] as const;
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';

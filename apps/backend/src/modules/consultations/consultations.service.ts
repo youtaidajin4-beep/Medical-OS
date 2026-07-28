@@ -51,7 +51,7 @@ export class ConsultationsService {
   }
 
   async list(physicianId: string) {
-    return this.prisma.consultation.findMany({
+    const rows = await this.prisma.consultation.findMany({
       where: { physicianId },
       orderBy: { createdAt: 'desc' },
       include: {
@@ -59,7 +59,76 @@ export class ConsultationsService {
         anonymousCase: true,
         soapDocuments: { orderBy: { version: 'desc' }, take: 1 },
         clinicalNotes: { orderBy: { version: 'desc' }, take: 1 },
+        generatedDocuments: { select: { id: true }, take: 1 },
       },
+    });
+
+    const patientIds = [
+      ...new Set(rows.map((r) => r.patientId).filter((id): id is string => Boolean(id))),
+    ];
+    const anonIds = [
+      ...new Set(rows.map((r) => r.anonymousCaseId).filter((id): id is string => Boolean(id))),
+    ];
+
+    const [patientAll, anonAll] = await Promise.all([
+      patientIds.length
+        ? this.prisma.consultation.findMany({
+            where: { patientId: { in: patientIds } },
+            select: { id: true, patientId: true, anonymousCaseId: true, createdAt: true },
+            orderBy: { createdAt: 'asc' },
+          })
+        : Promise.resolve(
+            [] as Array<{
+              id: string;
+              patientId: string | null;
+              anonymousCaseId: string | null;
+              createdAt: Date;
+            }>,
+          ),
+      anonIds.length
+        ? this.prisma.consultation.findMany({
+            where: { anonymousCaseId: { in: anonIds } },
+            select: { id: true, patientId: true, anonymousCaseId: true, createdAt: true },
+            orderBy: { createdAt: 'asc' },
+          })
+        : Promise.resolve(
+            [] as Array<{
+              id: string;
+              patientId: string | null;
+              anonymousCaseId: string | null;
+              createdAt: Date;
+            }>,
+          ),
+    ]);
+
+    const visitIndex = new Map<string, number>();
+    for (const group of [patientAll, anonAll]) {
+      const buckets = new Map<string, typeof group>();
+      for (const row of group) {
+        const key = row.patientId ?? row.anonymousCaseId;
+        if (!key) continue;
+        const list = buckets.get(key) ?? [];
+        list.push(row);
+        buckets.set(key, list);
+      }
+      for (const list of buckets.values()) {
+        list.forEach((row, i) => visitIndex.set(row.id, i + 1));
+      }
+    }
+
+    return rows.map((row) => {
+      const done =
+        row.status === ConsultationStatus.APPROVED ||
+        row.status === ConsultationStatus.COMPLETED ||
+        Boolean(row.copiedAt) ||
+        Boolean(row.approvedAt);
+      return {
+        ...row,
+        kind: row.patientId ? ('repeater' as const) : ('new' as const),
+        visitNumber: visitIndex.get(row.id) ?? 1,
+        lane: done ? ('done' as const) : ('waiting' as const),
+        hasDocuments: row.generatedDocuments.length > 0,
+      };
     });
   }
 

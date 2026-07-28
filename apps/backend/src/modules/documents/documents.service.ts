@@ -204,6 +204,13 @@ export class DocumentsService {
 
     const revisionExamples = await this.buildRevisionExamples(consultation.physicianId);
 
+    const chatMessages = await this.prisma.consultationChatMessage.findMany({
+      where: { consultationId, role: 'user' },
+      orderBy: { createdAt: 'asc' },
+      take: 50,
+    });
+    const physicianSubkarte = chatMessages.map((m) => `- ${m.content}`).join('\n');
+
     return {
       consultationId,
       caseCode,
@@ -232,6 +239,7 @@ export class DocumentsService {
       physicianRules,
       revisionExamples,
       referralPattern,
+      physicianSubkarte,
     };
   }
 

@@ -27,7 +27,11 @@ export default function LoginPage() {
       if (res.user.mustChangePassword) {
         router.push('/settings?changePassword=1');
       } else {
-        window.name = PANEL_WINDOW_NAME;
+        try {
+          window.name = PANEL_WINDOW_NAME;
+        } catch {
+          /* ignore */
+        }
         snapToPanelWindow();
         router.push('/panel');
       }
