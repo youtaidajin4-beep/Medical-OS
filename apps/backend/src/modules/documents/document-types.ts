@@ -23,6 +23,7 @@ export type DocumentGenerationContext = {
   structured: StructuredClinicalDataPayload;
   physicianRules: PhysicianRules;
   revisionExamples: string;
+  referralPattern?: 'simple' | 'complex';
 };
 
 export const GENERATED_DOCUMENT_TYPES: GeneratedDocumentType[] = [

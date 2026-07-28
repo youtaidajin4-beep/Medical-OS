@@ -1,27 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  Activity,
   History,
-  LayoutDashboard,
   LogOut,
   Menu,
+  PanelLeft,
   Settings,
   Stethoscope,
-  Users,
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { clearToken } from '@/lib/api-client';
+import { api, clearToken } from '@/lib/api-client';
+import { useUiMode } from './ui-mode-provider';
 import { DemoBanner } from './demo-banner';
 import { AiStatusBanner } from './ai-status-banner';
 
 const NAV = [
-  { href: '/dashboard', label: 'ダッシュボード', icon: LayoutDashboard },
-  { href: '/patients', label: '症例選択', icon: Users },
+  { href: '/panel', label: 'パネルに戻る', icon: PanelLeft, compact: true },
   { href: '/history', label: '履歴', icon: History },
   { href: '/settings', label: '設定', icon: Settings },
 ] as const;
@@ -44,15 +42,36 @@ function NavLinks({
   pathname,
   onNavigate,
   onLogout,
+  userName,
+  onBackToPanel,
 }: {
   pathname: string;
   onNavigate?: () => void;
   onLogout: () => void;
+  userName: string;
+  onBackToPanel: () => void;
 }) {
   return (
     <nav className="flex flex-1 flex-col gap-1">
-      {NAV.map(({ href, label, icon: Icon }) => {
-        const active = pathname === href || pathname.startsWith(`${href}/`);
+      {NAV.map(({ href, label, icon: Icon, ...rest }) => {
+        const isCompactLink = 'compact' in rest && rest.compact;
+        const active = !isCompactLink && (pathname === href || pathname.startsWith(`${href}/`));
+        if (isCompactLink) {
+          return (
+            <button
+              key={href}
+              type="button"
+              onClick={() => {
+                onBackToPanel();
+                onNavigate?.();
+              }}
+              className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-brand-700 transition-colors hover:bg-brand-50"
+            >
+              <Icon className="h-4 w-4 text-brand-600" />
+              {label}
+            </button>
+          );
+        }
         return (
           <Link
             key={href}
@@ -74,7 +93,7 @@ function NavLinks({
       <div className="mt-auto space-y-3 pt-6">
         <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
           <p className="text-xs text-slate-400">ログイン中</p>
-          <p className="truncate text-sm font-medium text-slate-700">デモ医師</p>
+          <p className="truncate text-sm font-medium text-slate-700">{userName}</p>
         </div>
         <button
           type="button"
@@ -92,11 +111,25 @@ function NavLinks({
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { setMode } = useUiMode();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [userName, setUserName] = useState('');
+
+  useEffect(() => {
+    void api
+      .me()
+      .then((user) => setUserName(user.name))
+      .catch(() => setUserName(''));
+  }, []);
 
   function logout() {
     clearToken();
     router.replace('/login');
+  }
+
+  function backToPanel() {
+    setMode('compact');
+    router.push('/panel');
   }
 
   return (
@@ -108,7 +141,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="mb-8 px-1 pt-1">
             <BrandLogo />
           </div>
-          <NavLinks pathname={pathname} onLogout={logout} />
+          <NavLinks
+            pathname={pathname}
+            onLogout={logout}
+            userName={userName || '—'}
+            onBackToPanel={backToPanel}
+          />
         </aside>
 
         <div className="min-w-0 flex-1">
@@ -146,6 +184,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   pathname={pathname}
                   onNavigate={() => setDrawerOpen(false)}
                   onLogout={logout}
+                  userName={userName || '—'}
+                  onBackToPanel={backToPanel}
                 />
               </div>
             </div>

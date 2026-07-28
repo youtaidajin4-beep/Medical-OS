@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ConsultationStatus } from '@prisma/client';
+import { ConsultationStatus, DocumentType } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { TranscriptService } from '../transcript/transcript.service';
 import { RecordingService } from '../recording/recording.service';
@@ -182,7 +182,22 @@ export class AiPipelineService {
       }
 
       const soapStart = Date.now();
-      const soap = await this.llmProvider.generateSoap(structured, consultationId);
+      const soapRevisions = await this.prisma.revisionHistory.findMany({
+        where: {
+          changedById: consultation.physicianId,
+          documentType: { in: [DocumentType.SOAP, DocumentType.CLINICAL_NOTE] },
+        },
+        orderBy: { changedAt: 'desc' },
+        take: 12,
+      });
+      const soapRevisionExamples = soapRevisions
+        .map((r) => `[${r.fieldName}] 「${r.beforeValue}」→「${r.afterValue}」`)
+        .join('\n');
+      const soap = await this.llmProvider.generateSoap(structured, consultationId, {
+        revisionExamples: soapRevisionExamples || undefined,
+        greeting: physicianRules.fixedPhrases?.greeting,
+        closing: physicianRules.fixedPhrases?.closing,
+      });
       await logAiExecution(this.prisma, {
         consultationId,
         step: 'soap_complete',

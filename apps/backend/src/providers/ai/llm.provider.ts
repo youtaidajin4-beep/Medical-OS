@@ -28,6 +28,12 @@ export const StructuredClinicalDataSchema = z.object({
 
 export type StructuredClinicalDataPayload = z.infer<typeof StructuredClinicalDataSchema>;
 
+export type SoapStyleHints = {
+  revisionExamples?: string;
+  greeting?: string;
+  closing?: string;
+};
+
 export interface LlmProvider {
   readonly name: string;
   correctTranscript(
@@ -39,6 +45,7 @@ export interface LlmProvider {
   generateSoap(
     data: StructuredClinicalDataPayload,
     consultationId?: string,
+    styleHints?: SoapStyleHints,
   ): Promise<{
     subjective: string;
     objective: string;
@@ -51,6 +58,11 @@ export interface LlmProvider {
     system: string,
     user: string,
   ): Promise<Record<string, unknown>>;
+  /** Optional physician consult chat (Phase 4). Default implementations may throw. */
+  consultChat?(
+    system: string,
+    messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+  ): Promise<string>;
 }
 
 function getScenario(consultationId?: string) {
@@ -72,7 +84,11 @@ export class MockLlmProvider implements LlmProvider {
     return getScenario(consultationId).structured;
   }
 
-  async generateSoap(data: StructuredClinicalDataPayload, _consultationId?: string) {
+  async generateSoap(
+    data: StructuredClinicalDataPayload,
+    _consultationId?: string,
+    _styleHints?: import('./llm.provider').SoapStyleHints,
+  ) {
     return {
       subjective: `主訴: ${data.chiefComplaint ?? ''}\n現病歴: ${data.presentIllness ?? ''}`,
       objective: [data.vitals, data.physicalExam].filter(Boolean).join('\n'),
@@ -224,5 +240,13 @@ export class MockLlmProvider implements LlmProvider {
       default:
         return {};
     }
+  }
+
+  async consultChat(
+    _system: string,
+    messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+  ): Promise<string> {
+    const last = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
+    return `（モック相談）「${last.slice(0, 40)}」について、診断は確定しません。関連する鑑別候補を臨床所見と照合し、必要なら精査目的の紹介を検討してください。`;
   }
 }

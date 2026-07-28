@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ClipboardCopy, LogOut, Settings2, UserCircle2 } from 'lucide-react';
 import { api, clearToken, getToken } from '@/lib/api-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,19 +9,32 @@ import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { isWeakPassword, WEAK_PASSWORD_MESSAGE } from '@/lib/password-policy';
+import { useUiMode } from '@/components/layout/ui-mode-provider';
 
 const COPY_STEPS = [
-  '診療後レビュー画面で内容を確認・修正する',
-  '「確認済みにする」を押す',
-  '「SOAP をコピー」または「通常診療記録をコピー」を押す',
-  'MEDLEY CLINICS の該当画面に貼り付ける',
-  '「全書類を生成」で紹介状・診断書等を作成',
+  'CLINICS を全画面、Medical OS を右下の小ウィンドウ（幅約420×高さ約800）で開く',
+  'パネルで「診療を開始」→ 同意チェック → 録音',
+  '診療終了後、SOAP を確認して「確認済みにする」',
+  '「SOAP をコピー」して CLINICS に貼り付ける',
+  '必要なときだけ「書類が必要なら開く」から紹介状などを作成',
 ] as const;
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
 export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div className="mx-auto max-w-2xl p-8 text-sm text-slate-500">読み込み中...</div>}>
+      <SettingsPageContent />
+    </Suspense>
+  );
+}
+
+function SettingsPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const mustChangePassword = searchParams.get('changePassword') === '1';
+  const { setMode } = useUiMode();
   const [rules, setRules] = useState<{
     referralRules: Array<{ trigger: string; mustInclude: string[] }>;
     fixedPhrases: { closing?: string; greeting?: string };
@@ -56,6 +69,10 @@ export default function SettingsPage() {
   const [suggestedReplacements, setSuggestedReplacements] = useState<
     Array<{ wrong: string; correct: string; count: number }>
   >([]);
+
+  useEffect(() => {
+    setMode('full');
+  }, [setMode]);
 
   useEffect(() => {
     if (!getToken()) {
@@ -136,6 +153,10 @@ export default function SettingsPage() {
       setPasswordError('新しいパスワードは8文字以上にしてください');
       return;
     }
+    if (isWeakPassword(newPassword)) {
+      setPasswordError(WEAK_PASSWORD_MESSAGE);
+      return;
+    }
     if (newPassword !== confirmPassword) {
       setPasswordError('新しいパスワードが一致しません');
       return;
@@ -147,6 +168,10 @@ export default function SettingsPage() {
       setNewPassword('');
       setConfirmPassword('');
       setPasswordMsg('パスワードを変更しました');
+      if (mustChangePassword) {
+        router.replace('/panel');
+        return;
+      }
       setTimeout(() => setPasswordMsg(''), 3000);
     } catch (error) {
       setPasswordError(error instanceof Error ? error.message : 'パスワードの変更に失敗しました');
@@ -161,6 +186,12 @@ export default function SettingsPage() {
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">設定</h1>
         <p className="mt-1 text-sm text-slate-500">先生独自の診療ルールと運用手順</p>
       </div>
+
+      {mustChangePassword && (
+        <Alert variant="warning">
+          初回ログインのため、安全なパスワードに変更してください。変更後、ダッシュボードへ進めます。
+        </Alert>
+      )}
 
       {DEMO_MODE && (
         <Alert variant="info">
@@ -359,12 +390,12 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <ClipboardCopy className="h-4 w-4 text-brand-600" />
-            MEDLEY CLINICS へのコピー手順
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ol className="space-y-3">
-            {COPY_STEPS.map((step, i) => (
+            MEDLEY CLINICS 連携の使い方
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ol className="space-y-3">
+              {COPY_STEPS.map((step, i) => (
               <li key={step} className="flex items-start gap-3 text-sm text-slate-700">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-700">
                   {i + 1}

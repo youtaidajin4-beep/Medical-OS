@@ -24,6 +24,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { Toast, useToast } from '@/components/ui/toast';
 import { DocumentsPanel } from '@/components/documents/documents-panel';
+import { ConsultChatPanel } from '@/components/consultation/consult-chat-panel';
+import { PaperCapturePanel } from '@/components/consultation/paper-capture-panel';
 import { cn } from '@/lib/utils';
 import type { SoapData } from '@/lib/mock-documents/types';
 
@@ -93,6 +95,8 @@ export function ReviewPhase({
   onGenerateAll,
   generatingDocs,
   documentInput,
+  density = 'full',
+  backHref = '/panel',
 }: {
   consultationId: string;
   caseName: string;
@@ -131,11 +135,19 @@ export function ReviewPhase({
     soap: Soap;
     structured?: Record<string, unknown> | null;
   };
+  density?: 'compact' | 'full';
+  backHref?: string;
 }) {
   const [tab, setTab] = useState<'soap' | 'note' | 'documents'>('soap');
   const [showRevisions, setShowRevisions] = useState(false);
+  const [showTranscript, setShowTranscript] = useState(density !== 'compact');
+  const [showDocuments, setShowDocuments] = useState(false);
+  const [docsTrigger, setDocsTrigger] = useState(0);
+  const [referralPattern, setReferralPattern] = useState<'simple' | 'complex'>('simple');
+  const [panelTab, setPanelTab] = useState<'soap' | 'consult' | 'docs' | 'paper'>('soap');
   const [selectedSuggestions, setSelectedSuggestions] = useState<Record<string, boolean>>({});
   const { toast, show } = useToast();
+  const compact = density === 'compact';
 
   useEffect(() => {
     if (copyMsg) show(copyMsg, 'success');
@@ -156,6 +168,217 @@ export function ReviewPhase({
       Object.fromEntries(glossarySuggestions.map((s) => [`${s.wrong}→${s.correct}`, true])),
     );
   }, [glossarySuggestions]);
+
+  function openDocsAndGenerate() {
+    setShowDocuments(true);
+    setPanelTab('docs');
+    setDocsTrigger((n) => n + 1);
+    if (onGenerateAll) void onGenerateAll();
+  }
+
+  const primaryAction = !approved ? (
+    <Button className="w-full" icon={<CheckCircle2 />} onClick={onApprove}>
+      確認済みにする
+    </Button>
+  ) : (
+    <div className="flex w-full flex-col gap-2">
+      <Button className="w-full" icon={<ClipboardCopy />} onClick={onCopySoap}>
+        SOAP をコピー → CLINICS
+      </Button>
+      <Button
+        className="w-full"
+        variant="secondary"
+        icon={<Printer />}
+        disabled={generatingDocs}
+        onClick={openDocsAndGenerate}
+      >
+        {generatingDocs ? '書類生成中…' : '書類を全部作る'}
+      </Button>
+    </div>
+  );
+
+  if (compact) {
+    return (
+      <div className="mx-auto max-w-md space-y-4 pb-24">
+        <Toast toast={toast} />
+
+        <div className="no-print flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="truncate text-xs text-slate-500">{caseName}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-lg font-bold tracking-tight text-slate-900">SOAP</h1>
+              {approved ? (
+                <Badge variant="success">
+                  <CheckCircle2 className="h-3 w-3" />
+                  確認済み
+                </Badge>
+              ) : (
+                <Badge variant="warning">下書き</Badge>
+              )}
+            </div>
+          </div>
+          <Link
+            href={backHref}
+            className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-brand-600"
+          >
+            <ArrowLeft className="h-3 w-3" />
+            戻る
+          </Link>
+        </div>
+
+        {warnings.length > 0 && (
+          <Alert variant="warning">
+            要確認 {warnings.length}件 — {warnings[0]?.message}
+            {warnings.length > 1 ? ` 他${warnings.length - 1}件` : ''}
+          </Alert>
+        )}
+
+        <div className="no-print flex gap-1 rounded-lg border border-slate-200 bg-white p-1 text-xs">
+          {(
+            [
+              { id: 'soap' as const, label: 'SOAP' },
+              { id: 'consult' as const, label: '相談' },
+              { id: 'docs' as const, label: '書類' },
+              { id: 'paper' as const, label: '紙資料' },
+            ] as const
+          ).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => {
+                setPanelTab(item.id);
+                if (item.id === 'docs') setShowDocuments(true);
+              }}
+              className={cn(
+                'flex-1 rounded-md px-2 py-1.5 font-medium transition-colors',
+                panelTab === item.id
+                  ? 'bg-brand-600 text-white'
+                  : 'text-slate-600 hover:bg-slate-50',
+              )}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        {panelTab === 'soap' && (
+          <>
+        <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-3">
+          {SOAP_FIELDS.map(({ key, label, name }) => (
+            <div key={key}>
+              <label className="mb-1 flex items-center gap-2 text-xs">
+                <span className="flex h-5 w-5 items-center justify-center rounded bg-brand-600 text-[10px] font-bold text-white">
+                  {label}
+                </span>
+                <span className="text-slate-500">{name}</span>
+              </label>
+              <Textarea
+                value={soap[key]}
+                onChange={(e) => onSoapChange({ ...soap, [key]: e.target.value })}
+                rows={2}
+              />
+            </div>
+          ))}
+          <Button variant="secondary" size="sm" icon={<Save />} onClick={onSaveSoap}>
+            SOAP を保存
+          </Button>
+        </div>
+
+        <div className="no-print space-y-2">
+          <button
+            type="button"
+            className="text-xs font-medium text-brand-600"
+            onClick={() => setShowTranscript((v) => !v)}
+          >
+            {showTranscript ? '文字起こしを閉じる' : '文字起こしを表示'}
+          </button>
+          {showTranscript && (
+            <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+              <ul className="max-h-48 space-y-2 overflow-y-auto text-sm">
+                {transcript.map((seg) => (
+                  <li key={seg.id} className="space-y-1 rounded-lg border border-slate-100 p-2">
+                    <Select
+                      value={seg.speaker}
+                      onChange={(e) => onSpeakerChange(seg.id, e.target.value)}
+                    >
+                      {SPEAKER_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </Select>
+                    <Textarea
+                      value={seg.text}
+                      onChange={(e) => onTranscriptTextChange(seg.id, e.target.value)}
+                      rows={2}
+                    />
+                  </li>
+                ))}
+              </ul>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<Save />}
+                onClick={onSaveTranscript}
+                disabled={savingTranscript}
+              >
+                {savingTranscript ? '保存中…' : '文字起こしを保存'}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <div className="no-print space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+          <p className="text-xs font-medium text-slate-600">通常診療記録</p>
+          <Textarea value={note} onChange={(e) => onNoteChange(e.target.value)} rows={4} />
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" size="sm" icon={<Save />} onClick={onSaveNote}>
+              保存
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<ClipboardCopy />}
+              disabled={!approved}
+              onClick={onCopyNote}
+            >
+              コピー
+            </Button>
+          </div>
+        </div>
+          </>
+        )}
+
+        {panelTab === 'consult' && (
+          <ConsultChatPanel
+            consultationId={consultationId}
+            onAppendToPlan={(text) => onSoapChange({ ...soap, plan: `${soap.plan}\n${text}`.trim() })}
+          />
+        )}
+
+        {panelTab === 'docs' && (
+          <DocumentsPanel
+            consultationId={consultationId}
+            documentInput={documentInput}
+            approved={approved}
+            autoGenerate={false}
+            compact
+            referralPattern={referralPattern}
+            onReferralPatternChange={setReferralPattern}
+            openTrigger={docsTrigger}
+          />
+        )}
+
+        {panelTab === 'paper' && (
+          <PaperCapturePanel consultationId={consultationId} />
+        )}
+
+        <div className="no-print fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 p-3 backdrop-blur">
+          <div className="mx-auto max-w-md">{panelTab === 'soap' ? primaryAction : null}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -182,11 +405,11 @@ export function ReviewPhase({
           )}
         </div>
         <Link
-          href="/patients"
+          href={backHref}
           className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-700"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          症例一覧
+          戻る
         </Link>
       </div>
 
@@ -444,11 +667,7 @@ export function ReviewPhase({
             >
               通常診療記録をコピー
             </Button>
-            <Button
-              variant="ghost"
-              icon={<Printer />}
-              onClick={() => setTab('documents')}
-            >
+            <Button variant="ghost" icon={<Printer />} onClick={() => setTab('documents')}>
               書類を作成・印刷
             </Button>
             {onGenerateAll && (

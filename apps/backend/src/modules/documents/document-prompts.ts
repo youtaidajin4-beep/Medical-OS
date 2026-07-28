@@ -10,6 +10,10 @@ const BASE_RULES = `あなたは日本のクリニック向け医療書類作成
 文体は丁寧な紹介状・診療情報提供書として、カルテにそのまま使える表現を心がけてください。`;
 
 function contextBlock(ctx: DocumentGenerationContext): string {
+  const patternHint =
+    ctx.referralPattern === 'complex'
+      ? `\n紹介パターン: 複雑紹介。10年分の経過・複数疾患・不定愁訴・既往を、経過／既往／現症／依頼事項の順で A4 一枚に綺麗に要約すること。冗長な羅列は禁止。`
+      : `\n紹介パターン: 簡単紹介。診断と依頼事項を短く明確に（例: 肺炎→入院お願いします）。`;
   return `患者: ${ctx.patientName}（${ctx.sex}、${ctx.age ?? '—'}歳）
 症例コード: ${ctx.caseCode}
 SOAP:
@@ -19,7 +23,7 @@ A: ${ctx.soap.assessment}
 P: ${ctx.soap.plan}
 構造化データ: ${JSON.stringify(ctx.structured, null, 2)}
 ${rulesToPromptSection(ctx.physicianRules)}
-${ctx.revisionExamples ? `\n医師の過去の修正例（文体参考）:\n${ctx.revisionExamples}` : ''}`;
+${ctx.revisionExamples ? `\n医師の過去の修正例（文体参考）:\n${ctx.revisionExamples}` : ''}${patternHint}`;
 }
 
 const PROMPTS: Record<GeneratedDocumentType, { system: string; schema: string }> = {
@@ -67,7 +71,7 @@ const PROMPTS: Record<GeneratedDocumentType, { system: string; schema: string }>
   },
   MEDICAL_CERTIFICATE: {
     system: `${BASE_RULES}
-診断書を作成します。健診・診断書形式で、記載可能な所見のみを含めてください。`,
+健康診断結果表を作成します。健診・結果表形式で、記載可能な所見のみを含めてください。タイトルは「健康診断結果表」です。`,
     schema: `{
   "issuedDate": "令和X年X月X日",
   "patientName": "氏名",

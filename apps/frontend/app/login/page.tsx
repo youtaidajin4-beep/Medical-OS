@@ -23,7 +23,11 @@ export default function LoginPage() {
     try {
       const res = await api.login(email, password);
       setToken(res.accessToken);
-      router.push('/dashboard');
+      if (res.user.mustChangePassword) {
+        router.push('/settings?changePassword=1');
+      } else {
+        router.push('/panel');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'ログインに失敗しました');
       setLoading(false);

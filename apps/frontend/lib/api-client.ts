@@ -81,11 +81,22 @@ export const api = {
       warning?: string;
     }>('/health/ai'),
   login: (email: string, password: string) =>
-    requestWithNetworkCheck<{ accessToken: string; user: { id: string; name: string; email: string } }>(
-      '/auth/login',
-      { method: 'POST', body: JSON.stringify({ email, password }) },
-    ),
-  me: () => requestWithNetworkCheck<{ id: string; name: string; email: string }>('/auth/me'),
+    requestWithNetworkCheck<{
+      accessToken: string;
+      user: {
+        id: string;
+        name: string;
+        email: string;
+        mustChangePassword?: boolean;
+      };
+    }>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+  me: () =>
+    requestWithNetworkCheck<{
+      id: string;
+      name: string;
+      email: string;
+      mustChangePassword?: boolean;
+    }>('/auth/me'),
   changePassword: (currentPassword: string, newPassword: string) =>
     requestWithNetworkCheck<{ success: boolean }>('/auth/password', {
       method: 'PATCH',
@@ -260,7 +271,10 @@ export const api = {
         updatedAt: string;
       }>
     >(`/consultations/${consultationId}/documents`),
-  generateAllDocuments: (consultationId: string) =>
+  generateAllDocuments: (
+    consultationId: string,
+    options?: { referralPattern?: 'simple' | 'complex' },
+  ) =>
     request<
       Array<{
         id: string;
@@ -268,7 +282,10 @@ export const api = {
         content: Record<string, unknown>;
         version: number;
       }>
-    >(`/consultations/${consultationId}/documents/generate-all`, { method: 'POST' }),
+    >(`/consultations/${consultationId}/documents/generate-all`, {
+      method: 'POST',
+      body: JSON.stringify(options ?? {}),
+    }),
   updateDocument: (consultationId: string, type: string, content: Record<string, unknown>) =>
     request(`/consultations/${consultationId}/documents/${type}`, {
       method: 'PATCH',
@@ -306,4 +323,69 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ replacements }),
     }),
+  listChat: (consultationId: string) =>
+    request<Array<{ id: string; role: string; content: string; createdAt: string }>>(
+      `/consultations/${consultationId}/chat`,
+    ),
+  askChat: (consultationId: string, content: string) =>
+    request<{ id: string; role: string; content: string }>(`/consultations/${consultationId}/chat`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    }),
+  listAttachments: (consultationId: string) =>
+    request<
+      Array<{
+        id: string;
+        fileName: string;
+        mimeType: string;
+        ocrText: string | null;
+        documentKind: string;
+        createdAt: string;
+      }>
+    >(`/consultations/${consultationId}/attachments`),
+  uploadAttachment: async (consultationId: string, file: File, documentKind = 'other') => {
+    const token = getToken();
+    const form = new FormData();
+    form.append('file', file);
+    form.append('documentKind', documentKind);
+    const res = await fetch(`${API_URL}/api/v1/consultations/${consultationId}/attachments`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: res.statusText }));
+      throw new ApiError(err.message ?? `Upload failed (${res.status})`, res.status);
+    }
+    return res.json() as Promise<{
+      id: string;
+      fileName: string;
+      ocrText: string | null;
+    }>;
+  },
+  getTimeline: (consultationId: string) =>
+    request<{
+      current: {
+        id: string;
+        label?: string | null;
+        soap: { assessment: string } | null;
+        documents: Array<{ type: string }>;
+        attachments: Array<{
+          id: string;
+          fileName: string;
+          mimeType: string;
+          ocrText: string | null;
+          documentKind: string;
+          createdAt: string;
+        }>;
+      };
+      history: Array<{
+        id: string;
+        createdAt: string;
+        status: string;
+        assessment: string | null;
+        documentCount: number;
+        attachmentCount: number;
+      }>;
+    }>(`/consultations/${consultationId}/timeline`),
 };

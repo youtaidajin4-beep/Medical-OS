@@ -12,6 +12,8 @@ import { AiModule } from './modules/ai/ai.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { DocumentsModule } from './modules/documents/documents.module';
+import { ChatModule } from './modules/chat/chat.module';
+import { AttachmentsModule } from './modules/attachments/attachments.module';
 import { AiConfigModule } from './providers/ai/ai-config.module';
 import { StorageModule } from './providers/storage/storage.module';
 import { CommonModule } from './common/common.module';
@@ -42,6 +44,8 @@ import { CommonModule } from './common/common.module';
     AuditModule,
     SettingsModule,
     DocumentsModule,
+    ChatModule,
+    AttachmentsModule,
   ],
 })
 export class AppModule {}

@@ -37,7 +37,7 @@ export function MedicalCertificate({ data, onChange }: Props) {
 
   return (
     <div className="doc-page doc-page-cert">
-      <h1 className="doc-title">診断書</h1>
+      <h1 className="doc-title">健康診断結果表</h1>
       <p>
         住所：
         <EditableInput value={data.patientName} onChange={(v) => patch({ patientName: v })} />　殿

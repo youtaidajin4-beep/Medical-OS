@@ -73,9 +73,10 @@ model User {
   name         String
   email        String    @unique
   passwordHash String    @map("password_hash")
-  role         UserRole  @default(PHYSICIAN)
-  status       String    @default("active")
-  lastLogin    DateTime? @map("last_login")
+  role               UserRole  @default(PHYSICIAN)
+  status             String    @default("active")
+  mustChangePassword Boolean   @default(false) @map("must_change_password")
+  lastLogin          DateTime? @map("last_login")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
   clinic       Clinic    @relation(fields: [clinicId], references: [id])
@@ -148,6 +149,8 @@ model Consultation {
   generatedDocuments GeneratedDocument[]
   revisions       RevisionHistory[]
   aiExecutions    AIExecution[]
+  chatMessages    ConsultationChatMessage[]
+  attachments     ConsultationAttachment[]
 
   @@map("consultations")
 }
@@ -333,4 +336,31 @@ model UserSettings {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("user_settings")
+}
+
+model ConsultationChatMessage {
+  id             String   @id @default(uuid())
+  consultationId String   @map("consultation_id")
+  role           String
+  content        String
+  createdAt      DateTime @default(now()) @map("created_at")
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@index([consultationId, createdAt])
+  @@map("consultation_chat_messages")
+}
+
+model ConsultationAttachment {
+  id             String   @id @default(uuid())
+  consultationId String   @map("consultation_id")
+  fileName       String   @map("file_name")
+  mimeType       String   @map("mime_type")
+  storageKey     String   @map("storage_key")
+  ocrText        String?  @map("ocr_text")
+  documentKind   String   @default("other") @map("document_kind")
+  createdAt      DateTime @default(now()) @map("created_at")
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@index([consultationId, createdAt])
+  @@map("consultation_attachments")
 }

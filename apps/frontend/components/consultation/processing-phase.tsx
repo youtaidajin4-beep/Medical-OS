@@ -20,9 +20,10 @@ const OPENAI_STEPS = [
   { label: 'SOAP を作成中', icon: Sparkles },
 ] as const;
 
-export function ProcessingPhase() {
+export function ProcessingPhase({ density = 'full' }: { density?: 'compact' | 'full' }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [openAi, setOpenAi] = useState(false);
+  const compact = density === 'compact';
 
   useEffect(() => {
     void api.healthAi().then((h) => setOpenAi(isOpenAiMode(h))).catch(() => {});
@@ -40,6 +41,27 @@ export function ProcessingPhase() {
   }, [steps.length, intervalMs]);
 
   const progress = ((stepIndex + 0.5) / steps.length) * 100;
+  const currentLabel = steps[stepIndex]?.label ?? '処理中';
+
+  if (compact) {
+    return (
+      <div className="mx-auto flex max-w-md flex-col items-center gap-4 py-10">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-600 text-white">
+          <Loader2 className="h-5 w-5 animate-spin" />
+        </div>
+        <div className="text-center">
+          <h1 className="text-base font-bold text-slate-900">処理中</h1>
+          <p className="mt-1 text-xs text-slate-500">{currentLabel}</p>
+        </div>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+          <div
+            className="h-full rounded-full bg-brand-500 transition-all duration-700 ease-out"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex max-w-lg flex-col items-center gap-8 py-16">

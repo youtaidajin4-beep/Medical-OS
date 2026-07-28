@@ -15,6 +15,7 @@ describe('AiPipelineService integration shape', () => {
     clinicalWarning: { deleteMany: jest.fn(), createMany: jest.fn() },
     soapDocument: { create: jest.fn() },
     clinicalNote: { create: jest.fn() },
+    revisionHistory: { findMany: jest.fn().mockResolvedValue([]) },
     consultation: {
       findUnique: jest.fn().mockResolvedValue({
         id: 'consultation-1',

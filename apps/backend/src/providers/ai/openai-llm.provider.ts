@@ -109,10 +109,23 @@ export class OpenAiLlmProvider implements LlmProvider {
     return StructuredClinicalDataSchema.parse(parsed);
   }
 
-  async generateSoap(data: StructuredClinicalDataPayload, _consultationId?: string) {
+  async generateSoap(
+    data: StructuredClinicalDataPayload,
+    _consultationId?: string,
+    styleHints?: import('./llm.provider').SoapStyleHints,
+  ) {
+    const styleBlock = [
+      styleHints?.greeting ? `挨拶・定型の参考: ${styleHints.greeting}` : '',
+      styleHints?.closing ? `締めの参考: ${styleHints.closing}` : '',
+      styleHints?.revisionExamples
+        ? `医師の過去の修正例（文体を合わせること）:\n${styleHints.revisionExamples}`
+        : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
     const result = await this.chatJson(
       SOAP_SYSTEM,
-      `構造化データ:\n${JSON.stringify(data, null, 2)}\n\nkeys: subjective, objective, assessment, plan のSOAPをJSONで生成。各値は文字列のみ。`,
+      `構造化データ:\n${JSON.stringify(data, null, 2)}\n${styleBlock ? `\n${styleBlock}\n` : ''}\nkeys: subjective, objective, assessment, plan のSOAPをJSONで生成。各値は文字列のみ。`,
     );
     const parsed = JSON.parse(result.content) as Record<string, unknown>;
     return {
@@ -121,6 +134,23 @@ export class OpenAiLlmProvider implements LlmProvider {
       assessment: normalizeSoapField(parsed.assessment),
       plan: normalizeSoapField(parsed.plan),
     };
+  }
+
+  async consultChat(
+    system: string,
+    messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+  ): Promise<string> {
+    const lastUser = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
+    const history = messages
+      .slice(0, -1)
+      .map((m) => `${m.role === 'user' ? '医師' : 'AI'}: ${m.content}`)
+      .join('\n');
+    const result = await this.chat(
+      system,
+      `${history ? `これまでの会話:\n${history}\n\n` : ''}医師の質問:\n${lastUser}`,
+      false,
+    );
+    return result.content;
   }
 
   async generateClinicalNote(data: StructuredClinicalDataPayload, _consultationId?: string) {

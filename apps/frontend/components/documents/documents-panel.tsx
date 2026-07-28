@@ -39,12 +39,14 @@ const DOCUMENT_OPTIONS: Array<{
   icon: typeof FileText;
 }> = [
   { id: 'referral', label: '診療情報提供書', icon: FileText },
-  { id: 'prescription', label: '現在の処方', icon: Pill },
   { id: 'info-combined', label: '情報提供書＋処方', icon: ClipboardList },
-  { id: 'certificate', label: '診断書', icon: Stethoscope },
+  { id: 'prescription', label: '現在の処方', icon: Pill },
+  { id: 'certificate', label: '健康診断結果表', icon: Stethoscope },
   { id: 'care-opinion-1', label: '主治医意見書①', icon: FileHeart },
   { id: 'care-opinion-2', label: '主治医意見書②', icon: FileHeart },
 ];
+
+const DEFAULT_SELECTED: DocumentTypeId[] = ['info-combined', 'certificate', 'care-opinion-1', 'care-opinion-2'];
 
 const API_TYPE_TO_KEY: Record<string, keyof GeneratedDocuments> = {
   referral: 'referral',
@@ -77,6 +79,10 @@ export function DocumentsPanel({
   approved,
   onBack,
   autoGenerate,
+  compact = false,
+  referralPattern,
+  onReferralPatternChange,
+  openTrigger,
 }: {
   consultationId: string;
   documentInput: {
@@ -93,8 +99,13 @@ export function DocumentsPanel({
   approved: boolean;
   onBack?: () => void;
   autoGenerate?: boolean;
+  compact?: boolean;
+  referralPattern?: 'simple' | 'complex';
+  onReferralPatternChange?: (pattern: 'simple' | 'complex') => void;
+  /** Increment to force generate-all from parent (compact sticky) */
+  openTrigger?: number;
 }) {
-  const [selected, setSelected] = useState<DocumentTypeId[]>(['referral', 'prescription']);
+  const [selected, setSelected] = useState<DocumentTypeId[]>(DEFAULT_SELECTED);
   const [docs, setDocs] = useState<GeneratedDocuments | null>(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -139,18 +150,35 @@ export function DocumentsPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoGenerate, hasApiDocs, approved]);
 
+  useEffect(() => {
+    if (openTrigger && openTrigger > 0 && approved) {
+      void handleGenerateAll();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openTrigger]);
+
   async function handleGenerateAll() {
     setGenerating(true);
     setError('');
     try {
-      const apiDocs = await api.generateAllDocuments(consultationId);
+      const apiDocs = await api.generateAllDocuments(consultationId, {
+        referralPattern: referralPattern ?? 'simple',
+      });
       setDocs(apiDocsToGenerated(apiDocs, mockFallback));
       setHasApiDocs(true);
+      setSelected((prev) =>
+        prev.length ? prev : [...DEFAULT_SELECTED],
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : '書類の生成に失敗しました');
     } finally {
       setGenerating(false);
     }
+  }
+
+  function handlePrintCareOpinionSet() {
+    setSelected(['care-opinion-1', 'care-opinion-2']);
+    requestAnimationFrame(() => window.print());
   }
 
   async function persistDoc(type: DocumentTypeId, updated: GeneratedDocuments) {
@@ -254,10 +282,17 @@ export function DocumentsPanel({
   }
 
   return (
-    <div className="space-y-4">
-      <Alert variant="info" className="no-print">
-        書類は診療データと先生のルール設定から生成されます。編集内容は自動保存され、次回生成の参考になります。
-      </Alert>
+    <div className={cn('space-y-4', compact && 'space-y-3')}>
+      {!compact && (
+        <Alert variant="info" className="no-print">
+          書類は診療データと先生のルール設定から生成されます。編集内容は自動保存され、次回生成の参考になります。
+        </Alert>
+      )}
+      {compact && (
+        <p className="no-print text-[11px] text-slate-500">
+          必要な書類だけ生成して CLINICS / 印刷に使います。患者名は CLINICS 側で確認してください。
+        </p>
+      )}
 
       {error && (
         <Alert variant="error" className="no-print">
@@ -272,12 +307,45 @@ export function DocumentsPanel({
           disabled={!approved || generating}
           onClick={handleGenerateAll}
         >
-          {generating ? '生成中…' : '全書類を生成'}
+          {generating ? '生成中…' : '書類を全部作る'}
+        </Button>
+        <Button
+          size="sm"
+          variant="secondary"
+          icon={<Printer />}
+          disabled={!approved}
+          onClick={handlePrintCareOpinionSet}
+        >
+          意見書①②セット印刷
         </Button>
         {!approved && (
           <p className="self-center text-sm text-amber-700">書類生成には先に「確認済みにする」が必要です</p>
         )}
       </div>
+
+      {onReferralPatternChange && (
+        <div className="no-print flex flex-wrap gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+          <span className="font-medium">紹介パターン</span>
+          <label className="inline-flex items-center gap-1.5">
+            <input
+              type="radio"
+              name="referralPattern"
+              checked={(referralPattern ?? 'simple') === 'simple'}
+              onChange={() => onReferralPatternChange('simple')}
+            />
+            簡単紹介
+          </label>
+          <label className="inline-flex items-center gap-1.5">
+            <input
+              type="radio"
+              name="referralPattern"
+              checked={referralPattern === 'complex'}
+              onChange={() => onReferralPatternChange('complex')}
+            />
+            複雑紹介（長期経過をA4一枚に）
+          </label>
+        </div>
+      )}
 
       <div className="no-print grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {DOCUMENT_OPTIONS.map(({ id, label, icon: Icon }) => {

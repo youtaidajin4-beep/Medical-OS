@@ -60,14 +60,22 @@ postgresql://postgres.xxxx:password@aws-0-ap-northeast-1.pooler.supabase.com:654
 
 ### 初回 seed（先生アカウント）
 
-ローカルから本番 DB に seed:
+ローカルから本番 DB に seed（**固有の SEED_PASSWORD を必ず設定**）:
 
 ```bash
 cd apps/backend
-DATABASE_URL="postgresql://..." pnpm db:seed
+DATABASE_URL="postgresql://..." SEED_PASSWORD="your-unique-secure-password" pnpm db:seed
 ```
 
-ログイン: `doctor@demo.clinic` / `password123`（本番前にパスワード変更推奨）
+- ログイン: `doctor@demo.clinic` / 上記 `SEED_PASSWORD`
+- 初回ログイン時は **パスワード変更画面** に誘導されます（Chrome の漏洩パスワード警告を防ぐため）
+- 本番で既存ユーザーのパスワードだけ更新する場合:
+
+```bash
+DATABASE_URL="postgresql://..." NEW_PASSWORD="your-unique-secure-password" pnpm set-password
+```
+
+**禁止**: `password123` 等の既知弱パスワード（API が拒否します）
 
 ---
 
@@ -94,9 +102,9 @@ Railway の `FRONTEND_URL` を Vercel の本番 URL に更新 → 再デプロ�
 
 ## Step 5: 動作確認
 
-1. Vercel URL を開く → 緑バナー「実AI接続中」
-2. ログイン
-3. 匿名症例で録音 → SOAP → 全書類生成
+1. Vercel URL を開く → 緑バナー「実AI接続中」→ **診療パネル**（`/panel`）
+2. CLINICS 全画面 + Medical OS を右下（約420×800）に配置してログイン
+3. 「診療を開始」→ 録音 → SOAP → CLINICS へコピー（必要なら書類）
 
 ---
 
@@ -104,6 +112,7 @@ Railway の `FRONTEND_URL` を Vercel の本番 URL に更新 → 再デプロ�
 
 | 症状 | 対処 |
 |------|------|
+| Chrome「パスワードを変更してください」 | 漏洩DBに載っている弱いパスワード使用中。設定画面または `pnpm set-password` で固有パスワードに変更 |
 | `apiKeyConfigured: false` | Railway の `OPENAI_API_KEY` を確認 |
 | CORS エラー | `FRONTEND_URL` が Vercel URL と一致しているか |
 | DB 接続失敗 | Supabase の `DATABASE_URL` と SSL 設定 |

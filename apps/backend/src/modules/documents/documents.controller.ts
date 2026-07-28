@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import { IsObject } from 'class-validator';
+import { IsIn, IsObject, IsOptional } from 'class-validator';
 import { DocumentsService } from './documents.service';
 import { JwtAuthGuard, AuthUser } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -7,6 +7,12 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 class UpdateDocumentDto {
   @IsObject()
   content!: Record<string, unknown>;
+}
+
+class GenerateAllDto {
+  @IsOptional()
+  @IsIn(['simple', 'complex'])
+  referralPattern?: 'simple' | 'complex';
 }
 
 @Controller('consultations/:consultationId/documents')
@@ -20,8 +26,14 @@ export class DocumentsController {
   }
 
   @Post('generate-all')
-  generateAll(@Param('consultationId') consultationId: string, @CurrentUser() user: AuthUser) {
-    return this.documentsService.generateAll(consultationId, user.sub);
+  generateAll(
+    @Param('consultationId') consultationId: string,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: GenerateAllDto,
+  ) {
+    return this.documentsService.generateAll(consultationId, user.sub, {
+      referralPattern: dto?.referralPattern ?? 'simple',
+    });
   }
 
   @Patch(':type')

@@ -47,6 +47,7 @@ export class AuthService {
         email: user.email,
         role: user.role,
         clinicId: user.clinicId,
+        mustChangePassword: user.mustChangePassword,
       },
     };
   }
@@ -59,6 +60,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       clinicId: user.clinicId,
+      mustChangePassword: user.mustChangePassword,
     };
   }
 
@@ -71,7 +73,7 @@ export class AuthService {
     const passwordHash = await argon2.hash(dto.newPassword);
     await this.prisma.user.update({
       where: { id: userId },
-      data: { passwordHash },
+      data: { passwordHash, mustChangePassword: false },
     });
     await this.auditService.log({
       userId,

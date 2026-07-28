@@ -46,9 +46,13 @@ export class DocumentsService {
     }));
   }
 
-  async generateAll(consultationId: string, physicianId: string) {
+  async generateAll(
+    consultationId: string,
+    physicianId: string,
+    options?: { referralPattern?: 'simple' | 'complex' },
+  ) {
     await this.consultationAccess.assertPhysicianOwns(consultationId, physicianId);
-    const ctx = await this.buildContext(consultationId, physicianId);
+    const ctx = await this.buildContext(consultationId, physicianId, options?.referralPattern);
     const start = Date.now();
     const results = await Promise.all(
       GENERATED_DOCUMENT_TYPES.map((type) => this.generateOne(consultationId, type, ctx)),
@@ -161,6 +165,7 @@ export class DocumentsService {
   private async buildContext(
     consultationId: string,
     physicianId: string,
+    referralPattern: 'simple' | 'complex' = 'simple',
   ): Promise<DocumentGenerationContext> {
     const consultation = await this.prisma.consultation.findUnique({
       where: { id: consultationId },
@@ -226,6 +231,7 @@ export class DocumentsService {
       structured,
       physicianRules,
       revisionExamples,
+      referralPattern,
     };
   }
 

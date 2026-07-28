@@ -1,13 +1,36 @@
 import { PrismaClient, UserRole } from '@prisma/client';
 import { DEFAULT_MEDICAL_GLOSSARY, mergeMedicalGlossary } from '../src/providers/ai/medical-glossary.types';
 import { parsePhysicianRules } from '../src/modules/settings/physician-rules.types';
+import { isWeakPassword } from '../src/modules/auth/password-policy';
 import * as argon2 from 'argon2';
+import { randomBytes } from 'crypto';
 
 const prisma = new PrismaClient();
 
 const CLINIC_ID = '00000000-0000-0000-0000-000000000001';
 
+function resolveSeedPassword(): string {
+  const fromEnv = process.env.SEED_PASSWORD?.trim();
+  if (fromEnv) {
+    if (fromEnv.length < 8) {
+      throw new Error('SEED_PASSWORD must be at least 8 characters.');
+    }
+    if (isWeakPassword(fromEnv)) {
+      throw new Error('SEED_PASSWORD is a known weak password. Use a unique password.');
+    }
+    return fromEnv;
+  }
+
+  const generated = randomBytes(18).toString('base64url');
+  console.log('SEED_PASSWORD not set — generated a one-time password (save this):');
+  console.log(generated);
+  return generated;
+}
+
 async function main() {
+  const seedPassword = resolveSeedPassword();
+  const passwordHash = await argon2.hash(seedPassword);
+
   const clinic = await prisma.clinic.upsert({
     where: { id: CLINIC_ID },
     update: { name: 'くしま内科クリニック' },
@@ -17,7 +40,6 @@ async function main() {
     },
   });
 
-  const passwordHash = await argon2.hash('password123');
   const demoUser = await prisma.user.upsert({
     where: { email: 'doctor@demo.clinic' },
     update: { name: '谷口 広明' },
@@ -27,6 +49,7 @@ async function main() {
       email: 'doctor@demo.clinic',
       passwordHash,
       role: UserRole.PHYSICIAN,
+      mustChangePassword: true,
     },
   });
 
@@ -69,7 +92,11 @@ async function main() {
     },
   });
 
-  console.log('Seed complete: doctor@demo.clinic / password123');
+  console.log('Seed complete: doctor@demo.clinic');
+  console.log('Initial login requires password change (mustChangePassword=true).');
+  if (process.env.SEED_PASSWORD?.trim()) {
+    console.log('Password: value from SEED_PASSWORD environment variable.');
+  }
   console.log('Patients and anonymous cases are not seeded — add them from the app.');
 }
 
