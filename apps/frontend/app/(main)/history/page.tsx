@@ -12,17 +12,10 @@ import {
   ConsultationListItem,
   type ConsultationListItemData,
 } from '@/components/consultation/consultation-list-item';
-import { useUiMode } from '@/components/layout/ui-mode-provider';
-
 export default function HistoryPage() {
   const router = useRouter();
-  const { setMode } = useUiMode();
   const [list, setList] = useState<ConsultationListItemData[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setMode('full');
-  }, [setMode]);
 
   useEffect(() => {
     if (!getToken()) {

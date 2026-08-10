@@ -10,7 +10,6 @@ import { Alert } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { isWeakPassword, WEAK_PASSWORD_MESSAGE } from '@/lib/password-policy';
-import { useUiMode } from '@/components/layout/ui-mode-provider';
 
 const COPY_STEPS = [
   'メニュー「患者」で基本情報を登録する（その場開始でも可）',
@@ -35,7 +34,6 @@ function SettingsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const mustChangePassword = searchParams.get('changePassword') === '1';
-  const { setMode } = useUiMode();
   const [rules, setRules] = useState<{
     referralRules: Array<{ trigger: string; mustInclude: string[] }>;
     fixedPhrases: { closing?: string; greeting?: string };
@@ -70,10 +68,6 @@ function SettingsPageContent() {
   const [suggestedReplacements, setSuggestedReplacements] = useState<
     Array<{ wrong: string; correct: string; count: number }>
   >([]);
-
-  useEffect(() => {
-    setMode('full');
-  }, [setMode]);
 
   useEffect(() => {
     if (!getToken()) {
