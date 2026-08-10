@@ -1,17 +1,22 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import { ConsultationWorkflow } from '@/components/consultation/consultation-workflow';
-import { useUiMode } from '@/components/layout/ui-mode-provider';
+import { useParams, useRouter } from 'next/navigation';
+import { Spinner } from '@/components/ui/spinner';
 
-export default function PanelConsultationPage() {
+/** パネル診療ルートは /consultation/[id] に統一。 */
+export default function PanelConsultationRedirectPage() {
+  const router = useRouter();
   const { id } = useParams<{ id: string }>();
-  const { setMode } = useUiMode();
 
   useEffect(() => {
-    setMode('compact');
-  }, [setMode]);
+    if (id) router.replace(`/consultation/${id}`);
+  }, [id, router]);
 
-  return <ConsultationWorkflow id={id} density="compact" backHref="/panel" />;
+  return (
+    <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
+      <Spinner />
+      診療画面へ移動中...
+    </div>
+  );
 }

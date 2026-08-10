@@ -111,7 +111,10 @@ export const api = {
         name: string;
         age: number | null;
         sex: string | null;
+        dateOfBirth?: string | null;
+        phone?: string | null;
         memo?: string | null;
+        visitCount?: number;
       }>;
       anonymousCases: Array<{
         id: string;
@@ -120,6 +123,7 @@ export const api = {
         name: string;
         age: number | null;
         sex: string | null;
+        visitCount?: number;
       }>;
     }>('/patients'),
   createPatient: (data: {
@@ -136,8 +140,33 @@ export const api = {
       name: string;
       age: number | null;
       sex: string | null;
+      dateOfBirth?: string | null;
+      phone?: string | null;
       memo?: string | null;
+      visitCount?: number;
     }>('/patients', { method: 'POST', body: JSON.stringify(data) }),
+  updatePatient: (
+    id: string,
+    data: {
+      name?: string;
+      sex?: string;
+      dateOfBirth?: string;
+      phone?: string;
+      memo?: string;
+    },
+  ) =>
+    requestWithNetworkCheck<{
+      id: string;
+      type: 'patient';
+      code: string;
+      name: string;
+      age: number | null;
+      sex: string | null;
+      dateOfBirth?: string | null;
+      phone?: string | null;
+      memo?: string | null;
+      visitCount?: number;
+    }>(`/patients/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   createAnonymousCase: (data: { displayName: string; age?: number; sex?: string }) =>
     requestWithNetworkCheck<{
       id: string;

@@ -4,7 +4,6 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { KeyRound, LogIn, Mail, Stethoscope } from 'lucide-react';
 import { api, setToken } from '@/lib/api-client';
-import { PANEL_WINDOW_NAME, snapToPanelWindow } from '@/lib/panel-window';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,13 +26,7 @@ export default function LoginPage() {
       if (res.user.mustChangePassword) {
         router.push('/settings?changePassword=1');
       } else {
-        try {
-          window.name = PANEL_WINDOW_NAME;
-        } catch {
-          /* ignore */
-        }
-        snapToPanelWindow();
-        router.push('/panel');
+        router.push('/home');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'ログインに失敗しました');

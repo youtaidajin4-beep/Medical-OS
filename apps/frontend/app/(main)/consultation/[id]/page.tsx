@@ -5,5 +5,5 @@ import { ConsultationWorkflow } from '@/components/consultation/consultation-wor
 
 export default function ConsultationPage() {
   const { id } = useParams<{ id: string }>();
-  return <ConsultationWorkflow id={id} density="full" backHref="/history" />;
+  return <ConsultationWorkflow id={id} density="full" backHref="/home" />;
 }

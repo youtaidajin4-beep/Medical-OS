@@ -1,10 +1,6 @@
-import { PanelShell } from '@/components/layout/panel-shell';
-import { MustChangePasswordGuard } from '@/components/layout/must-change-password-guard';
+import { AppShell } from '@/components/layout/app-shell';
 
+/** 旧パネルルート互換。UIは AppShell に統一。 */
 export default function PanelLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <PanelShell>
-      <MustChangePasswordGuard>{children}</MustChangePasswordGuard>
-    </PanelShell>
-  );
+  return <AppShell>{children}</AppShell>;
 }

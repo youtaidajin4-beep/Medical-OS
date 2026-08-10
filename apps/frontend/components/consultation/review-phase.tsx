@@ -100,7 +100,7 @@ export function ReviewPhase({
   generatingDocs,
   documentInput,
   density = 'full',
-  backHref = '/panel',
+  backHref = '/home',
 }: {
   consultationId: string;
   caseName: string;

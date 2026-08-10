@@ -8,20 +8,19 @@ import {
   History,
   LogOut,
   Menu,
-  PanelLeft,
   Settings,
   Stethoscope,
+  Users,
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api, clearToken } from '@/lib/api-client';
-import { snapToPanelWindow, openAsPanelWindow } from '@/lib/panel-window';
-import { useUiMode } from './ui-mode-provider';
 import { DemoBanner } from './demo-banner';
 import { AiStatusBanner } from './ai-status-banner';
 
 const NAV = [
-  { href: '/panel', label: 'パネルにする', icon: PanelLeft, compact: true },
+  { href: '/home', label: '診療', icon: Stethoscope },
+  { href: '/patients', label: '患者', icon: Users },
   { href: '/history', label: '履歴', icon: History },
   { href: '/knowledge', label: '医療ナレッジ', icon: BookOpen },
   { href: '/settings', label: '設定', icon: Settings },
@@ -46,35 +45,16 @@ function NavLinks({
   onNavigate,
   onLogout,
   userName,
-  onBackToPanel,
 }: {
   pathname: string;
   onNavigate?: () => void;
   onLogout: () => void;
   userName: string;
-  onBackToPanel: () => void;
 }) {
   return (
     <nav className="flex flex-1 flex-col gap-1">
-      {NAV.map(({ href, label, icon: Icon, ...rest }) => {
-        const isCompactLink = 'compact' in rest && rest.compact;
-        const active = !isCompactLink && (pathname === href || pathname.startsWith(`${href}/`));
-        if (isCompactLink) {
-          return (
-            <button
-              key={href}
-              type="button"
-              onClick={() => {
-                onBackToPanel();
-                onNavigate?.();
-              }}
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-brand-700 transition-colors hover:bg-brand-50"
-            >
-              <Icon className="h-4 w-4 text-brand-600" />
-              {label}
-            </button>
-          );
-        }
+      {NAV.map(({ href, label, icon: Icon }) => {
+        const active = pathname === href || pathname.startsWith(`${href}/`);
         return (
           <Link
             key={href}
@@ -114,7 +94,6 @@ function NavLinks({
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { setMode } = useUiMode();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [userName, setUserName] = useState('');
 
@@ -130,15 +109,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     router.replace('/login');
   }
 
-  function backToPanel() {
-    setMode('compact');
-    const stayInThisWindow = openAsPanelWindow('/panel');
-    if (stayInThisWindow) {
-      snapToPanelWindow();
-      router.push('/panel');
-    }
-  }
-
   return (
     <div className="min-h-screen bg-slate-50">
       <DemoBanner />
@@ -148,12 +118,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="mb-8 px-1 pt-1">
             <BrandLogo />
           </div>
-          <NavLinks
-            pathname={pathname}
-            onLogout={logout}
-            userName={userName || '—'}
-            onBackToPanel={backToPanel}
-          />
+          <NavLinks pathname={pathname} onLogout={logout} userName={userName || '—'} />
         </aside>
 
         <div className="min-w-0 flex-1">
@@ -192,7 +157,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   onNavigate={() => setDrawerOpen(false)}
                   onLogout={logout}
                   userName={userName || '—'}
-                  onBackToPanel={backToPanel}
                 />
               </div>
             </div>

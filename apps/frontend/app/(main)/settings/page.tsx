@@ -13,8 +13,8 @@ import { isWeakPassword, WEAK_PASSWORD_MESSAGE } from '@/lib/password-policy';
 import { useUiMode } from '@/components/layout/ui-mode-provider';
 
 const COPY_STEPS = [
-  'CLINICS を全画面にし、「パネルにする」で Medical OS を右に置く',
-  'パネルで「診療を開始」→ 同意チェック → 録音',
+  'メニュー「患者」で基本情報を登録する（その場開始でも可）',
+  '「診療」で「診療を開始」→ 同意チェック → 録音',
   '診療終了後、SOAP を確認し、右下「チャット」で疑い・処方意図を書く',
   '確認済みにしたら「書類を全部作る」、またはチャットで「紹介状を作って」',
   '修正も右下チャットで指示（例: 紹介状の宛先を〇〇病院に）',
@@ -170,7 +170,7 @@ function SettingsPageContent() {
       setConfirmPassword('');
       setPasswordMsg('パスワードを変更しました');
       if (mustChangePassword) {
-        router.replace('/panel');
+        router.replace('/home');
         return;
       }
       setTimeout(() => setPasswordMsg(''), 3000);

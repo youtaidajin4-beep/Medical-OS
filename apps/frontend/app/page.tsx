@@ -27,7 +27,7 @@ export default function HomePage() {
 
     api
       .me()
-      .then(() => router.replace('/panel'))
+      .then(() => router.replace('/home'))
       .catch(() => {
         clearToken();
       });

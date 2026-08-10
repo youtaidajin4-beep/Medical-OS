@@ -19,7 +19,7 @@ export type ConsultationDensity = 'compact' | 'full';
 export function ConsultationWorkflow({
   id,
   density = 'full',
-  backHref = '/panel',
+  backHref = '/home',
 }: {
   id: string;
   density?: ConsultationDensity;
@@ -291,7 +291,7 @@ export function ConsultationWorkflow({
       <ErrorPhase
         message={errorMessage}
         onBack={() => router.push(backHref)}
-        backLabel={density === 'compact' ? 'パネルに戻る' : '一覧に戻る'}
+        backLabel="診療ホームに戻る"
         density={density}
       />
     );

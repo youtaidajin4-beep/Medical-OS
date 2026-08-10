@@ -45,7 +45,7 @@ export default function HistoryPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">診療履歴</h1>
         <p className="mt-1 text-sm text-slate-500">
-          過去の診療を確認できます。日常の録音・SOAP は診療パネルを使います。
+          過去の診療を確認できます。日常の録音・SOAP は「診療」ホームから始めます。
         </p>
       </div>
 
@@ -60,11 +60,11 @@ export default function HistoryPage() {
         <EmptyState
           icon={<History />}
           title="まだ診療履歴がありません"
-          description="パネルから最初の診療を始めましょう"
+          description="診療ホームから最初の診療を始めましょう"
           action={
-            <Link href="/panel">
+            <Link href="/home">
               <Button size="sm" icon={<Mic />}>
-                診療パネルを開く
+                診療を開始
               </Button>
             </Link>
           }

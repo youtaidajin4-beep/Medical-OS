@@ -1,10 +1,11 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { IsOptional, IsString, MinLength } from 'class-validator';
 import { PatientsService } from './patients.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../../common/guards/jwt-auth.guard';
 import { CreatePatientDto } from './dto/create-patient.dto';
+import { UpdatePatientDto } from './dto/update-patient.dto';
 import { CreateAnonymousCaseDto } from './dto/create-anonymous-case.dto';
 
 class PromoteDto {
@@ -27,6 +28,15 @@ export class PatientsController {
   @Post()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreatePatientDto) {
     return this.patientsService.createPatient(user.clinicId, dto);
+  }
+
+  @Patch(':id')
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdatePatientDto,
+  ) {
+    return this.patientsService.updatePatient(user.clinicId, id, dto);
   }
 
   @Post('anonymous-cases')

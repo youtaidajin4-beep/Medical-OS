@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateAnonymousCaseDto } from './dto/create-anonymous-case.dto';
 import { CreatePatientDto } from './dto/create-patient.dto';
+import { UpdatePatientDto } from './dto/update-patient.dto';
 
 function nextCode(prefix: string, existing: string[]): string {
   const numbers = existing
@@ -43,6 +44,8 @@ export class PatientsService {
             )
           : null,
         sex: p.sex,
+        dateOfBirth: p.dateOfBirth?.toISOString().slice(0, 10) ?? null,
+        phone: p.phone,
         memo: p.memo,
         visitCount: p._count.consultations,
       })),
@@ -80,6 +83,47 @@ export class PatientsService {
       },
     });
 
+    return this.toPatientResponse(patient, 0);
+  }
+
+  async updatePatient(clinicId: string, patientId: string, dto: UpdatePatientDto) {
+    const existing = await this.prisma.patient.findFirst({
+      where: { id: patientId, clinicId },
+      include: { _count: { select: { consultations: true } } },
+    });
+    if (!existing) throw new NotFoundException('Patient not found');
+
+    const patient = await this.prisma.patient.update({
+      where: { id: patientId },
+      data: {
+        name: dto.name?.trim() || undefined,
+        sex: dto.sex,
+        dateOfBirth:
+          dto.dateOfBirth === undefined
+            ? undefined
+            : dto.dateOfBirth
+              ? new Date(dto.dateOfBirth)
+              : null,
+        phone: dto.phone === undefined ? undefined : dto.phone.trim() || null,
+        memo: dto.memo === undefined ? undefined : dto.memo.trim() || null,
+      },
+    });
+
+    return this.toPatientResponse(patient, existing._count.consultations);
+  }
+
+  private toPatientResponse(
+    patient: {
+      id: string;
+      patientCode: string;
+      name: string;
+      sex: string | null;
+      dateOfBirth: Date | null;
+      phone: string | null;
+      memo: string | null;
+    },
+    visitCount: number,
+  ) {
     return {
       id: patient.id,
       type: 'patient' as const,
@@ -91,8 +135,10 @@ export class PatientsService {
           )
         : null,
       sex: patient.sex,
+      dateOfBirth: patient.dateOfBirth?.toISOString().slice(0, 10) ?? null,
+      phone: patient.phone,
       memo: patient.memo,
-      visitCount: 0,
+      visitCount,
     };
   }
 
