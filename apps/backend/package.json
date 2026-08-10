@@ -16,7 +16,13 @@
     "db:reset-pilot": "ts-node prisma/reset-pilot-data.ts",
     "set-password": "ts-node prisma/set-physician-password.ts",
     "db:update-glossary": "ts-node prisma/update-physician-glossary.ts",
-    "db:suggest-replacements": "ts-node prisma/suggest-replacements.ts"
+    "db:suggest-replacements": "ts-node prisma/suggest-replacements.ts",
+    "knowledge:generate": "ts-node scripts/medical-knowledge/generate-cases.ts",
+    "knowledge:eval": "ts-node scripts/medical-knowledge/run-eval.ts",
+    "knowledge:patch": "ts-node scripts/medical-knowledge/patch-from-failures.ts",
+    "knowledge:loop": "ts-node scripts/medical-knowledge/eval-loop.ts",
+    "knowledge:whisper-spot": "ts-node scripts/medical-knowledge/whisper-spotcheck.ts",
+    "knowledge:patch-whisper": "ts-node scripts/medical-knowledge/patch-from-whisper.ts"
   },
   "dependencies": {
     "@medical-os/shared": "workspace:*",

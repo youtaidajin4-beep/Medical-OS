@@ -106,7 +106,7 @@ export function DocumentsPanel({
   onReferralPatternChange?: (pattern: 'simple' | 'complex') => void;
   /** Increment to force generate-all from parent (compact sticky) */
   openTrigger?: number;
-  /** サブカルテからの即時書類パッチ */
+  /** チャットからの即時書類パッチ */
   pendingDocPatches?: Array<{ type: string; content: Record<string, unknown> }>;
   onPendingDocPatchesApplied?: () => void;
 }) {

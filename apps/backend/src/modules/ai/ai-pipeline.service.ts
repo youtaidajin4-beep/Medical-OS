@@ -14,6 +14,7 @@ import { localizeOpenAiError } from '../../providers/ai/openai-retry.util';
 import { buildWhisperPrompt, resolveMedicalGlossary } from '../../providers/ai/medical-glossary';
 import { correctMedicalTerms } from '../../providers/ai/medical-term-corrector';
 import { validateStructuredData } from '../../providers/ai/clinical-data-validator';
+import { MedicalKnowledgeService } from '../medical-knowledge/medical-knowledge.service';
 import { logAiExecution } from './ai-execution.helper';
 
 const MOCK_PIPELINE_DELAY_MS = 2500;
@@ -31,6 +32,7 @@ export class AiPipelineService {
     private readonly transcriptService: TranscriptService,
     private readonly recordingService: RecordingService,
     private readonly settingsService: SettingsService,
+    private readonly medicalKnowledge: MedicalKnowledgeService,
     @Inject(LLM_PROVIDER) private readonly llmProvider: LlmProvider,
     @Inject(STT_PROVIDER) private readonly sttProvider: SttProvider,
   ) {}
@@ -110,13 +112,15 @@ export class AiPipelineService {
       });
 
       const segments = await this.transcriptService.getSegments(consultationId, { final: true });
-      let fullText = this.transcriptService.toFullText(segments);
+      const rawText = segments.map((s) => s.rawText ?? s.text).join('\n');
+      let fullText = rawText;
       if (!fullText.trim()) {
         throw new Error(
           '文字起こし結果が空です。マイク入力とSTT設定を確認してください。',
         );
       }
 
+      // Legacy glossary homophone pass (kept for backward compatibility)
       const dictStart = Date.now();
       const dictResult = correctMedicalTerms(fullText, glossary);
       fullText = dictResult.text;
@@ -133,6 +137,44 @@ export class AiPipelineService {
             : undefined,
       });
 
+      // Medical Knowledge Layer (RAG dictionary) — between STT and SOAP
+      const knowledgeStart = Date.now();
+      const patientMeds = glossary.drugNames ?? [];
+      const patientDx = glossary.diagnoses ?? [];
+      const knowledgeResult = this.medicalKnowledge.correct(fullText, {
+        medications: patientMeds,
+        diagnoses: patientDx,
+      });
+      fullText = knowledgeResult.correctedText;
+      await this.medicalKnowledge.persistCorrectionResult({
+        clinicId: consultation.clinicId,
+        physicianId: consultation.physicianId,
+        consultationId,
+        result: { ...knowledgeResult, rawText },
+      });
+      await logAiExecution(this.prisma, {
+        consultationId,
+        step: 'medical_knowledge_complete',
+        provider: 'medical-knowledge-layer-v1',
+        status: 'completed',
+        durationMs: Date.now() - knowledgeStart,
+        promptVersion: 'medical-knowledge-v1',
+        errorMessage: JSON.stringify({
+          automaticCorrectionCount: knowledgeResult.automaticCorrectionCount,
+          reviewRequiredCount: knowledgeResult.reviewRequiredCount,
+          entityCount: knowledgeResult.entities.length,
+        }),
+      });
+
+      // Append [要確認] markers for high-risk unresolved items before SOAP
+      const reviewFlags = knowledgeResult.entities
+        .filter((e) => e.needsReview && e.normalizedValue)
+        .slice(0, 12)
+        .map((e) => `[要確認:${e.entityType}:${e.rawValue}→${e.normalizedValue}]`);
+      if (reviewFlags.length) {
+        fullText = `${fullText}\n\n${reviewFlags.join('\n')}`;
+      }
+
       if (!isMock) {
         const llmCorrectStart = Date.now();
         fullText = await this.llmProvider.correctTranscript(fullText, glossary, consultationId);
@@ -147,6 +189,7 @@ export class AiPipelineService {
         });
       }
 
+      // Updates corrected text only — rawText preserved on TranscriptSegment
       await this.transcriptService.replaceFinalTranscript(consultationId, fullText);
 
       const extractStart = Date.now();

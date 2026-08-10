@@ -63,6 +63,9 @@ model Clinic {
   users     User[]
   patients  Patient[]
   anonymousCases AnonymousCase[]
+  clinicDictionaryTerms ClinicDictionaryTerm[]
+  doctorDictionaryTerms DoctorDictionaryTerm[]
+  transcriptCorrections TranscriptCorrection[]
 
   @@map("clinics")
 }
@@ -83,6 +86,8 @@ model User {
   consultations Consultation[] @relation("PhysicianConsultations")
   revisions    RevisionHistory[]
   auditLogs    AuditLog[]
+  doctorDictionaryTerms DoctorDictionaryTerm[]
+  transcriptCorrections TranscriptCorrection[]
 
   @@map("users")
 }
@@ -151,6 +156,8 @@ model Consultation {
   aiExecutions    AIExecution[]
   chatMessages    ConsultationChatMessage[]
   attachments     ConsultationAttachment[]
+  transcriptCorrections TranscriptCorrection[]
+  clinicalEntities ClinicalEntity[]
 
   @@map("consultations")
 }
@@ -185,6 +192,8 @@ model TranscriptSegment {
   id             String       @id @default(uuid())
   consultationId String       @map("consultation_id")
   sequenceNumber Int          @map("sequence_number")
+  /// STT raw text — never overwrite after STT finalize
+  rawText        String?      @map("raw_text")
   text           String
   normalizedText String?      @map("normalized_text")
   speaker        SpeakerLabel @default(UNKNOWN)
@@ -363,4 +372,242 @@ model ConsultationAttachment {
 
   @@index([consultationId, createdAt])
   @@map("consultation_attachments")
+}
+
+// ─── Medical Knowledge Layer (STT correction / normalization only — not diagnosis AI) ───
+
+enum MedicalTermCategory {
+  diagnosis
+  symptom
+  finding
+  medication
+  dosage
+  strength
+  unit
+  route
+  frequency
+  duration
+  laboratory_test
+  laboratory_value
+  vital_sign
+  imaging
+  procedure
+  allergy
+  body_part
+  body_side
+  negation
+  treatment_action
+  hospital_name
+  doctor_name
+  date
+  time
+  abbreviation
+  other
+}
+
+enum MedicalTermAliasType {
+  spoken
+  abbreviation
+  brand_name
+  generic_name
+  common_misspelling
+  stt_error
+  legacy
+  english
+}
+
+enum MedicalKnowledgeSource {
+  national_master_import
+  internal_medicine_seed
+  clinic
+  physician
+  learning_candidate
+}
+
+enum MedicalRiskLevel {
+  low
+  medium
+  high
+  critical
+}
+
+enum KnowledgeSpecialty {
+  internal_medicine
+  dentistry
+  orthopedics
+  dermatology
+  psychiatry
+  care
+  general
+}
+
+/// LEVEL 1–2 shared medical terms (national import + specialty seeds). Codes must come from masters — never LLM-invented.
+model MedicalTerm {
+  id            String               @id @default(uuid())
+  canonicalName String               @map("canonical_name")
+  reading       String?
+  category      MedicalTermCategory
+  subcategory   String?
+  englishName   String?              @map("english_name")
+  abbreviation  String?
+  specialty     KnowledgeSpecialty   @default(internal_medicine)
+  priority      Int                  @default(100)
+  riskLevel     MedicalRiskLevel     @default(medium) @map("risk_level")
+  source        MedicalKnowledgeSource @default(internal_medicine_seed)
+  /// Official master code when verified (YLCM/HOT/JLAC/etc). Null if unverified — never invent.
+  sourceCode    String?              @map("source_code")
+  isActive      Boolean              @default(true) @map("is_active")
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+  aliases       MedicalTermAlias[]
+
+  @@index([canonicalName])
+  @@index([category, specialty, isActive])
+  @@index([reading])
+  @@map("medical_terms")
+}
+
+model MedicalTermAlias {
+  id            String               @id @default(uuid())
+  medicalTermId String               @map("medical_term_id")
+  alias         String
+  aliasReading  String?              @map("alias_reading")
+  aliasType     MedicalTermAliasType @map("alias_type")
+  medicalTerm   MedicalTerm          @relation(fields: [medicalTermId], references: [id], onDelete: Cascade)
+
+  @@index([alias])
+  @@index([medicalTermId])
+  @@map("medical_term_aliases")
+}
+
+/// LEVEL 3 clinic-specific dictionary
+model ClinicDictionaryTerm {
+  id           String              @id @default(uuid())
+  clinicId     String              @map("clinic_id")
+  canonicalName String             @map("canonical_name")
+  reading      String?
+  category     MedicalTermCategory @default(other)
+  aliases      Json                @default("[]")
+  frequency    Int                 @default(0)
+  priority     Int                 @default(100)
+  isActive     Boolean             @default(true) @map("is_active")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+  clinic       Clinic              @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId, isActive])
+  @@index([clinicId, canonicalName])
+  @@map("clinic_dictionary_terms")
+}
+
+/// LEVEL 4 physician-specific dictionary
+model DoctorDictionaryTerm {
+  id                   String   @id @default(uuid())
+  clinicId             String   @map("clinic_id")
+  physicianId          String   @map("physician_id")
+  canonicalName        String   @map("canonical_name")
+  spokenForm           String   @map("spoken_form")
+  preferredWrittenForm String   @map("preferred_written_form")
+  frequency            Int      @default(0)
+  priority             Int      @default(100)
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+  clinic               Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  physician            User     @relation(fields: [physicianId], references: [id], onDelete: Cascade)
+
+  @@index([physicianId])
+  @@index([clinicId, physicianId])
+  @@map("doctor_dictionary_terms")
+}
+
+model TranscriptCorrection {
+  id                String              @id @default(uuid())
+  clinicId          String              @map("clinic_id")
+  physicianId       String?             @map("physician_id")
+  consultationId    String              @map("consultation_id")
+  rawText           String              @map("raw_text")
+  correctedText     String              @map("corrected_text")
+  originalTerm      String?             @map("original_term")
+  correctedTerm     String?             @map("corrected_term")
+  category          MedicalTermCategory?
+  confidence        Float?
+  correctionSource  String              @map("correction_source")
+  approvedByDoctor  Boolean             @default(false) @map("approved_by_doctor")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  clinic            Clinic              @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  physician         User?               @relation(fields: [physicianId], references: [id])
+  consultation      Consultation        @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@index([consultationId])
+  @@index([clinicId, originalTerm, correctedTerm])
+  @@map("transcript_corrections")
+}
+
+model ClinicalEntity {
+  id               String              @id @default(uuid())
+  consultationId   String              @map("consultation_id")
+  entityType       MedicalTermCategory @map("entity_type")
+  rawValue         String              @map("raw_value")
+  normalizedValue  String?             @map("normalized_value")
+  confidence       Float?
+  startPosition    Int?                @map("start_position")
+  endPosition      Int?                @map("end_position")
+  needsReview      Boolean             @default(false) @map("needs_review")
+  riskLevel        MedicalRiskLevel    @default(medium) @map("risk_level")
+  createdAt        DateTime            @default(now()) @map("created_at")
+  consultation     Consultation        @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  candidates       EntityCandidate[]
+
+  @@index([consultationId])
+  @@index([consultationId, needsReview])
+  @@map("clinical_entities")
+}
+
+model EntityCandidate {
+  id               String         @id @default(uuid())
+  clinicalEntityId String         @map("clinical_entity_id")
+  candidateValue   String         @map("candidate_value")
+  score            Float
+  candidateSource  String         @map("candidate_source")
+  clinicalEntity   ClinicalEntity @relation(fields: [clinicalEntityId], references: [id], onDelete: Cascade)
+
+  @@index([clinicalEntityId])
+  @@map("entity_candidates")
+}
+
+model KnowledgeQualityMetric {
+  id                          String   @id @default(uuid())
+  consultationId              String   @unique @map("consultation_id")
+  generalTranscriptionAccuracy Float?  @map("general_transcription_accuracy")
+  medicalTermAccuracy         Float?   @map("medical_term_accuracy")
+  medicationAccuracy          Float?   @map("medication_accuracy")
+  dosageAccuracy              Float?   @map("dosage_accuracy")
+  laboratoryAccuracy          Float?   @map("laboratory_accuracy")
+  numericAccuracy             Float?   @map("numeric_accuracy")
+  negationAccuracy            Float?   @map("negation_accuracy")
+  doctorCorrectionCount       Int      @default(0) @map("doctor_correction_count")
+  automaticCorrectionCount    Int      @default(0) @map("automatic_correction_count")
+  reviewRequiredCount         Int      @default(0) @map("review_required_count")
+  criticalMedicalErrorCount   Int      @default(0) @map("critical_medical_error_count")
+  createdAt                   DateTime @default(now()) @map("created_at")
+  updatedAt                   DateTime @updatedAt @map("updated_at")
+
+  @@map("knowledge_quality_metrics")
+}
+
+/// Learning candidates promoted from repeated corrections — require admin approval before clinic dictionary insert
+model DictionaryLearningCandidate {
+  id            String              @id @default(uuid())
+  clinicId      String              @map("clinic_id")
+  originalTerm  String              @map("original_term")
+  correctedTerm String              @map("corrected_term")
+  category      MedicalTermCategory?
+  occurrenceCount Int               @default(1) @map("occurrence_count")
+  status        String              @default("pending") // pending | approved | rejected
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+
+  @@unique([clinicId, originalTerm, correctedTerm])
+  @@index([clinicId, status])
+  @@map("dictionary_learning_candidates")
 }

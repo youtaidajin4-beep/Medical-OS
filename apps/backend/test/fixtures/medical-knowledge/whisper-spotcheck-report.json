@@ -1,0 +1,714 @@
+{
+  "skipped": false,
+  "generatedAt": "2026-08-10T03:36:33.326Z",
+  "total": 50,
+  "criticalFailed": 20,
+  "results": [
+    {
+      "id": "med-00001",
+      "category": "medication",
+      "originalInput": "アムロジピンを継続",
+      "asrText": "アムロジピンを継続",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "med-00002",
+      "category": "medication",
+      "originalInput": "アムロジピンを開始",
+      "asrText": "アムロ事件を開始",
+      "passed": false,
+      "critical": true,
+      "failure": {
+        "id": "med-00002-asr",
+        "category": "medication",
+        "critical": true,
+        "input": "アムロ事件を開始",
+        "correctedText": "アムロ事件を開始",
+        "reasons": [
+          "mustContain missing: アムロジピン",
+          "entity missing: medication=アムロジピン"
+        ]
+      }
+    },
+    {
+      "id": "med-00003",
+      "category": "medication",
+      "originalInput": "アムロジピンを中止",
+      "asrText": "アムロジピンを中止",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "med-00004",
+      "category": "medication",
+      "originalInput": "アムロジピンを増量",
+      "asrText": "アムロジピンを増量。",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "med-00005",
+      "category": "medication",
+      "originalInput": "ニフェジピンを継続",
+      "asrText": "ニフェジピンを継続。",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "med-00006",
+      "category": "medication",
+      "originalInput": "ニフェジピンを開始",
+      "asrText": "2ヘージピンを開始",
+      "passed": false,
+      "critical": true,
+      "failure": {
+        "id": "med-00006-asr",
+        "category": "medication",
+        "critical": true,
+        "input": "2ヘージピンを開始",
+        "correctedText": "2ヘージピンを開始",
+        "reasons": [
+          "mustContain missing: ニフェジピン",
+          "entity missing: medication=ニフェジピン"
+        ]
+      }
+    },
+    {
+      "id": "med-00007",
+      "category": "medication",
+      "originalInput": "ニフェジピンを中止",
+      "asrText": "ミフィジピンは中止",
+      "passed": false,
+      "critical": true,
+      "failure": {
+        "id": "med-00007-asr",
+        "category": "medication",
+        "critical": true,
+        "input": "ミフィジピンは中止",
+        "correctedText": "ミフィジピンは中止",
+        "reasons": [
+          "mustContain missing: ニフェジピン",
+          "entity missing: medication=ニフェジピン"
+        ]
+      }
+    },
+    {
+      "id": "med-00008",
+      "category": "medication",
+      "originalInput": "ニフェジピンを増量",
+      "asrText": "ミフェジピンを増量",
+      "passed": false,
+      "critical": true,
+      "failure": {
+        "id": "med-00008-asr",
+        "category": "medication",
+        "critical": true,
+        "input": "ミフェジピンを増量",
+        "correctedText": "ミフェジピンを増量",
+        "reasons": [
+          "mustContain missing: ニフェジピン",
+          "entity missing: medication=ニフェジピン"
+        ]
+      }
+    },
+    {
+      "id": "med-00009",
+      "category": "medication",
+      "originalInput": "アゼルニジピンを継続",
+      "asrText": "アゼルニジピンを継続",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "neg-00944",
+      "category": "negation",
+      "originalInput": "発熱なし",
+      "asrText": "発熱なし",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "neg-00945",
+      "category": "negation",
+      "originalInput": "発熱はありません",
+      "asrText": "発熱はありません。",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "neg-00946",
+      "category": "negation",
+      "originalInput": "発熱はない",
+      "asrText": "発熱はない。",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "neg-00947",
+      "category": "negation",
+      "originalInput": "微熱なし",
+      "asrText": "微熱なし",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "neg-00948",
+      "category": "negation",
+      "originalInput": "微熱はありません",
+      "asrText": "微熱はありません。",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "neg-00949",
+      "category": "negation",
+      "originalInput": "微熱はない",
+      "asrText": "微熱はない。",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "neg-00950",
+      "category": "negation",
+      "originalInput": "悪寒なし",
+      "asrText": "圧巻なし",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "neg-00951",
+      "category": "negation",
+      "originalInput": "悪寒はありません",
+      "asrText": "圧巻はありません",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "neg-00952",
+      "category": "negation",
+      "originalInput": "悪寒はない",
+      "asrText": "あっかんはない",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "dose-00445",
+      "category": "dosage",
+      "originalInput": "アムロジピン2.5ミリ継続",
+      "asrText": "AMRO 磁ピン 2.5mm 継続",
+      "passed": false,
+      "critical": true,
+      "failure": {
+        "id": "dose-00445-asr",
+        "category": "dosage",
+        "critical": true,
+        "input": "AMRO 磁ピン 2.5mm 継続",
+        "correctedText": "AMRO 磁ピン 2.5mm 継続",
+        "reasons": [
+          "mustContain missing: アムロジピン"
+        ]
+      }
+    },
+    {
+      "id": "dose-00446",
+      "category": "dosage",
+      "originalInput": "アムロジピン5ミリ継続",
+      "asrText": "アムロジーピン5ミリ継続",
+      "passed": false,
+      "critical": true,
+      "failure": {
+        "id": "dose-00446-asr",
+        "category": "dosage",
+        "critical": true,
+        "input": "アムロジーピン5ミリ継続",
+        "correctedText": "アムロジーピン5ミリ継続",
+        "reasons": [
+          "mustContain missing: アムロジピン"
+        ]
+      }
+    },
+    {
+      "id": "dose-00447",
+      "category": "dosage",
+      "originalInput": "アムロジピン10ミリ継続",
+      "asrText": "アムロジピン10ミリ継続",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "dose-00448",
+      "category": "dosage",
+      "originalInput": "アムロジピン20ミリ継続",
+      "asrText": "アムロジピン20ミリ継続",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "dose-00449",
+      "category": "dosage",
+      "originalInput": "ニフェジピン2.5ミリ継続",
+      "asrText": "NIFEG PIN 2.5mm継続",
+      "passed": false,
+      "critical": true,
+      "failure": {
+        "id": "dose-00449-asr",
+        "category": "dosage",
+        "critical": true,
+        "input": "NIFEG PIN 2.5mm継続",
+        "correctedText": "NIFEG PIN 2.5mm継続",
+        "reasons": [
+          "mustContain missing: ニフェジピン"
+        ]
+      }
+    },
+    {
+      "id": "dose-00450",
+      "category": "dosage",
+      "originalInput": "ニフェジピン5ミリ継続",
+      "asrText": "ミフェジピン5ミリ定俗",
+      "passed": false,
+      "critical": true,
+      "failure": {
+        "id": "dose-00450-asr",
+        "category": "dosage",
+        "critical": true,
+        "input": "ミフェジピン5ミリ定俗",
+        "correctedText": "ミフェジピン5ミリ定俗",
+        "reasons": [
+          "mustContain missing: ニフェジピン"
+        ]
+      }
+    },
+    {
+      "id": "dose-00451",
+      "category": "dosage",
+      "originalInput": "ニフェジピン10ミリ継続",
+      "asrText": "ミフェジピン10ミリ継続",
+      "passed": false,
+      "critical": true,
+      "failure": {
+        "id": "dose-00451-asr",
+        "category": "dosage",
+        "critical": true,
+        "input": "ミフェジピン10ミリ継続",
+        "correctedText": "ミフェジピン10ミリ継続",
+        "reasons": [
+          "mustContain missing: ニフェジピン"
+        ]
+      }
+    },
+    {
+      "id": "dose-00452",
+      "category": "dosage",
+      "originalInput": "ニフェジピン20ミリ継続",
+      "asrText": "ミフェジピン 20ミリ 継続",
+      "passed": false,
+      "critical": true,
+      "failure": {
+        "id": "dose-00452-asr",
+        "category": "dosage",
+        "critical": true,
+        "input": "ミフェジピン 20ミリ 継続",
+        "correctedText": "ミフェジピン 20ミリ 継続",
+        "reasons": [
+          "mustContain missing: ニフェジピン"
+        ]
+      }
+    },
+    {
+      "id": "dose-00453",
+      "category": "dosage",
+      "originalInput": "アゼルニジピン2.5ミリ継続",
+      "asrText": "アゼル二次ピン2.5mm継続",
+      "passed": false,
+      "critical": true,
+      "failure": {
+        "id": "dose-00453-asr",
+        "category": "dosage",
+        "critical": true,
+        "input": "アゼル二次ピン2.5mm継続",
+        "correctedText": "アゼル二次ピン2.5mm継続",
+        "reasons": [
+          "mustContain missing: アゼルニジピン"
+        ]
+      }
+    },
+    {
+      "id": "stt-00865",
+      "category": "stt_error",
+      "originalInput": "アムロジビンです",
+      "asrText": "アムロジミンです",
+      "passed": false,
+      "critical": true,
+      "failure": {
+        "id": "stt-00865-asr",
+        "category": "stt_error",
+        "critical": true,
+        "input": "アムロジミンです",
+        "correctedText": "アムロジミンです",
+        "reasons": [
+          "expectedCanonical not found: アムロジピン"
+        ],
+        "patchHint": {
+          "surfaceForm": "アムロジビン",
+          "expectedCanonical": "アムロジピン"
+        }
+      },
+      "patchHint": {
+        "surfaceForm": "アムロジビン",
+        "expectedCanonical": "アムロジピン"
+      }
+    },
+    {
+      "id": "stt-00866",
+      "category": "stt_error",
+      "originalInput": "アムロジビンを継続",
+      "asrText": "アムロジビンを 継続",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "stt-00867",
+      "category": "stt_error",
+      "originalInput": "今日はアムロジビン",
+      "asrText": "きょうは アムロジビン",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "stt-00868",
+      "category": "stt_error",
+      "originalInput": "アムロジビン5ミリ",
+      "asrText": "アムロジビン5ミリ",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "stt-00869",
+      "category": "stt_error",
+      "originalInput": "無効団員です",
+      "asrText": "無効代音です",
+      "passed": false,
+      "critical": true,
+      "failure": {
+        "id": "stt-00869-asr",
+        "category": "stt_error",
+        "critical": true,
+        "input": "無効代音です",
+        "correctedText": "無効代音です",
+        "reasons": [
+          "expectedCanonical not found: ムコダイン"
+        ],
+        "patchHint": {
+          "surfaceForm": "無効団員",
+          "expectedCanonical": "ムコダイン"
+        }
+      },
+      "patchHint": {
+        "surfaceForm": "無効団員",
+        "expectedCanonical": "ムコダイン"
+      }
+    },
+    {
+      "id": "stt-00870",
+      "category": "stt_error",
+      "originalInput": "無効団員を継続",
+      "asrText": "無効団員を継続",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "stt-00871",
+      "category": "stt_error",
+      "originalInput": "今日は無効団員",
+      "asrText": "きょうは むこうだいん",
+      "passed": false,
+      "critical": true,
+      "failure": {
+        "id": "stt-00871-asr",
+        "category": "stt_error",
+        "critical": true,
+        "input": "きょうは むこうだいん",
+        "correctedText": "きょうは むこうだいん",
+        "reasons": [
+          "expectedCanonical not found: ムコダイン"
+        ],
+        "patchHint": {
+          "surfaceForm": "無効団員",
+          "expectedCanonical": "ムコダイン"
+        }
+      },
+      "patchHint": {
+        "surfaceForm": "無効団員",
+        "expectedCanonical": "ムコダイン"
+      }
+    },
+    {
+      "id": "stt-00872",
+      "category": "stt_error",
+      "originalInput": "無効団員5ミリ",
+      "asrText": "むこうだいぐん ごみり",
+      "passed": false,
+      "critical": true,
+      "failure": {
+        "id": "stt-00872-asr",
+        "category": "stt_error",
+        "critical": true,
+        "input": "むこうだいぐん ごみり",
+        "correctedText": "むこうだいぐん ごみり",
+        "reasons": [
+          "expectedCanonical not found: ムコダイン"
+        ],
+        "patchHint": {
+          "surfaceForm": "無効団員",
+          "expectedCanonical": "ムコダイン"
+        }
+      },
+      "patchHint": {
+        "surfaceForm": "無効団員",
+        "expectedCanonical": "ムコダイン"
+      }
+    },
+    {
+      "id": "stt-00873",
+      "category": "stt_error",
+      "originalInput": "無効だいんです",
+      "asrText": "むこうだいんです。",
+      "passed": false,
+      "critical": true,
+      "failure": {
+        "id": "stt-00873-asr",
+        "category": "stt_error",
+        "critical": true,
+        "input": "むこうだいんです。",
+        "correctedText": "むこうだいんです。",
+        "reasons": [
+          "expectedCanonical not found: ムコダイン"
+        ],
+        "patchHint": {
+          "surfaceForm": "無効だいん",
+          "expectedCanonical": "ムコダイン"
+        }
+      },
+      "patchHint": {
+        "surfaceForm": "無効だいん",
+        "expectedCanonical": "ムコダイン"
+      }
+    },
+    {
+      "id": "brand-00765",
+      "category": "brand",
+      "originalInput": "カロナールを処方",
+      "asrText": "カロナールを処方",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "brand-00766",
+      "category": "brand",
+      "originalInput": "カロナールを継続",
+      "asrText": "カロナールを継続。",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "brand-00767",
+      "category": "brand",
+      "originalInput": "カロナール頓服で",
+      "asrText": "カロナールトンプクデ",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "brand-00768",
+      "category": "brand",
+      "originalInput": "カロナールについて",
+      "asrText": "カロナールについて。",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "brand-00769",
+      "category": "brand",
+      "originalInput": "ロキソニンを処方",
+      "asrText": "ロクソニーの処方",
+      "passed": false,
+      "critical": true,
+      "failure": {
+        "id": "brand-00769-asr",
+        "category": "brand",
+        "critical": true,
+        "input": "ロクソニーの処方",
+        "correctedText": "ロクソニーの処方",
+        "reasons": [
+          "expectedCanonical not found: ロキソプロフェン"
+        ],
+        "patchHint": {
+          "surfaceForm": "ロキソニン",
+          "expectedCanonical": "ロキソプロフェン"
+        }
+      },
+      "patchHint": {
+        "surfaceForm": "ロキソニン",
+        "expectedCanonical": "ロキソプロフェン"
+      }
+    },
+    {
+      "id": "brand-00770",
+      "category": "brand",
+      "originalInput": "ロキソニンを継続",
+      "asrText": "ロキソニー語 継続",
+      "passed": false,
+      "critical": true,
+      "failure": {
+        "id": "brand-00770-asr",
+        "category": "brand",
+        "critical": true,
+        "input": "ロキソニー語 継続",
+        "correctedText": "ロキソニー語 継続",
+        "reasons": [
+          "expectedCanonical not found: ロキソプロフェン"
+        ],
+        "patchHint": {
+          "surfaceForm": "ロキソニン",
+          "expectedCanonical": "ロキソプロフェン"
+        }
+      },
+      "patchHint": {
+        "surfaceForm": "ロキソニン",
+        "expectedCanonical": "ロキソプロフェン"
+      }
+    },
+    {
+      "id": "brand-00771",
+      "category": "brand",
+      "originalInput": "ロキソニン頓服で",
+      "asrText": "ノキソニントンプクデ",
+      "passed": false,
+      "critical": true,
+      "failure": {
+        "id": "brand-00771-asr",
+        "category": "brand",
+        "critical": true,
+        "input": "ノキソニントンプクデ",
+        "correctedText": "ノキソニントンプクデ",
+        "reasons": [
+          "expectedCanonical not found: ロキソプロフェン"
+        ],
+        "patchHint": {
+          "surfaceForm": "ロキソニン",
+          "expectedCanonical": "ロキソプロフェン"
+        }
+      },
+      "patchHint": {
+        "surfaceForm": "ロキソニン",
+        "expectedCanonical": "ロキソプロフェン"
+      }
+    },
+    {
+      "id": "brand-00772",
+      "category": "brand",
+      "originalInput": "ロキソニンについて",
+      "asrText": "ロキソニンについて",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "brand-00773",
+      "category": "brand",
+      "originalInput": "タケキャブを処方",
+      "asrText": "竹キャブを処方。",
+      "passed": false,
+      "critical": true,
+      "failure": {
+        "id": "brand-00773-asr",
+        "category": "brand",
+        "critical": true,
+        "input": "竹キャブを処方。",
+        "correctedText": "竹キャブを処方。",
+        "reasons": [
+          "expectedCanonical not found: ボノプラザン"
+        ],
+        "patchHint": {
+          "surfaceForm": "タケキャブ",
+          "expectedCanonical": "ボノプラザン"
+        }
+      },
+      "patchHint": {
+        "surfaceForm": "タケキャブ",
+        "expectedCanonical": "ボノプラザン"
+      }
+    },
+    {
+      "id": "lab-01259",
+      "category": "lab",
+      "originalInput": "HbA1cは6.8です",
+      "asrText": "HB-A1Cは6.8です。",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "lab-01260",
+      "category": "lab",
+      "originalInput": "HbA1cは7.2です",
+      "asrText": "HBA1Cは7.2です。",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "lab-01261",
+      "category": "lab",
+      "originalInput": "HbA1cは5.9です",
+      "asrText": "HB-A1Cは5.9です。",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "hba1c-01448",
+      "category": "lab",
+      "originalInput": "A1Cは6.8ですね",
+      "asrText": "A1Cは6.8ですね。",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    },
+    {
+      "id": "hba1c-01449",
+      "category": "lab",
+      "originalInput": "エーワンシーは6.8ですね",
+      "asrText": "A1Cは6.8ですね。",
+      "passed": true,
+      "critical": true,
+      "failure": null
+    }
+  ]
+}

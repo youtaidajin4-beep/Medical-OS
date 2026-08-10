@@ -66,6 +66,7 @@ export class TranscriptService {
           data: {
             consultationId,
             sequenceNumber: i,
+            rawText: seg.text,
             text: seg.text,
             normalizedText: seg.text,
             speaker: SPEAKER_MAP[seg.speaker ?? 'unknown'],
@@ -92,6 +93,7 @@ export class TranscriptService {
         data: {
           consultationId,
           sequenceNumber: 0,
+          rawText: correctedText,
           text: correctedText,
           normalizedText: correctedText,
           speaker: SpeakerLabel.UNKNOWN,
@@ -103,9 +105,17 @@ export class TranscriptService {
     }
 
     const [first, ...rest] = existing;
+    // Preserve rawText forever — only update display/corrected text fields
+    const preservedRaw =
+      first!.rawText ??
+      existing.map((s) => s.rawText ?? s.text).join('\n');
     await this.prisma.transcriptSegment.update({
       where: { id: first!.id },
-      data: { text: correctedText, normalizedText: correctedText },
+      data: {
+        rawText: preservedRaw,
+        text: correctedText,
+        normalizedText: correctedText,
+      },
     });
     if (rest.length) {
       await this.prisma.transcriptSegment.deleteMany({

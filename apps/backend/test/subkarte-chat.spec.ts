@@ -24,6 +24,7 @@ describe('MockLlmProvider.subkarteChat', () => {
     expect(result.reply).toContain('記録');
     expect(result.soapPatch).toBeUndefined();
     expect(result.documentPatches).toBeUndefined();
+    expect(result.generateDocuments).toBeUndefined();
   });
 
   it('patches assessment on edit-like Assessment messages', async () => {
@@ -43,5 +44,26 @@ describe('MockLlmProvider.subkarteChat', () => {
     );
     expect(result.documentPatches?.[0]?.type).toBe('referral');
     expect(result.documentPatches?.[0]?.content.recipientHospital).toBe('市立中央病院');
+    expect(result.generateDocuments).toBeUndefined();
+  });
+
+  it('requests document generation for 作って messages', async () => {
+    const result = await provider.subkarteChat!(
+      'system',
+      [{ role: 'user', content: '市立中央病院向けに紹介状と処方を作って' }],
+      context,
+    );
+    expect(result.generateDocuments).toEqual(['referral', 'prescription']);
+    expect(result.reply).toContain('市立中央病院');
+    expect(result.documentPatches?.[0]?.content.recipientHospital).toBe('市立中央病院');
+  });
+
+  it('requests all documents when no type is specified', async () => {
+    const result = await provider.subkarteChat!(
+      'system',
+      [{ role: 'user', content: '書類を全部作って' }],
+      context,
+    );
+    expect(result.generateDocuments).toBe('all');
   });
 });

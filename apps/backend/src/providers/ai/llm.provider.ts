@@ -77,6 +77,16 @@ export interface LlmProvider {
     soapPatch?: { subjective?: string; objective?: string; assessment?: string; plan?: string };
     notePatch?: string;
     documentPatches?: Array<{ type: string; content: Record<string, unknown> }>;
+    generateDocuments?:
+      | 'all'
+      | Array<
+          | 'referral'
+          | 'prescription'
+          | 'certificate'
+          | 'care-opinion-1'
+          | 'care-opinion-2'
+          | 'info-combined'
+        >;
   }>;
 }
 
@@ -262,7 +272,7 @@ export class MockLlmProvider implements LlmProvider {
     messages: Array<{ role: 'user' | 'assistant'; content: string }>,
   ): Promise<string> {
     const last = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
-    return `（モック）サブカルテに「${last.slice(0, 40)}」を記録しました。`;
+    return `（モック）「${last.slice(0, 40)}」を記録しました。`;
   }
 
   async subkarteChat(
@@ -275,12 +285,43 @@ export class MockLlmProvider implements LlmProvider {
     },
   ) {
     const last = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
+    const wantsGenerate = /作って|作成して|生成|資料|書類を全部|全部作/.test(last);
+    if (wantsGenerate) {
+      const types: Array<
+        | 'referral'
+        | 'prescription'
+        | 'certificate'
+        | 'care-opinion-1'
+        | 'care-opinion-2'
+        | 'info-combined'
+      > = [];
+      if (/紹介状/.test(last)) types.push('referral');
+      if (/処方/.test(last)) types.push('prescription');
+      if (/診断書/.test(last)) types.push('certificate');
+      const generateDocuments = types.length ? types : ('all' as const);
+      const matches = [...last.matchAll(/([^\s「」をにへ]+(?:病院|クリニック|医院))/g)];
+      const recipientHospital = matches.at(-1)?.[1];
+      return {
+        reply: recipientHospital
+          ? `${recipientHospital}向けに書類を作成します。`
+          : '書類を作成します。',
+        generateDocuments,
+        documentPatches: recipientHospital
+          ? [
+              {
+                type: 'referral',
+                content: { ...(context.documents.referral ?? {}), recipientHospital },
+              },
+            ]
+          : undefined,
+      };
+    }
     const editLike = /修正|変更|追記|直して|にして|Assessment|assessment|Plan|plan|紹介状|宛先|処方/.test(
       last,
     );
     if (!editLike) {
       return {
-        reply: 'サブカルテに記録しました。書類を作るときに SOAP と合わせて反映します。',
+        reply: '記録しました。書類を作るときや修正指示のときに反映します。',
       };
     }
     if (/Assessment|assessment|評価/.test(last)) {
@@ -301,7 +342,7 @@ export class MockLlmProvider implements LlmProvider {
       };
     }
     return {
-      reply: 'サブカルテに記録し、Plan に反映しました。',
+      reply: '記録し、Plan に反映しました。',
       soapPatch: {
         plan: `${context.soap.plan}\n${last}`.trim(),
       },

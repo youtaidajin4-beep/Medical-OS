@@ -1,0 +1,100 @@
+{
+  "generatedAt": "2026-08-10T03:37:21.755Z",
+  "aliasCandidates": [
+    {
+      "surfaceForm": "アムロ事件を開始",
+      "expectedCanonical": "アムロジピン",
+      "from": "アムロ事件を開始"
+    },
+    {
+      "surfaceForm": "ヘージピンを開始",
+      "expectedCanonical": "ニフェジピン",
+      "from": "2ヘージピンを開始"
+    },
+    {
+      "surfaceForm": "ミフィジピンは中止",
+      "expectedCanonical": "ニフェジピン",
+      "from": "ミフィジピンは中止"
+    },
+    {
+      "surfaceForm": "ミフェジピンを増量",
+      "expectedCanonical": "ニフェジピン",
+      "from": "ミフェジピンを増量"
+    },
+    {
+      "surfaceForm": "磁ピン",
+      "expectedCanonical": "アムロジピン",
+      "from": "AMRO 磁ピン 2.5mm 継続"
+    },
+    {
+      "surfaceForm": "アムロジーピン",
+      "expectedCanonical": "アムロジピン",
+      "from": "アムロジーピン5ミリ継続"
+    },
+    {
+      "surfaceForm": "ミフェジピン",
+      "expectedCanonical": "ニフェジピン",
+      "from": "ミフェジピン5ミリ定俗"
+    },
+    {
+      "surfaceForm": "ミフェジピン",
+      "expectedCanonical": "ニフェジピン",
+      "from": "ミフェジピン10ミリ継続"
+    },
+    {
+      "surfaceForm": "ミフェジピン",
+      "expectedCanonical": "ニフェジピン",
+      "from": "ミフェジピン 20ミリ 継続"
+    },
+    {
+      "surfaceForm": "アゼル二次ピン",
+      "expectedCanonical": "アゼルニジピン",
+      "from": "アゼル二次ピン2.5mm継続"
+    },
+    {
+      "surfaceForm": "アムロジビン",
+      "expectedCanonical": "アムロジピン",
+      "from": "アムロジミンです"
+    },
+    {
+      "surfaceForm": "無効団員",
+      "expectedCanonical": "ムコダイン",
+      "from": "無効代音です"
+    },
+    {
+      "surfaceForm": "無効団員",
+      "expectedCanonical": "ムコダイン",
+      "from": "きょうは むこうだいん"
+    },
+    {
+      "surfaceForm": "無効団員",
+      "expectedCanonical": "ムコダイン",
+      "from": "むこうだいぐん ごみり"
+    },
+    {
+      "surfaceForm": "無効だいん",
+      "expectedCanonical": "ムコダイン",
+      "from": "むこうだいんです。"
+    },
+    {
+      "surfaceForm": "ロキソニン",
+      "expectedCanonical": "ロキソプロフェン",
+      "from": "ロクソニーの処方"
+    },
+    {
+      "surfaceForm": "ロキソニン",
+      "expectedCanonical": "ロキソプロフェン",
+      "from": "ロキソニー語 継続"
+    },
+    {
+      "surfaceForm": "ロキソニン",
+      "expectedCanonical": "ロキソプロフェン",
+      "from": "ノキソニントンプクデ"
+    },
+    {
+      "surfaceForm": "タケキャブ",
+      "expectedCanonical": "ボノプラザン",
+      "from": "竹キャブを処方。"
+    }
+  ]
+}

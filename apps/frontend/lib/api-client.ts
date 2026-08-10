@@ -341,6 +341,92 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ replacements }),
     }),
+  listMedicalTerms: (params?: { q?: string; category?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.q) qs.set('q', params.q);
+    if (params?.category) qs.set('category', params.category);
+    const suffix = qs.toString() ? `?${qs}` : '';
+    return requestWithNetworkCheck<
+      Array<{
+        id: string;
+        canonicalName: string;
+        reading: string | null;
+        category: string;
+        abbreviation: string | null;
+        riskLevel: string;
+        aliases: Array<{ alias: string; aliasType: string }>;
+      }>
+    >(`/medical-knowledge/terms${suffix}`);
+  },
+  listClinicDictionary: () =>
+    requestWithNetworkCheck<
+      Array<{ id: string; canonicalName: string; aliases: unknown; frequency: number }>
+    >('/medical-knowledge/clinic'),
+  listDoctorDictionary: () =>
+    requestWithNetworkCheck<
+      Array<{
+        id: string;
+        spokenForm: string;
+        preferredWrittenForm: string;
+        frequency: number;
+      }>
+    >('/medical-knowledge/doctor'),
+  listMisrecognitions: () =>
+    requestWithNetworkCheck<
+      Array<{ originalTerm: string | null; correctedTerm: string | null; count: number }>
+    >('/medical-knowledge/misrecognitions'),
+  listLearningCandidates: () =>
+    requestWithNetworkCheck<
+      Array<{
+        id: string;
+        originalTerm: string;
+        correctedTerm: string;
+        occurrenceCount: number;
+        status: string;
+      }>
+    >('/medical-knowledge/learning-candidates'),
+  approveLearningCandidate: (id: string) =>
+    requestWithNetworkCheck<{ ok: boolean }>(`/medical-knowledge/learning-candidates/${id}/approve`, {
+      method: 'POST',
+    }),
+  getConsultationKnowledge: (consultationId: string) =>
+    requestWithNetworkCheck<{
+      rawText: string;
+      correctedText: string;
+      entities: Array<{
+        id: string;
+        entityType: string;
+        rawValue: string;
+        normalizedValue: string | null;
+        confidence: number | null;
+        needsReview: boolean;
+        riskLevel: string;
+        candidates: Array<{ candidateValue: string; score: number; candidateSource: string }>;
+      }>;
+      corrections: Array<{
+        id: string;
+        originalTerm: string | null;
+        correctedTerm: string | null;
+        confidence: number | null;
+        correctionSource: string;
+        approvedByDoctor: boolean;
+      }>;
+      metrics: {
+        automaticCorrectionCount: number;
+        reviewRequiredCount: number;
+        criticalMedicalErrorCount: number;
+      } | null;
+    }>(`/medical-knowledge/consultations/${consultationId}`),
+  approveDoctorCorrection: (body: {
+    consultationId: string;
+    originalTerm: string;
+    correctedTerm: string;
+    category?: string;
+  }) =>
+    requestWithNetworkCheck('/medical-knowledge/doctor-corrections', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   listChat: (consultationId: string) =>
     request<Array<{ id: string; role: string; content: string; createdAt: string }>>(
       `/consultations/${consultationId}/chat`,

@@ -29,6 +29,7 @@ import {
   type SubkarteAskResult,
 } from '@/components/consultation/subkarte-chat-panel';
 import { PaperCapturePanel } from '@/components/consultation/paper-capture-panel';
+import { KnowledgeTranscriptPanel } from '@/components/consultation/knowledge-transcript-panel';
 import { cn } from '@/lib/utils';
 import type { SoapData } from '@/lib/mock-documents/types';
 
@@ -224,7 +225,7 @@ export function ReviewPhase({
 
   if (compact) {
     return (
-      <div className="mx-auto max-w-md space-y-4 pb-52">
+      <div className="mx-auto max-w-md space-y-4 pb-28">
         <Toast toast={toast} />
 
         <div className="no-print flex items-start justify-between gap-2">
@@ -350,6 +351,7 @@ export function ReviewPhase({
                   </Button>
                 </div>
               )}
+              <KnowledgeTranscriptPanel consultationId={consultationId} />
             </div>
 
             <div className="no-print space-y-2 rounded-xl border border-slate-200 bg-white p-3">
@@ -391,17 +393,12 @@ export function ReviewPhase({
         {panelTab === 'paper' && <PaperCapturePanel consultationId={consultationId} />}
 
         <div className="no-print fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 backdrop-blur">
-          <div className="mx-auto max-w-md space-y-2 p-3">
-            {(panelTab === 'soap' || panelTab === 'docs') && (
-              <SubkarteChatPanel
-                consultationId={consultationId}
-                compact
-                onResult={handleSubkarteResult}
-              />
-            )}
+          <div className="mx-auto max-w-md space-y-2 p-3 pr-28">
             {panelTab === 'soap' ? primaryAction : null}
           </div>
         </div>
+
+        <SubkarteChatPanel consultationId={consultationId} onResult={handleSubkarteResult} />
       </div>
     );
   }
@@ -468,13 +465,6 @@ export function ReviewPhase({
         value={tab}
         onChange={setTab}
       />
-
-      <div className="no-print sticky top-2 z-10 rounded-xl border-2 border-brand-200 bg-white shadow-card">
-        <SubkarteChatPanel
-          consultationId={consultationId}
-          onResult={handleSubkarteResult}
-        />
-      </div>
 
       {tab === 'documents' ? (
         <DocumentsPanel
@@ -726,6 +716,8 @@ export function ReviewPhase({
           </div>
         </div>
       )}
+
+      <SubkarteChatPanel consultationId={consultationId} onResult={handleSubkarteResult} />
     </div>
   );
 }

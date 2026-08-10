@@ -2,6 +2,7 @@ import { PrismaClient, UserRole } from '@prisma/client';
 import { DEFAULT_MEDICAL_GLOSSARY, mergeMedicalGlossary } from '../src/providers/ai/medical-glossary.types';
 import { parsePhysicianRules } from '../src/modules/settings/physician-rules.types';
 import { isWeakPassword } from '../src/modules/auth/password-policy';
+import { seedMedicalKnowledge } from './seed-medical-knowledge';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
 
@@ -91,6 +92,8 @@ async function main() {
       },
     },
   });
+
+  await seedMedicalKnowledge(prisma);
 
   console.log('Seed complete: doctor@demo.clinic');
   console.log('Initial login requires password change (mustChangePassword=true).');

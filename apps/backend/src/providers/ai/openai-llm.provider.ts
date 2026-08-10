@@ -181,6 +181,16 @@ export class OpenAiLlmProvider implements LlmProvider {
         soapPatch?: { subjective?: string; objective?: string; assessment?: string; plan?: string };
         notePatch?: string;
         documentPatches?: Array<{ type: string; content: Record<string, unknown> }>;
+        generateDocuments?:
+          | 'all'
+          | Array<
+              | 'referral'
+              | 'prescription'
+              | 'certificate'
+              | 'care-opinion-1'
+              | 'care-opinion-2'
+              | 'info-combined'
+            >;
       };
     } catch {
       return { reply: result.content || '記録しました。' };

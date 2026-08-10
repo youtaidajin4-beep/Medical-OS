@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
+  BookOpen,
   History,
   LogOut,
   Menu,
@@ -22,6 +23,7 @@ import { AiStatusBanner } from './ai-status-banner';
 const NAV = [
   { href: '/panel', label: 'パネルにする', icon: PanelLeft, compact: true },
   { href: '/history', label: '履歴', icon: History },
+  { href: '/knowledge', label: '医療ナレッジ', icon: BookOpen },
   { href: '/settings', label: '設定', icon: Settings },
 ] as const;
 

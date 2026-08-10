@@ -1,4 +1,4 @@
-/** CLINICS 全画面の右下に置く補助パネル用のウィンドウ寸法・位置 */
+/** CLINICS 全画面の右端に置く補助パネル用のウィンドウ寸法・位置（幅約1/3・高さほぼ全画面） */
 
 export const PANEL_WINDOW_NAME = 'medicalOsPanel';
 
@@ -11,11 +11,11 @@ export function getPanelWindowBounds() {
   const availWidth = screen.availWidth || screen.width;
   const availHeight = screen.availHeight || screen.height;
 
-  // 画面の右下 1/4（幅1/2 × 高さ1/2）
-  const width = Math.max(380, Math.round(availWidth / 2));
-  const height = Math.max(520, Math.round(availHeight / 2));
+  // 画面右端の縦帯（幅1/3 × 高さほぼ全画面）
+  const width = Math.max(380, Math.round(availWidth / 3));
+  const height = availHeight;
   const left = availLeft + Math.max(0, availWidth - width);
-  const top = availTop + Math.max(0, availHeight - height);
+  const top = availTop;
 
   return { width, height, left, top };
 }
@@ -81,7 +81,7 @@ export function expandToFullWindow(): boolean {
 
 /**
  * 「パネルにする」用。
- * ユーザー操作の直後に右下 1/4 のポップアップを開く（通常タブの resize 制限を回避）。
+ * ユーザー操作の直後に右端 1/3 縦帯のポップアップを開く（通常タブの resize 制限を回避）。
  * 戻り値: 同じウィンドウで続ける場合 true（router.push が必要）
  */
 export function openAsPanelWindow(path = '/panel'): boolean {
