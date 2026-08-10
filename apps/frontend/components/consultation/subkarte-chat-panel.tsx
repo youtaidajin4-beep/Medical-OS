@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { MessageCircle, Send, X } from 'lucide-react';
 import { api } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
@@ -36,12 +37,17 @@ export function SubkarteChatPanel({
   compact?: boolean;
   className?: string;
 }) {
+  const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const listRef = useRef<HTMLUListElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     void api
@@ -85,8 +91,14 @@ export function SubkarteChatPanel({
     }
   }
 
-  return (
-    <div className={cn('pointer-events-none fixed bottom-4 right-4 z-40 flex flex-col items-end gap-2', className)}>
+  // Portal to body: parent shells use animate-fade-in (transform), which breaks position:fixed
+  const ui = (
+    <div
+      className={cn(
+        'pointer-events-none fixed bottom-4 right-4 z-[60] flex flex-col items-end gap-2',
+        className,
+      )}
+    >
       {open && (
         <div
           className="pointer-events-auto flex w-[min(100vw-2rem,22rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
@@ -197,4 +209,7 @@ export function SubkarteChatPanel({
       </button>
     </div>
   );
+
+  if (!mounted) return null;
+  return createPortal(ui, document.body);
 }
