@@ -6,11 +6,18 @@ import {
 import { GeneratedDocumentType } from '@prisma/client';
 import { MedicalGlossary } from './medical-glossary.types';
 import { glossaryToLlmHint } from './medical-glossary';
+import {
+  isRetryableHttpStatus,
+  localizeOpenAiError,
+  sleep,
+} from './openai-retry.util';
 
 export interface OpenAiLlmConfig {
   apiKey: string;
   model?: string;
   correctionModel?: string;
+  /** 書類生成用モデル。誤字脱字と転記精度を優先して既定は gpt-4o。 */
+  documentModel?: string;
 }
 
 export type ChatResult = {
@@ -68,12 +75,15 @@ const NOTE_SYSTEM = `あなたは日本のクリニック向け診療記録作�
 推測や追加情報は禁止です。`;
 
 const TRANSCRIPT_CORRECTION_SYSTEM = `あなたは日本の内科クリニック向け文字起こし校正アシスタントです。
-音声認識の同音異義誤りを、診察文脈から修正してください。
+音声認識の同音異義誤りを、診察文脈と内科ナレッジから修正してください。
 
 ルール:
 - 意味を追加・削除しない
 - 医師が言っていない診断・薬剤を創作しない
 - 明らかな同音異義のみ修正（例: 期間支援→気管支炎、無効団員→ムコダイン、調子んでは→聴診では）
+- 薬剤名・用量・単位・アレルギー・検査値・左右・陽性陰性・中止/継続は慎重に扱い、数値の桁違いは補正しない
+- 否定表現を反転させない
+- 商品名と一般名は双方向に正しく正規化してよい（例: カロナール→アセトアミノフェン、またはその逆で文脈に合わせる）
 - 不明な場合は原文維持 + （要確認）を付ける
 - 出力は校正後の文字起こしテキストのみ`;
 
@@ -82,11 +92,13 @@ export class OpenAiLlmProvider implements LlmProvider {
   private readonly apiKey: string;
   private readonly model: string;
   private readonly correctionModel: string;
+  private readonly documentModel: string;
 
   constructor(config: OpenAiLlmConfig) {
     this.apiKey = config.apiKey;
     this.model = config.model ?? 'gpt-4o-mini';
     this.correctionModel = config.correctionModel ?? 'gpt-4o';
+    this.documentModel = config.documentModel ?? 'gpt-4o';
   }
 
   async correctTranscript(transcript: string, glossary?: MedicalGlossary, _consultationId?: string) {
@@ -160,6 +172,8 @@ export class OpenAiLlmProvider implements LlmProvider {
       soap: { subjective: string; objective: string; assessment: string; plan: string };
       note: string;
       documents: Record<string, Record<string, unknown>>;
+      patientSummary?: string;
+      structured?: unknown;
     },
   ) {
     const lastUser = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
@@ -169,9 +183,9 @@ export class OpenAiLlmProvider implements LlmProvider {
       .join('\n');
     const result = await this.chatJson(
       system,
-      `${history ? `これまでの会話:\n${history}\n\n` : ''}現在のSOAP:\n${JSON.stringify(context.soap, null, 2)}
+      `${history ? `これまでの会話:\n${history}\n\n` : ''}${context.patientSummary ? `患者: ${context.patientSummary}\n` : ''}現在のSOAP:\n${JSON.stringify(context.soap, null, 2)}
 通常診療記録:\n${context.note || '（なし）'}
-既存書類:\n${JSON.stringify(context.documents, null, 2)}
+${context.structured ? `構造化診療データ:\n${JSON.stringify(context.structured, null, 2)}\n` : ''}既存書類:\n${JSON.stringify(context.documents, null, 2)}
 
 医師の入力:\n${lastUser}`,
     );
@@ -211,7 +225,7 @@ export class OpenAiLlmProvider implements LlmProvider {
     system: string,
     user: string,
   ): Promise<Record<string, unknown>> {
-    const result = await this.chatJson(system, user);
+    const result = await this.chatJsonWithModel(this.documentModel, system, user);
     return JSON.parse(result.content) as Record<string, unknown>;
   }
 
@@ -222,11 +236,20 @@ export class OpenAiLlmProvider implements LlmProvider {
   private lastUsage?: { inputTokens?: number; outputTokens?: number };
 
   private async chatJson(system: string, user: string): Promise<ChatResult> {
+    return this.chatJsonWithModel(this.model, system, user);
+  }
+
+  private async chatJsonWithModel(
+    model: string,
+    system: string,
+    user: string,
+  ): Promise<ChatResult> {
     try {
-      const result = await this.chat(system, user, true);
+      const result = await this.chatWithModel(model, system, user, true);
       return result;
     } catch (error) {
-      const fix = await this.chat(
+      const fix = await this.chatWithModel(
+        model,
         '有効なJSONのみを返してください。構文エラーを修正してください。',
         `次の内容を有効なJSONとして再生成:\n${user}`,
         true,
@@ -274,6 +297,7 @@ export class OpenAiLlmProvider implements LlmProvider {
     jsonMode: boolean,
     attempt = 0,
   ): Promise<ChatResult> {
+    const maxAttempts = 3;
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -293,11 +317,13 @@ export class OpenAiLlmProvider implements LlmProvider {
 
     if (!response.ok) {
       const errorBody = await response.text();
-      if ((response.status === 429 || response.status >= 500) && attempt < 1) {
-        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+      if (isRetryableHttpStatus(response.status) && attempt < maxAttempts - 1) {
+        await sleep(1000 * Math.pow(2, attempt));
         return this.requestChat(model, system, user, jsonMode, attempt + 1);
       }
-      throw new Error(`OpenAI LLM failed (${response.status}): ${errorBody}`);
+      throw new Error(
+        localizeOpenAiError(`OpenAI LLM failed (${response.status}): ${errorBody}`),
+      );
     }
 
     const data = (await response.json()) as {

@@ -84,7 +84,7 @@ export function expandToFullWindow(): boolean {
  * ユーザー操作の直後に右端 1/3 縦帯のポップアップを開く（通常タブの resize 制限を回避）。
  * 戻り値: 同じウィンドウで続ける場合 true（router.push が必要）
  */
-export function openAsPanelWindow(path = '/panel'): boolean {
+export function openAsPanelWindow(path = '/home'): boolean {
   if (typeof window === 'undefined') return true;
 
   const { width, height, left, top } = getPanelWindowBounds();

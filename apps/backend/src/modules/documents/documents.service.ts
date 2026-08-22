@@ -174,6 +174,12 @@ export class DocumentsService {
         anonymousCase: true,
         structuredData: true,
         soapDocuments: { orderBy: { version: 'desc' }, take: 1 },
+        transcriptSegments: { orderBy: { sequenceNumber: 'asc' } },
+        attachments: {
+          where: { documentKind: 'questionnaire', ocrText: { not: null } },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
       },
     });
     if (!consultation) throw new NotFoundException('Consultation not found');
@@ -211,6 +217,19 @@ export class DocumentsService {
     });
     const physicianSubkarte = chatMessages.map((m) => `- ${m.content}`).join('\n');
 
+    const TRANSCRIPT_EXCERPT_LIMIT = 8000;
+    const transcriptFull = consultation.transcriptSegments
+      .map((seg) => seg.text.trim())
+      .filter(Boolean)
+      .join('\n');
+    const transcriptExcerpt = transcriptFull
+      ? transcriptFull.length > TRANSCRIPT_EXCERPT_LIMIT
+        ? `${transcriptFull.slice(0, TRANSCRIPT_EXCERPT_LIMIT)}\n…（以降省略）`
+        : transcriptFull
+      : undefined;
+
+    const questionnaireText = consultation.attachments[0]?.ocrText?.trim() || undefined;
+
     return {
       consultationId,
       caseCode,
@@ -240,6 +259,9 @@ export class DocumentsService {
       revisionExamples,
       referralPattern,
       physicianSubkarte,
+      todayJa: formatJapaneseDate(new Date()),
+      transcriptExcerpt,
+      questionnaireText,
     };
   }
 
@@ -299,6 +321,15 @@ export class DocumentsService {
       }
     }
   }
+}
+
+function formatJapaneseDate(date: Date): string {
+  return new Intl.DateTimeFormat('ja-JP-u-ca-japanese', {
+    era: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(date);
 }
 
 function flattenObject(obj: Record<string, unknown>, prefix = ''): Record<string, string> {

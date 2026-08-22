@@ -1,14 +1,34 @@
 import { GeneratedDocumentType } from '@prisma/client';
 import { rulesToPromptSection } from '../settings/physician-rules.types';
 import { DocumentGenerationContext } from './document-types';
+import {
+  knowledgePackDocumentHint,
+  knowledgePackSafetyRules,
+} from '../medical-knowledge/data/load-knowledge-pack';
 
 const BASE_RULES = `あなたは日本のクリニック向け医療書類作成アシスタントです。
-SOAP・構造化データ・医師サブカルテを使います。
-医師サブカルテに書かれた疑い・方針・処方意図は SOAP より優先してください。
-推測で新規診断や未記載の検査値を作らないでください（サブカルテに医師が書いた内容は採用可）。
-不明な項目は空文字または「要確認」としてください。
-診療文脈を理解し、単語の羅列ではなく読みやすい医学文書にしてください。
-文体は丁寧な紹介状・診療情報提供書として、カルテにそのまま使える表現を心がけてください。`;
+SOAP・構造化データ・医師サブカルテ・問診票・診察時の会話記録を使います。
+
+情報の優先順位:
+1. 医師サブカルテ（疑い・方針・処方意図の正。SOAPより優先）
+2. SOAP・構造化データ
+3. 問診票（既往歴・服薬・アレルギー・生活歴の転記元として積極的に使う）
+4. 会話記録（SOAPに載っていない経過・数値・訴えの詳細を補完する。会話に出た事実のみ使用可）
+
+厳守事項:
+- 推測で新規診断や未記載の検査値を作らない（サブカルテに医師が書いた内容は採用可）
+- 患者氏名・生年月日・年齢・日付は与えられた情報を一字一句正確に転記する
+- 発行日・記入日には「本日の日付」を使う
+- 不明な項目は空文字または「要確認」とする
+- 空欄を埋めるためだけの創作は禁止。ただし SOAP・問診票・会話記録に根拠がある情報は漏らさず反映する
+- 薬剤名・用量・単位・アレルギー・検査値・左右・陽性陰性・中止/継続は高精度に転記し、数値の桁違い補正はしない
+
+文章品質:
+- 診療文脈を理解し、単語の羅列ではなく読みやすい医学文書にする
+- 文体は丁寧な紹介状・診療情報提供書として、カルテにそのまま使える表現にする
+- 出力前に全フィールドを自己点検する: 誤字脱字・仮名遣いの誤り・薬剤名や病名の誤変換（例: 気管支炎を期間支援と書くなど）・数値や単位の転記ミスがないこと
+- 薬剤名は正式名称（一般名または先発品名）で正確に表記し、用法用量の単位（mg、錠、回、日）を正しく書く
+- 商品名が出た場合は可能なら一般名も併記してよい（例: ムコダイン＝カルボシステイン）`;
 
 function contextBlock(ctx: DocumentGenerationContext): string {
   const patternHint =
@@ -18,14 +38,33 @@ function contextBlock(ctx: DocumentGenerationContext): string {
   const subkarte = ctx.physicianSubkarte.trim()
     ? `\n医師サブカルテ（処方・疑い・方針の正・SOAPより優先）:\n${ctx.physicianSubkarte}`
     : `\n医師サブカルテ: （なし）`;
-  return `患者: ${ctx.patientName}（${ctx.sex}、${ctx.age ?? '—'}歳）
-症例コード: ${ctx.caseCode}
+  const patientDetail = [
+    ctx.dateOfBirth ? `生年月日: ${ctx.dateOfBirth.slice(0, 10)}` : '',
+    ctx.phone ? `電話: ${ctx.phone}` : '',
+    ctx.address ? `住所: ${ctx.address}` : '',
+    ctx.memo ? `患者メモ: ${ctx.memo}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
+  const questionnaire = ctx.questionnaireText
+    ? `\n問診票（既往・服薬・アレルギー等の転記元）:\n${ctx.questionnaireText}`
+    : '';
+  const transcript = ctx.transcriptExcerpt
+    ? `\n診察時の会話記録（補正済み・SOAPにない詳細の補完用）:\n${ctx.transcriptExcerpt}`
+    : '';
+  const knowledgeHint = knowledgePackDocumentHint();
+  const safety = knowledgePackSafetyRules();
+  return `本日の日付: ${ctx.todayJa}
+患者: ${ctx.patientName}（${ctx.sex}、${ctx.age ?? '—'}歳）
+症例コード: ${ctx.caseCode}${patientDetail ? `\n${patientDetail}` : ''}
 SOAP:
 S: ${ctx.soap.subjective}
 O: ${ctx.soap.objective}
 A: ${ctx.soap.assessment}
-P: ${ctx.soap.plan}${subkarte}
-構造化データ: ${JSON.stringify(ctx.structured, null, 2)}
+P: ${ctx.soap.plan}${subkarte}${questionnaire}
+構造化データ: ${JSON.stringify(ctx.structured, null, 2)}${transcript}
+${knowledgeHint}
+${safety.length ? `安全ルール再掲:\n${safety.map((r) => `- ${r}`).join('\n')}` : ''}
 ${rulesToPromptSection(ctx.physicianRules)}
 ${ctx.revisionExamples ? `\n医師の過去の修正例（文体参考）:\n${ctx.revisionExamples}` : ''}${patternHint}`;
 }

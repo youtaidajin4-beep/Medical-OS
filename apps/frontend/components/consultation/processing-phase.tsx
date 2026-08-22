@@ -2,20 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { AudioLines, Brain, Check, FileAudio, Loader2, Sparkles } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api-client';
 import { isOpenAiMode } from '@/lib/ai-status';
 
-const MOCK_STEPS = [
+const STEPS = [
   { label: '音声を結合中', icon: FileAudio },
   { label: '文字起こし中', icon: AudioLines },
-  { label: '下書きを生成中', icon: Sparkles },
-] as const;
-
-const OPENAI_STEPS = [
-  { label: '音声を結合中', icon: FileAudio },
-  { label: 'Whisper で文字起こし中', icon: AudioLines },
   { label: '診療データを整理中', icon: Brain },
   { label: 'SOAP を作成中', icon: Sparkles },
 ] as const;
@@ -26,108 +19,58 @@ export function ProcessingPhase({ density = 'full' }: { density?: 'compact' | 'f
   const compact = density === 'compact';
 
   useEffect(() => {
-    void api.healthAi().then((h) => setOpenAi(isOpenAiMode(h))).catch(() => {});
+    void api
+      .healthAi()
+      .then((h) => setOpenAi(isOpenAiMode(h)))
+      .catch(() => {});
   }, []);
-
-  const steps = openAi ? OPENAI_STEPS : MOCK_STEPS;
-  const intervalMs = openAi ? 4000 : 900;
 
   useEffect(() => {
     setStepIndex(0);
     const timer = setInterval(() => {
-      setStepIndex((i) => Math.min(i + 1, steps.length - 1));
-    }, intervalMs);
+      setStepIndex((i) => Math.min(i + 1, STEPS.length - 1));
+    }, openAi ? 4000 : 900);
     return () => clearInterval(timer);
-  }, [steps.length, intervalMs]);
+  }, [openAi]);
 
-  const progress = ((stepIndex + 0.5) / steps.length) * 100;
-  const currentLabel = steps[stepIndex]?.label ?? '処理中';
-
-  if (compact) {
-    return (
-      <div className="mx-auto flex max-w-md flex-col items-center gap-4 py-10">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-600 text-white">
-          <Loader2 className="h-5 w-5 animate-spin" />
-        </div>
-        <div className="text-center">
-          <h1 className="text-base font-bold text-slate-900">処理中</h1>
-          <p className="mt-1 text-xs text-slate-500">{currentLabel}</p>
-        </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-          <div
-            className="h-full rounded-full bg-brand-500 transition-all duration-700 ease-out"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </div>
-    );
-  }
+  const progress = ((stepIndex + 0.5) / STEPS.length) * 100;
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col items-center gap-8 py-16">
-      <div className="relative flex h-20 w-20 items-center justify-center">
-        <span className="absolute inset-0 animate-pulse-ring rounded-full bg-brand-400/30" />
-        <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-brand-600 text-white shadow-lg shadow-brand-600/25">
-          <Loader2 className="h-7 w-7 animate-spin" />
-        </div>
+    <section className="flex min-h-[62dvh] flex-col items-center justify-center gap-5 text-center">
+      <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#c9ddd8] border-t-[#0c2f2c]" />
+      <p className={cn('font-semibold text-[#0c2f2c]', compact ? 'text-base' : 'text-lg')}>
+        文字起こしと SOAP を作成中
+      </p>
+      <p className="max-w-sm text-sm leading-relaxed text-slate-500">
+        音声を文字にし、内科の言葉に寄せています。
+      </p>
+      <div className="h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-[#d7e2dd]">
+        <div
+          className="h-full rounded-full bg-[#0c2f2c] transition-all duration-700 ease-out"
+          style={{ width: `${progress}%` }}
+        />
       </div>
-
-      <div className="text-center">
-        <h1 className="text-xl font-bold tracking-tight text-slate-900">AI が処理しています</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          {openAi
-            ? '実音声の文字起こしと SOAP 下書きの生成には30秒〜2分かかることがあります'
-            : '文字起こしと SOAP 下書きの生成を行っています'}
-        </p>
-      </div>
-
-      <Card className="w-full">
-        <CardContent className="space-y-5 py-5">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-            <div
-              className="h-full rounded-full bg-brand-500 transition-all duration-700 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-
-          <ul className="space-y-3">
-            {steps.map(({ label, icon: Icon }, i) => {
-              const done = i < stepIndex;
-              const current = i === stepIndex;
-              return (
-                <li key={label} className="flex items-center gap-3">
-                  <span
-                    className={cn(
-                      'flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors',
-                      done && 'bg-emerald-100 text-emerald-600',
-                      current && 'bg-brand-100 text-brand-600',
-                      !done && !current && 'bg-slate-100 text-slate-400',
-                    )}
-                  >
-                    {done ? (
-                      <Check className="h-4 w-4 animate-scale-in" />
-                    ) : current ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Icon className="h-4 w-4" />
-                    )}
-                  </span>
-                  <span
-                    className={cn(
-                      'text-sm transition-colors',
-                      done && 'text-slate-500 line-through decoration-slate-300',
-                      current && 'font-medium text-slate-900',
-                      !done && !current && 'text-slate-400',
-                    )}
-                  >
-                    {label}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </CardContent>
-      </Card>
-    </div>
+      <ul className="w-full max-w-sm space-y-2 text-left">
+        {STEPS.map(({ label, icon: Icon }, i) => {
+          const done = i < stepIndex;
+          const current = i === stepIndex;
+          return (
+            <li key={label} className="flex items-center gap-3">
+              <span
+                className={cn(
+                  'flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
+                  done && 'bg-emerald-100 text-emerald-600',
+                  current && 'bg-[#0c2f2c] text-[#e8c98a]',
+                  !done && !current && 'bg-[#e8eee9] text-slate-400',
+                )}
+              >
+                {done ? <Check className="h-4 w-4" /> : current ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
+              </span>
+              <span className={cn('text-sm', current ? 'font-medium text-[#0c2f2c]' : 'text-slate-500')}>{label}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }

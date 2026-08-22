@@ -34,7 +34,13 @@ type Timeline = {
   }>;
 };
 
-export function PaperCapturePanel({ consultationId }: { consultationId: string }) {
+export function PaperCapturePanel({
+  consultationId,
+  onApplied,
+}: {
+  consultationId: string;
+  onApplied?: (soap: { subjective: string; objective: string; assessment: string; plan: string }) => void;
+}) {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [timeline, setTimeline] = useState<Timeline | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -67,6 +73,20 @@ export function PaperCapturePanel({ consultationId }: { consultationId: string }
     }
   }
 
+  async function applyToSoap(attachmentId: string) {
+    setUploading(true);
+    setError('');
+    try {
+      const result = await api.applyQuestionnaire(consultationId, attachmentId);
+      if (result.soap) onApplied?.(result.soap);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'SOAPへの反映に失敗しました');
+    } finally {
+      setUploading(false);
+    }
+  }
+
   return (
     <div className="space-y-3">
       <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
@@ -79,14 +99,14 @@ export function PaperCapturePanel({ consultationId }: { consultationId: string }
         </p>
         <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-brand-300 bg-brand-50/50 px-3 py-4 text-sm font-medium text-brand-700">
           <FileImage className="h-4 w-4" />
-          {uploading ? '処理中…' : '写真を選ぶ / 撮影'}
+          {uploading ? '処理中…' : '問診票を撮影 / 選ぶ'}
           <input
             type="file"
             accept="image/*"
             capture="environment"
             className="hidden"
             disabled={uploading}
-            onChange={(e) => void handleFile(e.target.files?.[0] ?? null, 'other')}
+            onChange={(e) => void handleFile(e.target.files?.[0] ?? null, 'questionnaire')}
           />
         </label>
         {uploading && (
@@ -109,6 +129,17 @@ export function PaperCapturePanel({ consultationId }: { consultationId: string }
                 <p className="mt-1 whitespace-pre-wrap text-slate-600">
                   {a.ocrText ?? '（読取なし）'}
                 </p>
+                {a.ocrText && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="mt-2"
+                    disabled={uploading}
+                    onClick={() => void applyToSoap(a.id)}
+                  >
+                    SOAP / 患者メモへ反映
+                  </Button>
+                )}
               </li>
             ))}
           </ul>

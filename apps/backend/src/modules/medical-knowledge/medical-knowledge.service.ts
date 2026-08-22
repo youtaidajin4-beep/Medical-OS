@@ -57,39 +57,58 @@ export class MedicalKnowledgeService implements OnModuleInit {
   }
 
   async ensureSeedTerms() {
-    const count = await this.prisma.medicalTerm.count();
-    if (count > 0) {
-      this.logger.log(`medical_terms already seeded (${count})`);
-      return { inserted: 0, skipped: count };
-    }
     let inserted = 0;
+    let aliasesAdded = 0;
     for (const t of INTERNAL_MEDICINE_SEED_TERMS) {
-      const created = await this.prisma.medicalTerm.create({
-        data: {
-          canonicalName: t.canonicalName,
-          reading: t.reading,
-          category: t.category as MedicalTermCategory,
-          subcategory: t.subcategory,
-          englishName: t.englishName,
-          abbreviation: t.abbreviation,
-          priority: t.priority ?? 100,
-          riskLevel: (t.riskLevel ?? 'medium') as MedicalRiskLevel,
-          source: MedicalKnowledgeSource.internal_medicine_seed,
-          sourceCode: null,
-          aliases: {
-            create: (t.aliases ?? []).map((a) => ({
-              alias: a.alias,
-              aliasReading: a.aliasReading,
-              aliasType: a.aliasType as MedicalTermAliasType,
-            })),
-          },
-        },
+      const existing = await this.prisma.medicalTerm.findFirst({
+        where: { canonicalName: t.canonicalName },
+        include: { aliases: true },
       });
-      void created;
-      inserted += 1;
+      if (!existing) {
+        await this.prisma.medicalTerm.create({
+          data: {
+            canonicalName: t.canonicalName,
+            reading: t.reading,
+            category: t.category as MedicalTermCategory,
+            subcategory: t.subcategory,
+            englishName: t.englishName,
+            abbreviation: t.abbreviation,
+            priority: t.priority ?? 100,
+            riskLevel: (t.riskLevel ?? 'medium') as MedicalRiskLevel,
+            source: MedicalKnowledgeSource.internal_medicine_seed,
+            sourceCode: null,
+            aliases: {
+              create: (t.aliases ?? []).map((a) => ({
+                alias: a.alias,
+                aliasReading: a.aliasReading,
+                aliasType: a.aliasType as MedicalTermAliasType,
+              })),
+            },
+          },
+        });
+        inserted += 1;
+        aliasesAdded += t.aliases?.length ?? 0;
+        continue;
+      }
+      const existingAliases = new Set(existing.aliases.map((a) => a.alias));
+      for (const a of t.aliases ?? []) {
+        if (existingAliases.has(a.alias)) continue;
+        await this.prisma.medicalTermAlias.create({
+          data: {
+            medicalTermId: existing.id,
+            alias: a.alias,
+            aliasReading: a.aliasReading,
+            aliasType: a.aliasType as MedicalTermAliasType,
+          },
+        });
+        aliasesAdded += 1;
+      }
     }
     await this.refreshIndexFromDb();
-    return { inserted, skipped: 0 };
+    this.logger.log(
+      `medical knowledge upsert complete: inserted=${inserted}, aliasesAdded=${aliasesAdded}, indexSize=${INTERNAL_MEDICINE_SEED_TERMS.length}`,
+    );
+    return { inserted, aliasesAdded, skipped: 0 };
   }
 
   async persistCorrectionResult(params: {

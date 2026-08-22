@@ -46,7 +46,7 @@ export class AttachmentsService {
 
     const ocrText = await this.runOcr(file.buffer, file.mimetype);
 
-    return this.prisma.consultationAttachment.create({
+    const attachment = await this.prisma.consultationAttachment.create({
       data: {
         consultationId,
         fileName: file.originalname,
@@ -64,6 +64,77 @@ export class AttachmentsService {
         createdAt: true,
       },
     });
+
+    if (documentKind === 'questionnaire' && ocrText) {
+      await this.applyQuestionnaire(consultationId, physicianId, attachment.id);
+    }
+
+    return attachment;
+  }
+
+  async applyQuestionnaire(consultationId: string, physicianId: string, attachmentId: string) {
+    await this.consultationAccess.assertPhysicianOwns(consultationId, physicianId);
+    const attachment = await this.prisma.consultationAttachment.findFirst({
+      where: { id: attachmentId, consultationId },
+    });
+    if (!attachment?.ocrText?.trim()) {
+      throw new BadRequestException('問診票の読取結果がありません');
+    }
+    const ocr = attachment.ocrText.trim();
+    const block = `【問診票】\n${ocr}`;
+
+    const consultation = await this.prisma.consultation.findUniqueOrThrow({
+      where: { id: consultationId },
+      include: {
+        patient: true,
+        soapDocuments: { orderBy: { version: 'desc' }, take: 1 },
+      },
+    });
+
+    let patientMemo: string | null = consultation.patient?.memo ?? null;
+    if (consultation.patientId) {
+      const current = consultation.patient?.memo ?? '';
+      if (!current.includes(ocr.slice(0, 40))) {
+        patientMemo = [current, block].filter(Boolean).join('\n\n');
+        await this.prisma.patient.update({
+          where: { id: consultation.patientId },
+          data: { memo: patientMemo },
+        });
+      }
+    }
+
+    const latest = consultation.soapDocuments[0];
+    let soap = latest
+      ? {
+          subjective: latest.subjective,
+          objective: latest.objective,
+          assessment: latest.assessment,
+          plan: latest.plan,
+        }
+      : null;
+    if (latest && !latest.subjective.includes('【問診票】')) {
+      soap = {
+        subjective: `${block}\n${latest.subjective}`.trim(),
+        objective: latest.objective,
+        assessment: latest.assessment,
+        plan: latest.plan,
+      };
+      await this.prisma.soapDocument.create({
+        data: {
+          consultationId,
+          ...soap,
+          version: latest.version + 1,
+          isAiGenerated: false,
+        },
+      });
+    }
+
+    return {
+      attachmentId: attachment.id,
+      ocrText: ocr,
+      soap,
+      patientMemo,
+    };
   }
 
   async timeline(consultationId: string, physicianId: string) {

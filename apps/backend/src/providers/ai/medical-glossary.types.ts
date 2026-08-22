@@ -9,47 +9,39 @@ export type MedicalGlossary = {
   customReplacements: MedicalGlossaryReplacement[];
 };
 
+import { knowledgePackGlossaryDefaults } from '../../modules/medical-knowledge/data/load-knowledge-pack';
+
+const pack = knowledgePackGlossaryDefaults();
+
+/** Whisper / LLM glossary defaults — driven by 内科ナレッジ v1 pack. */
 export const DEFAULT_MEDICAL_GLOSSARY: MedicalGlossary = {
-  drugNames: [
-    'ムコダイン',
+  drugNames: unique([
+    ...pack.drugNames.slice(0, 80),
     'ムコソルバン',
-    'アムロジピン',
-    'メトホルミン',
-    'ロスバスタチン',
-    'ラベプラゾール',
-    'アセトアミノフェン',
-    'ロキソプロフェン',
-    'アンブロキソール',
-    'カルベジロール',
     'エンレスト',
-    'フォシーガ',
-    'ランソプラゾール',
     'トラネキサム酸',
     'ベタヒスチン',
-    'モンテルカスト',
-    'クラリスロマイシン',
-    'レボセチリジン',
     'プレドニン',
     'ツムラ大建中湯',
-  ],
-  diagnoses: [
+  ]),
+  diagnoses: unique([
+    ...pack.diagnoses.slice(0, 80),
     '気管支炎',
-    '高血圧症',
-    '2型糖尿病',
-    '胃食道逆流症',
-    '脂質異常症',
     'うつ病',
     '不眠症',
-    '慢性腎臓病',
-    'インフルエンザ',
     '副鼻腔炎',
-  ],
+  ]),
   customReplacements: [
     { wrong: '無効団員', correct: 'ムコダイン' },
     { wrong: '調子んでは', correct: '聴診では' },
     { wrong: '最新しましょう', correct: '再診しましょう' },
+    { wrong: '期間支援', correct: '気管支炎' },
   ],
 };
+
+function unique(terms: string[]): string[] {
+  return [...new Set(terms.map((t) => t.trim()).filter(Boolean))];
+}
 
 export function mergeMedicalGlossary(
   existing: MedicalGlossary | undefined,

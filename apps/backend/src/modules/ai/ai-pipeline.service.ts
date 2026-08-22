@@ -78,10 +78,17 @@ export class AiPipelineService {
       let audio: Buffer;
       if (chunks.length > 0) {
         audio = await this.recordingService.getAssembledAudioBuffer(consultationId);
-      } else if (isMock) {
-        audio = Buffer.alloc(128);
       } else {
-        throw new Error('録音データがありません。マイクの入力を確認して再度録音してください。');
+        const existing = await this.recordingService.getExistingAssembledBuffer(consultationId);
+        if (existing) {
+          audio = existing;
+        } else if (isMock) {
+          audio = Buffer.alloc(128);
+        } else {
+          throw new Error(
+            '録音データがありません。マイクの入力を確認して再度録音するか、「録り直す」からやり直してください。',
+          );
+        }
       }
 
       const recordingDurationSec =
@@ -236,11 +243,19 @@ export class AiPipelineService {
       const soapRevisionExamples = soapRevisions
         .map((r) => `[${r.fieldName}] 「${r.beforeValue}」→「${r.afterValue}」`)
         .join('\n');
-      const soap = await this.llmProvider.generateSoap(structured, consultationId, {
+      const generatedSoap = await this.llmProvider.generateSoap(structured, consultationId, {
         revisionExamples: soapRevisionExamples || undefined,
         greeting: physicianRules.fixedPhrases?.greeting,
         closing: physicianRules.fixedPhrases?.closing,
       });
+      const soap = { ...generatedSoap };
+      const questionnaire = await this.prisma.consultationAttachment.findFirst({
+        where: { consultationId, documentKind: 'questionnaire', ocrText: { not: null } },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (questionnaire?.ocrText && !soap.subjective.includes('【問診票】')) {
+        soap.subjective = `【問診票】\n${questionnaire.ocrText.trim()}\n${soap.subjective}`.trim();
+      }
       await logAiExecution(this.prisma, {
         consultationId,
         step: 'soap_complete',

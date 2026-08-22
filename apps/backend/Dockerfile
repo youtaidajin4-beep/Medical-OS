@@ -22,6 +22,9 @@ RUN apk add --no-cache ffmpeg
 RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 WORKDIR /app
 ENV NODE_ENV=production
+# Railway Volume 推奨: STORAGE_PATH=/data/audio（Volume を /data にマウント）
+ENV STORAGE_PATH=/data/audio
+RUN mkdir -p /data/audio
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
 COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
@@ -31,4 +34,4 @@ COPY --from=builder /app/apps/backend/node_modules ./apps/backend/node_modules
 COPY --from=builder /app/packages ./packages
 EXPOSE 3001
 WORKDIR /app/apps/backend
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+CMD ["sh", "-c", "mkdir -p \"${STORAGE_PATH:-/data/audio}\" && npx prisma migrate deploy && node dist/main.js"]

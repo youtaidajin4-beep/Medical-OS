@@ -71,6 +71,8 @@ export interface LlmProvider {
       soap: { subjective: string; objective: string; assessment: string; plan: string };
       note: string;
       documents: Record<string, Record<string, unknown>>;
+      patientSummary?: string;
+      structured?: unknown;
     },
   ): Promise<{
     reply: string;

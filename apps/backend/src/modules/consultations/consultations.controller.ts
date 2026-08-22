@@ -69,6 +69,16 @@ export class ConsultationsController {
     return this.consultationsService.stopRecording(id, user.sub);
   }
 
+  @Post(':id/reprocess')
+  reprocess(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.consultationsService.reprocess(id, user.sub);
+  }
+
+  @Post(':id/recording/reset')
+  resetRecording(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.consultationsService.resetForRerecord(id, user.sub);
+  }
+
   @Patch(':id/soap')
   updateSoap(
     @Param('id') id: string,

@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { formatDuration } from '@medical-os/shared';
 import { Mic, Pause, Play, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Alert } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api-client';
@@ -26,54 +25,6 @@ type RecordingPhaseProps = {
   density?: 'compact' | 'full';
 };
 
-/* Decorative sound-level bars shown while recording */
-const BAR_DELAYS = ['0ms', '150ms', '300ms', '100ms', '250ms', '50ms', '200ms'];
-
-function SoundBars({ active }: { active: boolean }) {
-  return (
-    <div className="flex h-8 items-center gap-1" aria-hidden>
-      {BAR_DELAYS.map((delay, i) => (
-        <span
-          key={i}
-          className={cn(
-            'w-1 rounded-full bg-brand-500 transition-all',
-            active ? 'h-full origin-center animate-sound-bar' : 'h-1.5 bg-slate-300',
-          )}
-          style={active ? { animationDelay: delay } : undefined}
-        />
-      ))}
-    </div>
-  );
-}
-
-function MicVisual({ state }: { state: RecordingPhaseProps['state'] }) {
-  const recording = state === 'recording';
-  const paused = state === 'paused';
-  return (
-    <div className="relative flex h-28 w-28 items-center justify-center">
-      {recording && (
-        <>
-          <span className="absolute inset-0 animate-pulse-ring rounded-full bg-red-400/40" />
-          <span
-            className="absolute inset-0 animate-pulse-ring rounded-full bg-red-400/30"
-            style={{ animationDelay: '0.5s' }}
-          />
-        </>
-      )}
-      <div
-        className={cn(
-          'relative flex h-24 w-24 items-center justify-center rounded-full shadow-lg transition-colors',
-          recording && 'bg-red-500 text-white shadow-red-500/30',
-          paused && 'bg-amber-400 text-white shadow-amber-400/30',
-          !recording && !paused && 'bg-slate-100 text-slate-400',
-        )}
-      >
-        {paused ? <Pause className="h-10 w-10" /> : <Mic className="h-10 w-10" />}
-      </div>
-    </div>
-  );
-}
-
 export function RecordingPhase({
   caseName,
   state,
@@ -90,160 +41,121 @@ export function RecordingPhase({
   density = 'full',
 }: RecordingPhaseProps) {
   const [openAi, setOpenAi] = useState(false);
-  const [showPreview, setShowPreview] = useState(density !== 'compact');
   const compact = density === 'compact';
 
   useEffect(() => {
-    void api.healthAi().then((h) => setOpenAi(isOpenAiMode(h))).catch(() => {});
+    void api
+      .healthAi()
+      .then((h) => setOpenAi(isOpenAiMode(h)))
+      .catch(() => {});
   }, []);
 
+  const live = state === 'recording' || state === 'paused';
+
   return (
-    <div className={cn('mx-auto flex flex-col gap-4', compact ? 'max-w-md gap-3' : 'max-w-2xl gap-6')}>
-      <div>
-        <p className="text-xs text-slate-500 sm:text-sm">{caseName}</p>
-        <h1
+    <section
+      className={cn(
+        'flex flex-col items-center justify-center rounded-[2rem] px-6 text-[#f3efe4] shadow-[0_40px_80px_-40px_rgba(12,47,44,0.8)]',
+        compact ? 'min-h-[62dvh]' : 'min-h-[72dvh]',
+        'bg-[radial-gradient(circle_at_50%_30%,#1a5c55,transparent_55%),linear-gradient(180deg,#0c2f2c,#071c1a)]',
+      )}
+    >
+      <div className={cn('relative mb-8 flex items-center justify-center', compact ? 'h-28 w-28' : 'h-40 w-40')}>
+        {state === 'recording' && (
+          <>
+            <span className="absolute inset-0 animate-pulse-ring rounded-full bg-red-400/40" />
+            <span className="absolute inset-6 animate-pulse rounded-full bg-red-500/20" />
+          </>
+        )}
+        <span
           className={cn(
-            'font-bold tracking-tight text-slate-900',
-            compact ? 'text-lg' : 'text-2xl',
+            'relative flex items-center justify-center rounded-full text-white',
+            compact ? 'h-16 w-16' : 'h-24 w-24',
+            state === 'paused' ? 'bg-amber-500' : 'bg-red-600 shadow-[0_0_40px_rgba(220,38,38,0.45)]',
           )}
         >
-          診療中
-        </h1>
+          {state === 'paused' ? <Pause className={compact ? 'h-7 w-7' : 'h-10 w-10'} /> : <Mic className={compact ? 'h-7 w-7' : 'h-10 w-10'} />}
+        </span>
       </div>
 
-      <Card>
-        <CardContent
-          className={cn(
-            'flex flex-col items-center gap-4',
-            compact ? 'py-6' : 'gap-6 py-10',
-          )}
-        >
-          {!compact && <MicVisual state={state} />}
-          {compact && (
-            <div
-              className={cn(
-                'flex h-14 w-14 items-center justify-center rounded-full',
-                state === 'recording' && 'bg-red-500 text-white',
-                state === 'paused' && 'bg-amber-400 text-white',
-                state !== 'recording' && state !== 'paused' && 'bg-slate-100 text-slate-400',
-              )}
+      <p className="text-xs font-semibold tracking-[0.35em] text-red-200">
+        {state === 'paused' ? 'PAUSED' : live ? 'RECORDING' : 'READY'}
+      </p>
+      <p className={cn('mt-2 font-mono font-light tabular-nums tracking-tight', compact ? 'text-5xl' : 'text-6xl min-[480px]:text-7xl')}>
+        {formatDuration(seconds)}
+      </p>
+      <p className="mt-4 text-sm text-[#c9ddd8]">{caseName}</p>
+
+      {pendingChunks > 0 && (
+        <Alert variant="warning" className="mt-4 w-full max-w-md">
+          未送信チャンク: {pendingChunks}
+        </Alert>
+      )}
+      {limitReached && (
+        <Alert variant="error" className="mt-4 w-full max-w-md">
+          録音上限（60分）に達したため終了しました
+        </Alert>
+      )}
+      {live && seconds >= 12 * 60 && (
+        <Alert variant="error" className="mt-4 w-full max-w-md">
+          録音が12分を超えています。試験運用では10分前後を目安に区切ると安定します。必要なら一度終了してSOAPを作り、続きは別診療で録ってください。
+        </Alert>
+      )}
+      {live && seconds >= 8 * 60 && seconds < 12 * 60 && (
+        <Alert variant="warning" className="mt-4 w-full max-w-md">
+          録音8分経過。長時間は文字起こし失敗のリスクが上がります。区切りの良いところで終了を検討してください。
+        </Alert>
+      )}
+
+      {!openAi && preview && live && (
+        <p className="mt-4 max-w-md text-center text-xs leading-relaxed text-[#c9ddd8]">{preview}</p>
+      )}
+
+      <div className="mt-10 flex w-full max-w-md flex-col gap-3">
+        {state === 'idle' && (
+          <>
+            <label className="flex w-full cursor-pointer items-start gap-3 rounded-2xl border border-white/15 bg-white/5 px-4 py-3.5 text-sm leading-relaxed text-[#d5e6e1]">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded accent-[#e8c98a]"
+                checked={consentGiven}
+                onChange={(e) => onConsentChange(e.target.checked)}
+              />
+              <span>患者の同意を得た上で診療音声を記録します。音声はSOAP生成後に削除されます。</span>
+            </label>
+            <Button
+              size="lg"
+              variant="danger"
+              className="w-full rounded-full"
+              icon={<Mic />}
+              disabled={!consentGiven}
+              onClick={onStart}
             >
-              {state === 'paused' ? <Pause className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
-            </div>
-          )}
-
-          <div
-            className={cn(
-              'inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium sm:px-4 sm:py-1.5 sm:text-sm',
-              state === 'recording' && 'bg-red-50 text-red-700 ring-1 ring-red-200',
-              state === 'paused' && 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
-              state !== 'recording' && state !== 'paused' && 'bg-slate-100 text-slate-600',
-            )}
-          >
-            {state === 'recording' && (
-              <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-            )}
-            {state === 'recording' ? '録音中' : state === 'paused' ? '一時停止中' : '待機中'}
+              録音開始
+            </Button>
+          </>
+        )}
+        {state === 'recording' && (
+          <div className="flex w-full gap-2">
+            <Button variant="secondary" size="lg" className="flex-1 rounded-full" icon={<Pause />} onClick={onPause}>
+              一時停止
+            </Button>
+            <Button size="lg" variant="danger" className="flex-1 rounded-full" icon={<Square />} onClick={onStop}>
+              終了
+            </Button>
           </div>
-
-          <div className="flex flex-col items-center gap-2">
-            <p
-              className={cn(
-                'font-mono font-semibold tabular-nums tracking-tight text-slate-900',
-                compact ? 'text-3xl' : 'text-5xl',
-              )}
-            >
-              {formatDuration(seconds)}
-            </p>
-            {!compact && <SoundBars active={state === 'recording'} />}
+        )}
+        {state === 'paused' && (
+          <div className="flex w-full gap-2">
+            <Button variant="secondary" size="lg" className="flex-1 rounded-full" icon={<Play />} onClick={onResume}>
+              再開
+            </Button>
+            <Button size="lg" variant="danger" className="flex-1 rounded-full" icon={<Square />} onClick={onStop}>
+              終了
+            </Button>
           </div>
-
-          {pendingChunks > 0 && (
-            <Alert variant="warning" className="w-full">
-              未送信チャンク: {pendingChunks}
-            </Alert>
-          )}
-          {limitReached && (
-            <Alert variant="error" className="w-full">
-              録音上限（60分）に達したため終了しました
-            </Alert>
-          )}
-
-          {(openAi || preview) && (
-            <div className="w-full">
-              {compact ? (
-                <button
-                  type="button"
-                  className="mb-1 text-xs font-medium text-brand-600"
-                  onClick={() => setShowPreview((v) => !v)}
-                >
-                  {showPreview ? '文字起こしを閉じる' : '文字起こしを表示'}
-                </button>
-              ) : null}
-              {(!compact || showPreview) && (
-                <div className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 sm:px-4 sm:py-3">
-                  <p className="mb-1 text-xs font-medium text-slate-400">
-                    {openAi ? '文字起こし' : 'リアルタイムプレビュー'}
-                  </p>
-                  <p className="whitespace-pre-line text-sm leading-relaxed text-slate-700">
-                    {openAi
-                      ? '診療終了後に文字起こしします。録音中はプレビューを表示しません。'
-                      : preview}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="flex w-full flex-col gap-3">
-            {state === 'idle' && (
-              <>
-                <label className="flex w-full items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-700 sm:gap-3 sm:px-4 sm:py-3 sm:text-sm">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-600"
-                    checked={consentGiven}
-                    onChange={(e) => onConsentChange(e.target.checked)}
-                  />
-                  <span>
-                    患者の同意を得た上で診療音声を記録します。音声はSOAP生成後に削除されます。
-                  </span>
-                </label>
-                <Button
-                  size="lg"
-                  variant="danger"
-                  className="w-full rounded-full"
-                  icon={<Mic />}
-                  disabled={!consentGiven}
-                  onClick={onStart}
-                >
-                  録音開始
-                </Button>
-              </>
-            )}
-            {state === 'recording' && (
-              <div className="flex w-full gap-2">
-                <Button variant="secondary" size="lg" className="flex-1" icon={<Pause />} onClick={onPause}>
-                  一時停止
-                </Button>
-                <Button size="lg" className="flex-1" icon={<Square />} onClick={onStop}>
-                  終了
-                </Button>
-              </div>
-            )}
-            {state === 'paused' && (
-              <div className="flex w-full gap-2">
-                <Button variant="secondary" size="lg" className="flex-1" icon={<Play />} onClick={onResume}>
-                  再開
-                </Button>
-                <Button size="lg" className="flex-1" icon={<Square />} onClick={onStop}>
-                  終了
-                </Button>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+        )}
+      </div>
+    </section>
   );
 }

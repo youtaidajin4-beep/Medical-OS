@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { SttProvider, SttTranscriptSegment } from './stt.provider';
 
 export interface OpenAiSttConfig {
@@ -7,6 +7,9 @@ export interface OpenAiSttConfig {
 }
 
 const MIN_AUDIO_BYTES = 1024;
+/** OpenAI Whisper hard limit is 25MB; reject earlier with a clear message. */
+const WHISPER_MAX_UPLOAD_BYTES = 24 * 1024 * 1024;
+const MAX_RETRIES = 3;
 const WHISPER_HALLUCINATION_PATTERNS = [
   /ご視聴ありがとうございました/,
   /ご視聴ありがとうございます/,
@@ -56,9 +59,18 @@ export class OpenAiSttProvider implements SttProvider {
         '音声データが短すぎます。マイクの入力を確認し、30秒以上録音してから再試行してください。',
       );
     }
-    const isWav = audio.length > 4 && audio.toString('ascii', 0, 4) === 'RIFF';
-    const filename = isWav ? 'consultation.wav' : 'consultation.webm';
-    const mimeType = isWav ? 'audio/wav' : 'audio/webm';
+    if (audio.length > WHISPER_MAX_UPLOAD_BYTES) {
+      throw new Error(
+        `録音が長すぎます（約${Math.round(audio.length / (1024 * 1024))}MB）。短く区切って録り直すか、診療を分割してください。`,
+      );
+    }
+    const header = audio.subarray(0, 4).toString('ascii');
+    const isWav = header === 'RIFF';
+    const isId3 = audio.length > 2 && audio[0] === 0x49 && audio[1] === 0x44 && audio[2] === 0x33;
+    const isMp3Frame = audio.length > 1 && audio[0] === 0xff && (audio[1]! & 0xe0) === 0xe0;
+    const isMp3 = isId3 || isMp3Frame;
+    const filename = isWav ? 'consultation.wav' : isMp3 ? 'consultation.mp3' : 'consultation.webm';
+    const mimeType = isWav ? 'audio/wav' : isMp3 ? 'audio/mpeg' : 'audio/webm';
     return this.transcribeBuffer(audio, filename, mimeType, options?.whisperPrompt);
   }
 
@@ -68,12 +80,12 @@ export class OpenAiSttProvider implements SttProvider {
     }
   }
 
-  private async transcribeBuffer(
+  private buildForm(
     audio: Buffer,
     filename: string,
     mimeType: string,
     whisperPrompt?: string,
-  ): Promise<SttTranscriptSegment[]> {
+  ): FormData {
     const form = new FormData();
     form.append('file', new Blob([audio], { type: mimeType }), filename);
     form.append('model', this.model);
@@ -83,8 +95,16 @@ export class OpenAiSttProvider implements SttProvider {
     if (whisperPrompt?.trim()) {
       form.append('prompt', whisperPrompt.trim());
     }
+    return form;
+  }
 
-    const data = await this.requestWhisper(form);
+  private async transcribeBuffer(
+    audio: Buffer,
+    filename: string,
+    mimeType: string,
+    whisperPrompt?: string,
+  ): Promise<SttTranscriptSegment[]> {
+    const data = await this.requestWhisper(audio, filename, mimeType, whisperPrompt);
     const segments = data.segments?.length
       ? data.segments
           .map((seg) => ({
@@ -124,7 +144,14 @@ export class OpenAiSttProvider implements SttProvider {
     }
   }
 
-  private async requestWhisper(form: FormData, attempt = 0): Promise<WhisperVerboseResponse> {
+  private async requestWhisper(
+    audio: Buffer,
+    filename: string,
+    mimeType: string,
+    whisperPrompt?: string,
+    attempt = 0,
+  ): Promise<WhisperVerboseResponse> {
+    const form = this.buildForm(audio, filename, mimeType, whisperPrompt);
     const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
       headers: { Authorization: `Bearer ${this.apiKey}` },
@@ -133,10 +160,23 @@ export class OpenAiSttProvider implements SttProvider {
 
     if (!response.ok) {
       const errorBody = await response.text();
-      if ((response.status === 429 || response.status >= 500) && attempt < 1) {
-        this.logger.warn(`Whisper retry after ${response.status}`);
-        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
-        return this.requestWhisper(form, attempt + 1);
+      if ((response.status === 429 || response.status >= 500) && attempt < MAX_RETRIES - 1) {
+        const delayMs = Math.min(8000, 1000 * 2 ** attempt);
+        this.logger.warn(
+          `Whisper retry ${attempt + 1}/${MAX_RETRIES} after ${response.status} (wait ${delayMs}ms)`,
+        );
+        await new Promise((r) => setTimeout(r, delayMs));
+        return this.requestWhisper(audio, filename, mimeType, whisperPrompt, attempt + 1);
+      }
+      if (response.status === 429) {
+        throw new Error(
+          '混み合っています。しばらく待ってから再試行してください。',
+        );
+      }
+      if (response.status >= 500) {
+        throw new Error(
+          '混み合っています。再試行してください。改善しない場合は紙カルテで継続してください。',
+        );
       }
       throw new Error(`OpenAI Whisper failed (${response.status}): ${errorBody}`);
     }

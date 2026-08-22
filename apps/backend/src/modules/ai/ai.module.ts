@@ -22,6 +22,7 @@ import { LLM_PROVIDER } from '../../providers/ai/llm.tokens';
             apiKey: config.get<string>('OPENAI_API_KEY', ''),
             model: config.get<string>('OPENAI_LLM_MODEL', 'gpt-4o-mini'),
             correctionModel: config.get<string>('OPENAI_CORRECTION_MODEL', 'gpt-4o'),
+            documentModel: config.get<string>('OPENAI_DOCUMENT_MODEL', 'gpt-4o'),
           });
         }
         return new MockLlmProvider();

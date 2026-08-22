@@ -99,10 +99,36 @@ export class RecordingService {
   }
 
   async getAssembledAudioBuffer(consultationId: string): Promise<Buffer> {
-    const chunks = await this.listChunks(consultationId);
     const file = await this.assembleAudioFile(consultationId);
-    const buffer = await this.storage.get(file.storageKey);
-    return buffer;
+    return this.storage.get(file.storageKey);
+  }
+
+  async getExistingAssembledBuffer(consultationId: string): Promise<Buffer | null> {
+    const existingFile = await this.prisma.audioFile.findFirst({
+      where: {
+        consultationId,
+        deletedAt: null,
+        storageKey: { startsWith: `${consultationId}/full.` },
+      },
+    });
+    if (!existingFile) return null;
+    try {
+      return await this.storage.get(existingFile.storageKey);
+    } catch {
+      return null;
+    }
+  }
+
+  async hasAudio(consultationId: string): Promise<boolean> {
+    const chunks = await this.listChunks(consultationId);
+    if (chunks.length > 0) return true;
+    const existing = await this.getExistingAssembledBuffer(consultationId);
+    return Boolean(existing);
+  }
+
+  async resetAudioForRerecord(consultationId: string) {
+    await this.deleteAudioForConsultation(consultationId);
+    await this.prisma.audioChunk.deleteMany({ where: { consultationId } });
   }
 
   async deleteAudioForConsultation(consultationId: string) {

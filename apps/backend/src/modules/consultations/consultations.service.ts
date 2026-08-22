@@ -4,6 +4,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { AiPipelineService } from '../ai/ai-pipeline.service';
 import { ConsultationAccessService } from '../../common/services/consultation-access.service';
+import { RecordingService } from '../recording/recording.service';
 import { mockScenarioContext } from '../../providers/ai/mock-scenario-context';
 import { resolveMockScenario } from '../../providers/ai/mock-scenarios';
 
@@ -16,6 +17,7 @@ export class ConsultationsService {
     private readonly auditService: AuditService,
     private readonly aiPipeline: AiPipelineService,
     private readonly consultationAccess: ConsultationAccessService,
+    private readonly recordingService: RecordingService,
   ) {}
 
   async create(
@@ -164,7 +166,12 @@ export class ConsultationsService {
         ? failedExecution.errorMessage
         : undefined;
 
-    return { ...consultation, pipelineError };
+    const hasAudio =
+      Boolean(pipelineError) || consultation.status === ConsultationStatus.PROCESSING
+        ? await this.recordingService.hasAudio(id)
+        : false;
+
+    return { ...consultation, pipelineError, hasAudio };
   }
 
   async startRecording(id: string, physicianId: string) {
@@ -191,6 +198,48 @@ export class ConsultationsService {
       this.logger.error(`Async pipeline failed for consultation ${id}`, error);
     });
     return consultation;
+  }
+
+  async reprocess(id: string, physicianId: string) {
+    await this.consultationAccess.assertPhysicianOwns(id, physicianId);
+    const consultation = await this.prisma.consultation.findFirst({
+      where: { id, physicianId },
+      include: { soapDocuments: { take: 1 } },
+    });
+    if (!consultation) throw new NotFoundException('Consultation not found');
+    if (consultation.soapDocuments.length > 0) {
+      throw new BadRequestException('すでにSOAPがあります。録り直す場合は新規診療を開始してください。');
+    }
+    const hasAudio = await this.recordingService.hasAudio(id);
+    if (!hasAudio) {
+      throw new BadRequestException(
+        '再処理できる録音がありません。「録り直す」から再度録音してください。',
+      );
+    }
+    const updated = await this.prisma.consultation.update({
+      where: { id },
+      data: {
+        status: ConsultationStatus.PROCESSING,
+        endedAt: consultation.endedAt ?? new Date(),
+      },
+    });
+    void this.aiPipeline.processConsultation(id).catch((error) => {
+      this.logger.error(`Reprocess pipeline failed for consultation ${id}`, error);
+    });
+    return { ...updated, hasAudio: true };
+  }
+
+  async resetForRerecord(id: string, physicianId: string) {
+    await this.consultationAccess.assertPhysicianOwns(id, physicianId);
+    await this.recordingService.resetAudioForRerecord(id);
+    return this.prisma.consultation.update({
+      where: { id },
+      data: {
+        status: ConsultationStatus.RECORDING,
+        startedAt: new Date(),
+        endedAt: null,
+      },
+    });
   }
 
   async updateSoap(

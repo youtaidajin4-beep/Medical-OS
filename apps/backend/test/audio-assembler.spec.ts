@@ -12,30 +12,30 @@ describe('AudioAssemblerService', () => {
     await expect(service.assemble([chunk])).rejects.toThrow('ffmpeg');
   });
 
-  it('returns wav for single chunk when ffmpeg converts successfully', async () => {
+  it('returns mp3 for single chunk when ffmpeg converts successfully', async () => {
     jest
       .spyOn(service as unknown as { isFfmpegAvailable: () => Promise<boolean> }, 'isFfmpegAvailable')
       .mockResolvedValue(true);
     jest
       .spyOn(
         service as unknown as {
-          tryConvertToWav: (
+          tryConvertToMp3: (
             buffer: Buffer,
             filename: string,
           ) => Promise<{ buffer: Buffer; mimeType: string; extension: string } | null>;
         },
-        'tryConvertToWav',
+        'tryConvertToMp3',
       )
       .mockResolvedValue({
-        buffer: Buffer.from('wav-data'),
-        mimeType: 'audio/wav',
-        extension: 'wav',
+        buffer: Buffer.from('mp3-data'),
+        mimeType: 'audio/mpeg',
+        extension: 'mp3',
       });
 
     const chunk = Buffer.from('webm-chunk-data');
     const result = await service.assemble([chunk]);
-    expect(result.extension).toBe('wav');
-    expect(result.mimeType).toBe('audio/wav');
+    expect(result.extension).toBe('mp3');
+    expect(result.mimeType).toBe('audio/mpeg');
   });
 
   it('throws when multiple chunks and ffmpeg is unavailable', async () => {

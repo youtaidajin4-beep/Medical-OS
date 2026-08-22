@@ -102,9 +102,6 @@ export function useRecording(consultationId: string) {
     if (finalBlob.size === 0) return;
     const checksum = await sha256Hex(finalBlob);
     await api.uploadFinalRecording(consultationId, finalBlob, checksum);
-    // #region agent log
-    fetch('http://127.0.0.1:7691/ingest/361a7d21-06dd-46cb-8e34-20e49f62c5c0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9009b6'},body:JSON.stringify({sessionId:'9009b6',location:'use-recording.ts:uploadFinalBlob',message:'final blob uploaded',data:{consultationId,partCount:blobs.length,finalBytes:finalBlob.size,seconds},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-    // #endregion
   }, [consultationId, seconds]);
 
   const stop = useCallback(async () => {
@@ -123,9 +120,7 @@ export function useRecording(consultationId: string) {
         try {
           await uploadFinalBlob();
         } catch {
-          // #region agent log
-          fetch('http://127.0.0.1:7691/ingest/361a7d21-06dd-46cb-8e34-20e49f62c5c0',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9009b6'},body:JSON.stringify({sessionId:'9009b6',location:'use-recording.ts:stop',message:'final blob upload failed',data:{consultationId,partCount:localBlobs.current.length},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-          // #endregion
+          // final blob upload failed; pipeline may still use chunks
         }
         await api.stopRecording(consultationId);
         resolve();

@@ -45,4 +45,13 @@ export class AttachmentsController {
   timeline(@Param('consultationId') consultationId: string, @CurrentUser() user: AuthUser) {
     return this.attachmentsService.timeline(consultationId, user.sub);
   }
+
+  @Post('attachments/:attachmentId/apply-questionnaire')
+  applyQuestionnaire(
+    @Param('consultationId') consultationId: string,
+    @Param('attachmentId') attachmentId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.attachmentsService.applyQuestionnaire(consultationId, user.sub, attachmentId);
+  }
 }

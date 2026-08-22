@@ -5,10 +5,22 @@ const execFileAsync = promisify(execFile);
 
 let ffmpegAvailable: boolean | null = null;
 
+export function getFfmpegPath(): string {
+  if (process.env.FFMPEG_PATH?.trim()) return process.env.FFMPEG_PATH.trim();
+  try {
+    // Local development fallback. Production images already install ffmpeg.
+    const staticPath = require('ffmpeg-static') as string | null;
+    if (staticPath) return staticPath;
+  } catch {
+    // Fall back to PATH below.
+  }
+  return 'ffmpeg';
+}
+
 export async function isFfmpegAvailable(): Promise<boolean> {
   if (ffmpegAvailable !== null) return ffmpegAvailable;
   try {
-    await execFileAsync('ffmpeg', ['-version']);
+    await execFileAsync(getFfmpegPath(), ['-version']);
     ffmpegAvailable = true;
   } catch {
     ffmpegAvailable = false;

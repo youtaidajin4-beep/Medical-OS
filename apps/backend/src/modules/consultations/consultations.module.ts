@@ -3,9 +3,10 @@ import { ConsultationsController } from './consultations.controller';
 import { ConsultationsService } from './consultations.service';
 import { AuditModule } from '../audit/audit.module';
 import { AiModule } from '../ai/ai.module';
+import { RecordingModule } from '../recording/recording.module';
 
 @Module({
-  imports: [AuditModule, AiModule],
+  imports: [AuditModule, AiModule, RecordingModule],
   controllers: [ConsultationsController],
   providers: [ConsultationsService],
 })

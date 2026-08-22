@@ -3,10 +3,11 @@ import {
   MedicalGlossary,
 } from './medical-glossary.types';
 import { PhysicianRules } from '../../modules/settings/physician-rules.types';
+import { knowledgePackGlossaryDefaults } from '../../modules/medical-knowledge/data/load-knowledge-pack';
 
 const BASE_PROMPT =
   '内科診察の会話。主訴、現病歴、既往歴、聴診、再診、処方、経過観察。';
-const FINDINGS = 'wheeze、ラ音、咽頭発赤、発赤';
+const FINDINGS = 'wheeze、ラ音、咽頭発赤、発赤、浮腫、動悸、息切れ';
 
 function uniqueTerms(terms: string[]): string[] {
   return [...new Set(terms.map((t) => t.trim()).filter(Boolean))];
@@ -23,26 +24,36 @@ export function resolveMedicalGlossary(rules?: PhysicianRules): MedicalGlossary 
       ...DEFAULT_MEDICAL_GLOSSARY.diagnoses,
       ...(fromRules?.diagnoses ?? []),
     ]),
-    customReplacements: fromRules?.customReplacements ?? [],
+    customReplacements: [
+      ...DEFAULT_MEDICAL_GLOSSARY.customReplacements,
+      ...(fromRules?.customReplacements ?? []),
+    ],
   };
 }
 
 /** Whisper prompt parameter (keep under ~224 tokens). */
 export function buildWhisperPrompt(glossary: MedicalGlossary): string {
-  const diagnoses = glossary.diagnoses.slice(0, 14);
-  const drugs = glossary.drugNames.slice(0, 16);
+  const pack = knowledgePackGlossaryDefaults();
+  const diagnoses = uniqueTerms([...glossary.diagnoses, ...pack.diagnoses]).slice(0, 18);
+  const drugs = uniqueTerms([...glossary.drugNames, ...pack.drugNames]).slice(0, 20);
+  const spoken = pack.spokenHints.slice(0, 12);
   return [
     BASE_PROMPT,
     `診断:${diagnoses.join('、')}`,
     `薬剤:${drugs.join('、')}`,
+    spoken.length ? `読み:${spoken.join('、')}` : '',
     `所見:${FINDINGS}`,
-  ].join(' ');
+  ]
+    .filter(Boolean)
+    .join(' ');
 }
 
 export function glossaryToLlmHint(glossary: MedicalGlossary): string {
+  const pack = knowledgePackGlossaryDefaults();
   const lines = [
-    `常用診断: ${glossary.diagnoses.join('、')}`,
-    `常用薬剤: ${glossary.drugNames.join('、')}`,
+    `常用診断: ${uniqueTerms([...glossary.diagnoses, ...pack.diagnoses.slice(0, 40)]).join('、')}`,
+    `常用薬剤: ${uniqueTerms([...glossary.drugNames, ...pack.drugNames.slice(0, 40)]).join('、')}`,
+    `音声別名ヒント: ${pack.spokenHints.slice(0, 30).join('、')}`,
   ];
   if (glossary.customReplacements.length) {
     lines.push(

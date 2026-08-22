@@ -57,6 +57,8 @@ export function ConsultationWorkflow({
   const [saveMsg, setSaveMsg] = useState('');
   const [caseName, setCaseName] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [canReprocess, setCanReprocess] = useState(false);
+  const [errorBusy, setErrorBusy] = useState(false);
   const [documentInput, setDocumentInput] = useState<{
     caseCode: string;
     patientName: string;
@@ -109,6 +111,7 @@ export function ConsultationWorkflow({
 
       if (data.pipelineError) {
         setErrorMessage(data.pipelineError);
+        setCanReprocess(Boolean(data.hasAudio));
         setPhase('error');
         return;
       }
@@ -123,6 +126,7 @@ export function ConsultationWorkflow({
           (data.soapDocuments?.length ?? 0) > 0 || (data.transcriptSegments?.length ?? 0) > 0;
         if (!hasContent && data.status === 'REVIEW') {
           setErrorMessage('処理は完了しましたが、下書きが生成されませんでした。');
+          setCanReprocess(Boolean(data.hasAudio));
           setPhase('error');
           return;
         }
@@ -250,6 +254,35 @@ export function ConsultationWorkflow({
     setTimeout(() => setSaveMsg(''), 3000);
   }
 
+  async function handleReprocess() {
+    setErrorBusy(true);
+    try {
+      await api.reprocessConsultation(id);
+      setErrorMessage('');
+      setPhase('processing');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : '再処理に失敗しました');
+      setCanReprocess(false);
+    } finally {
+      setErrorBusy(false);
+    }
+  }
+
+  async function handleRerecord() {
+    setErrorBusy(true);
+    try {
+      await api.resetRecording(id);
+      setErrorMessage('');
+      setCanReprocess(false);
+      setConsentGiven(false);
+      setPhase('recording');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : '録り直しの準備に失敗しました');
+    } finally {
+      setErrorBusy(false);
+    }
+  }
+
   async function handleGenerateAll() {
     setGeneratingDocs(true);
     try {
@@ -293,6 +326,10 @@ export function ConsultationWorkflow({
         onBack={() => router.push(backHref)}
         backLabel="診療ホームに戻る"
         density={density}
+        canReprocess={canReprocess}
+        onReprocess={handleReprocess}
+        onRerecord={handleRerecord}
+        busy={errorBusy}
       />
     );
   }

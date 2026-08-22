@@ -14,6 +14,15 @@ const TABS = [
   { id: 'doctor', label: '医師' },
   { id: 'mis', label: '誤変換' },
   { id: 'learn', label: '学習候補' },
+  { id: 'whisper', label: 'Whisper確認' },
+] as const;
+
+const WHISPER_REVIEW_CANDIDATES = [
+  { heard: 'アムロ事件', expected: 'アムロジピン' },
+  { heard: 'ヘージピン / ミフェジピン', expected: 'ニフェジピン' },
+  { heard: 'アムロジーピン', expected: 'アムロジピン' },
+  { heard: '2.5mm', expected: '5ミリ（用量は要確認。mgへ自動確定しない）' },
+  { heard: 'むこうだいん', expected: 'ムコダイン' },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -64,7 +73,7 @@ export default function KnowledgePage() {
           <h1 className="text-xl font-bold text-slate-900">医療ナレッジ</h1>
         </div>
         <p className="text-sm text-slate-600">
-          音声認識補正・用語正規化用（診断AIではありません）。外部マスターコードは未検証時 NULL のままです。
+          音声認識補正・用語正規化用です。否定の反転や、曖昧な「ミリ」の用量確定は自動では行いません。
         </p>
       </header>
 
@@ -166,6 +175,25 @@ export default function KnowledgePage() {
             <li className="px-4 py-6 text-sm text-slate-500">誤変換ログはまだありません。</li>
           )}
         </ul>
+      )}
+
+      {tab === 'whisper' && (
+        <div className="space-y-3 rounded-xl border border-[#d7e2dd] bg-[#fbfaf6] p-4">
+          <p className="text-sm text-slate-700">
+            実音声スポットで出た誤変換です。全国シードへ自動では混ぜません。医院辞書へ入れるときは、診療で確認してから「学習候補」で承認してください。
+          </p>
+          <p className="text-xs text-slate-500">
+            STT を安価なモデルへ替える場合も、この一覧をくしま内科の音声で再確認してからにします。
+          </p>
+          <ul className="divide-y divide-[#e4ebe7] rounded-xl border border-[#d7e2dd] bg-white">
+            {WHISPER_REVIEW_CANDIDATES.map((c) => (
+              <li key={c.heard} className="flex flex-wrap justify-between gap-2 px-4 py-3 text-sm">
+                <span className="text-slate-600">「{c.heard}」</span>
+                <span className="font-medium text-[#0c2f2c]">→ {c.expected}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {tab === 'learn' && (

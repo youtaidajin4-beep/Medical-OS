@@ -6,20 +6,15 @@ import {
   ArrowLeft,
   CheckCircle2,
   ClipboardCopy,
-  ClipboardList,
   ExternalLink,
-  FileText,
   History,
-  MessageSquareText,
   Printer,
   Save,
-  Stethoscope,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert } from '@/components/ui/alert';
-import { Tabs } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { Toast, useToast } from '@/components/ui/toast';
@@ -50,13 +45,6 @@ const SPEAKER_OPTIONS = [
   { value: 'OTHER', label: 'その他' },
   { value: 'UNKNOWN', label: '不明' },
 ] as const;
-
-const SPEAKER_STYLE: Record<string, string> = {
-  PHYSICIAN: 'border-brand-200 bg-brand-50',
-  PATIENT: 'border-slate-200 bg-white',
-  OTHER: 'border-slate-200 bg-slate-50',
-  UNKNOWN: 'border-amber-200 bg-amber-50',
-};
 
 const SOAP_FIELDS = [
   { key: 'subjective', label: 'S', name: '主観的情報（Subjective）' },
@@ -153,8 +141,20 @@ export function ReviewPhase({
     Array<{ type: string; content: Record<string, unknown> }> | undefined
   >();
   const [selectedSuggestions, setSelectedSuggestions] = useState<Record<string, boolean>>({});
+  const [copiedField, setCopiedField] = useState('');
   const { toast, show } = useToast();
   const compact = density === 'compact';
+
+  async function copyField(label: string, text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(label);
+      show(`${label} をコピーしました`, 'success');
+      window.setTimeout(() => setCopiedField(''), 2000);
+    } catch {
+      show('コピーに失敗しました', 'error');
+    }
+  }
 
   function handleSubkarteResult(result: SubkarteAskResult) {
     if (result.soap) onSoapChange(result.soap);
@@ -390,7 +390,9 @@ export function ReviewPhase({
           />
         )}
 
-        {panelTab === 'paper' && <PaperCapturePanel consultationId={consultationId} />}
+        {panelTab === 'paper' && (
+          <PaperCapturePanel consultationId={consultationId} onApplied={onSoapChange} />
+        )}
 
         <div className="no-print fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 backdrop-blur">
           <div className="mx-auto max-w-md space-y-2 p-3 pr-28">
@@ -404,67 +406,64 @@ export function ReviewPhase({
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-5 pb-28">
       <Toast toast={toast} />
 
-      <div className="no-print flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-slate-500">{caseName}</p>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">診療後レビュー</h1>
-            {approved ? (
-              <Badge variant="success">
-                <CheckCircle2 className="h-3 w-3" />
-                確認済み
-              </Badge>
-            ) : (
-              <Badge variant="warning">下書き</Badge>
-            )}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-[#d7e2dd] bg-[#fbfaf6] px-4 py-3 shadow-sm min-[480px]:px-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0c2f2c] text-[#e8c98a]">
+            {caseName.slice(0, 1)}
           </div>
-          {!approved && (
-            <p className="mt-1 text-sm text-amber-700">
-              確認済みにするまでコピー・印刷はできません
+          <div className="min-w-0">
+            <p className="truncate font-semibold text-[#0c2f2c]">{caseName}</p>
+            <p className="text-xs text-slate-500">
+              {approved ? '確認済み' : '下書き — 確認後にコピー・印刷できます'}
             </p>
-          )}
+          </div>
         </div>
-        <Link
-          href={backHref}
-          className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-700"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          戻る
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex rounded-full bg-[#e8eee9] p-1 text-xs font-semibold">
+            {(
+              [
+                { id: 'soap' as const, label: 'SOAP' },
+                { id: 'note' as const, label: '記録' },
+                { id: 'documents' as const, label: '書類' },
+              ] as const
+            ).map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setTab(item.id)}
+                className={cn(
+                  'rounded-full px-4 py-2 transition',
+                  tab === item.id ? 'bg-[#0c2f2c] text-white shadow-sm' : 'text-slate-600',
+                )}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <Link href={backHref} className="text-xs font-medium text-[#0f766e] hover:underline">
+            戻る
+          </Link>
+        </div>
       </div>
 
       {warnings.length > 0 && (
-        <Card className="no-print border-amber-200">
-          <CardHeader className="border-amber-100 bg-amber-50/60">
-            <CardTitle className="flex items-center gap-2 text-base">
-              要確認項目
-              <Badge variant="warning">{warnings.length}件</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
+        <div className="no-print rounded-[1.5rem] border border-amber-200 bg-[#fbf6ea] p-4">
+          <p className="mb-2 text-[11px] font-bold tracking-wide text-[#8a6d32]">
+            要確認 {warnings.length}件
+          </p>
+          <ul className="space-y-1.5">
             {warnings.map((w) => (
-              <div key={w.id} className="flex items-start gap-2 text-sm">
+              <li key={w.id} className="flex items-start gap-2 text-sm text-slate-700">
                 <Badge variant={warningVariant(w.severity)}>{w.severity}</Badge>
-                <span className="text-slate-700">{w.message}</span>
-              </div>
+                <span>{w.message}</span>
+              </li>
             ))}
-          </CardContent>
-        </Card>
+          </ul>
+        </div>
       )}
-
-      <Tabs
-        className="no-print"
-        items={[
-          { id: 'soap' as const, label: 'SOAP', icon: <Stethoscope /> },
-          { id: 'note' as const, label: '通常診療記録', icon: <MessageSquareText /> },
-          { id: 'documents' as const, label: '書類・印刷', icon: <Printer /> },
-        ]}
-        value={tab}
-        onChange={setTab}
-      />
 
       {tab === 'documents' ? (
         <DocumentsPanel
@@ -472,46 +471,60 @@ export function ReviewPhase({
           documentInput={documentInput}
           approved={approved}
           onBack={() => setTab('soap')}
-          autoGenerate
+          autoGenerate={false}
           pendingDocPatches={pendingDocPatches}
           onPendingDocPatchesApplied={() => setPendingDocPatches(undefined)}
         />
+      ) : tab === 'note' ? (
+        <div className="space-y-3 rounded-[1.75rem] border border-[#d7e2dd] bg-[#fbfaf6] p-4 min-[480px]:p-6">
+          <p className="text-[11px] font-semibold tracking-[0.22em] text-[#6f8f88]">CLINICAL NOTE</p>
+          <Textarea value={note} onChange={(e) => onNoteChange(e.target.value)} rows={14} className="bg-white" />
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" icon={<Save />} onClick={onSaveNote}>
+              診療記録を保存
+            </Button>
+            <Button variant="ghost" icon={<ClipboardCopy />} disabled={!approved} onClick={onCopyNote}>
+              コピー
+            </Button>
+          </div>
+        </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <FileText className="h-4 w-4 text-brand-600" />
-                文字起こし（最終版）
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="max-h-[28rem] space-y-2 overflow-y-auto pr-1 text-sm">
+        <div className="grid gap-5 min-[860px]:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] min-[860px]:items-start">
+          <div className="space-y-4">
+            <div className="rounded-[1.75rem] border border-[#d7e2dd] bg-[#fbfaf6] p-4 shadow-sm min-[480px]:p-6">
+              <p className="mb-4 text-[11px] font-semibold tracking-[0.22em] text-[#6f8f88]">TRANSCRIPT</p>
+              <ul className="max-h-[58dvh] space-y-3 overflow-y-auto pr-1">
                 {transcript.map((seg) => (
-                  <li
-                    key={seg.id}
-                    className={cn(
-                      'flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-start',
-                      SPEAKER_STYLE[seg.speaker] ?? 'border-slate-200 bg-white',
-                    )}
-                  >
-                    <Select
-                      value={seg.speaker}
-                      onChange={(e) => onSpeakerChange(seg.id, e.target.value)}
-                      className="shrink-0"
+                  <li key={seg.id} className={cn('flex', seg.speaker === 'PATIENT' ? 'justify-end' : 'justify-start')}>
+                    <div
+                      className={cn(
+                        'w-full max-w-[92%] space-y-2 rounded-2xl px-3 py-3',
+                        seg.speaker === 'PHYSICIAN'
+                          ? 'rounded-tl-md bg-[#0c2f2c] text-[#f3efe4]'
+                          : 'rounded-tr-md bg-white text-slate-800 ring-1 ring-[#e4ebe7]',
+                      )}
                     >
-                      {SPEAKER_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </Select>
-                    <Textarea
-                      value={seg.text}
-                      onChange={(e) => onTranscriptTextChange(seg.id, e.target.value)}
-                      rows={2}
-                      className="min-w-0 flex-1"
-                    />
+                      <Select
+                        value={seg.speaker}
+                        onChange={(e) => onSpeakerChange(seg.id, e.target.value)}
+                        className="w-28"
+                      >
+                        {SPEAKER_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </Select>
+                      <Textarea
+                        value={seg.text}
+                        onChange={(e) => onTranscriptTextChange(seg.id, e.target.value)}
+                        rows={2}
+                        className={cn(
+                          'border-0 text-sm shadow-none',
+                          seg.speaker === 'PHYSICIAN' ? 'bg-white/10 text-[#f3efe4]' : 'bg-[#f7faf8]',
+                        )}
+                      />
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -525,10 +538,8 @@ export function ReviewPhase({
                 {savingTranscript ? '保存中…' : '文字起こしを保存'}
               </Button>
               {glossarySuggestions && glossarySuggestions.length > 0 && (
-                <div className="mt-4 space-y-3 rounded-lg border border-brand-200 bg-brand-50/50 p-4">
-                  <p className="text-sm font-medium text-slate-800">
-                    検出された修正を語彙に追加しますか？
-                  </p>
+                <div className="mt-4 space-y-3 rounded-2xl border border-[#d7e2dd] bg-white p-4">
+                  <p className="text-sm font-medium text-slate-800">検出された修正を語彙に追加しますか？</p>
                   {glossarySuggestions.map((item) => {
                     const key = `${item.wrong}→${item.correct}`;
                     return (
@@ -564,52 +575,65 @@ export function ReviewPhase({
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+            <KnowledgeTranscriptPanel consultationId={consultationId} />
+            <PaperCapturePanel consultationId={consultationId} onApplied={onSoapChange} />
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <ClipboardList className="h-4 w-4 text-brand-600" />
-                {tab === 'soap' ? 'SOAP 下書き' : '通常診療記録'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {tab === 'soap' ? (
-                <div className="space-y-4">
-                  {SOAP_FIELDS.map(({ key, label, name }) => (
-                    <div key={key}>
-                      <label className="mb-1.5 flex items-center gap-2 text-sm">
-                        <span className="flex h-6 w-6 items-center justify-center rounded bg-brand-600 text-xs font-bold text-white">
-                          {label}
-                        </span>
-                        <span className="text-slate-500">{name}</span>
-                      </label>
-                      <Textarea
-                        value={soap[key]}
-                        onChange={(e) => onSoapChange({ ...soap, [key]: e.target.value })}
-                        rows={3}
-                      />
-                    </div>
-                  ))}
-                  <Button variant="secondary" icon={<Save />} onClick={onSaveSoap}>
-                    SOAP を保存
-                  </Button>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] font-semibold tracking-[0.22em] text-[#6f8f88]">SOAP</p>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="rounded-full"
+                icon={<ClipboardCopy />}
+                disabled={!approved}
+                onClick={onCopySoap}
+              >
+                {copiedField === 'SOAP' ? 'コピー済み' : 'SOAP をコピー'}
+              </Button>
+            </div>
+            {SOAP_FIELDS.map(({ key, label, name }) => (
+              <div key={key} className="overflow-hidden rounded-[1.5rem] border border-[#d7e2dd] bg-white p-4 shadow-sm">
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#0c2f2c] text-sm font-bold text-[#e8c98a]">
+                    {label}
+                  </span>
+                  <span className="text-xs font-semibold tracking-wide text-[#6f8f88]">{name}</span>
+                  <button
+                    type="button"
+                    className="ml-auto inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium text-slate-500 hover:bg-slate-100"
+                    disabled={!approved}
+                    onClick={() => void copyField(label, soap[key])}
+                  >
+                    <ClipboardCopy className="h-3.5 w-3.5" />
+                    {copiedField === label ? 'コピー済み' : 'コピー'}
+                  </button>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  <Textarea
-                    value={note}
-                    onChange={(e) => onNoteChange(e.target.value)}
-                    rows={14}
-                  />
-                  <Button variant="secondary" icon={<Save />} onClick={onSaveNote}>
-                    診療記録を保存
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                <Textarea
+                  rows={3}
+                  value={soap[key]}
+                  onChange={(e) => onSoapChange({ ...soap, [key]: e.target.value })}
+                  className="border-0 bg-[#f7faf8] text-sm leading-relaxed shadow-none"
+                />
+              </div>
+            ))}
+            <Button variant="secondary" className="w-full rounded-2xl" icon={<Save />} onClick={onSaveSoap}>
+              SOAP を保存
+            </Button>
+            <Button
+              className="h-12 w-full rounded-2xl bg-[#0c2f2c] hover:bg-[#134540]"
+              icon={<Printer />}
+              disabled={!approved || generatingDocs}
+              onClick={() => {
+                setTab('documents');
+                if (onGenerateAll) void onGenerateAll();
+              }}
+            >
+              {generatingDocs ? '書類生成中…' : '書類をすべて作る'}
+            </Button>
+          </div>
         </div>
       )}
       {revisions.length > 0 && tab !== 'documents' && (

@@ -5,6 +5,8 @@ import { PrismaService } from '../../database/prisma.service';
 import { ConsultationAccessService } from '../../common/services/consultation-access.service';
 import { LLM_PROVIDER } from '../../providers/ai/llm.tokens';
 import { LlmProvider } from '../../providers/ai/llm.provider';
+import { STT_PROVIDER } from '../../providers/ai/stt.tokens';
+import { SttProvider } from '../../providers/ai/stt.provider';
 import { DocumentsService } from '../documents/documents.service';
 import { FRONTEND_DOC_TYPE_MAP, BACKEND_DOC_TYPE_MAP } from '../documents/document-types';
 
@@ -19,6 +21,7 @@ const DOC_TYPES = [
 
 const SUBKARTE_SYSTEM = `あなたは日本の内科クリニック（くしま内科）向けの診療アシスタント「チャット」です。
 医師と対話し、記録・質問回答・SOAP/書類の修正・書類作成まで会話で進めます。
+入力は音声文字起こしのことがあり、多少崩れた文でも医師の意図を汲み取って処理してください。
 
 対応モード:
 1) 記録のみ … 疑い・方針・処方意図のメモ。パッチ不要
@@ -26,16 +29,26 @@ const SUBKARTE_SYSTEM = `あなたは日本の内科クリニック（くしま�
 3) 修正指示 … soapPatch / notePatch / documentPatches を返す
 4) 書類作成依頼 … generateDocuments を返す（「作って」「生成して」「資料を」等）
 
+意図の汲み取り（最重要）:
+- 医師の指示は一字一句ではなく意図を理解して反映する。曖昧な指示でも文脈（SOAP・既存書類・会話履歴）から対象の書類・フィールドを特定する
+- 例: 「経過をもう少し詳しく」→ 紹介状の clinicalCourse を SOAP・会話の事実で肉付けする
+- 例: 「もっと丁寧に」「文面かたく」→ 該当書類の文体を書き直す（事実は変えない）
+- 例: 「カロナール追加」→ 処方一覧に追加し、SOAP の Plan にも反映する
+- 指示の対象が本当に判断できないときだけ reply で一度だけ確認する。安易に聞き返さない
+- 同じ情報を持つ書類は整合させる（例: 紹介状の宛先・診断名を変えたら info-combined の紹介状部分も同時に documentPatches で更新する）
+
 ルール:
 - 医師の記載を最優先する（SOAP よりチャットの意図を尊重）
 - 診断の創作はしない。医師が書いた疑い・処方意図はそのまま扱う
 - 単なるメモ記録のときは soapPatch / notePatch / documentPatches / generateDocuments を付けない
 - 修正指示（追記・変更・宛先変更・処方追加など）のときだけパッチを返す
 - soapPatch の各フィールドは「置換後の全文」（追記なら既存文＋追記）
-- documentPatches の content は当該書類の完全な JSON（部分ではなく全体）
+- documentPatches の content は当該書類の完全な JSON（部分ではなく全体）。既存の他フィールドを消さない
 - 書類 type は: referral | prescription | certificate | care-opinion-1 | care-opinion-2 | info-combined
 - generateDocuments は "all"（全書類）または type 配列。種類の指定がなければ "all"
+- 書類の内容変更依頼で当該書類がまだ存在しない場合は generateDocuments でその書類を生成する
 - 病院名が含まれる書類作成依頼では、必要なら documentPatches で紹介状の recipientHospital も更新してよい（生成後でも可）
+- 出力する文章は誤字脱字なく、カルテ・書類にそのまま使える丁寧な日本語にする
 - reply は医師向けの短い日本語。何を記録/反映/作成したか（または回答）を明示する
 - 必ず有効な JSON のみを返す（説明文禁止）
 
@@ -89,7 +102,40 @@ export class ChatService {
     private readonly consultationAccess: ConsultationAccessService,
     private readonly documentsService: DocumentsService,
     @Inject(LLM_PROVIDER) private readonly llmProvider: LlmProvider,
+    @Inject(STT_PROVIDER) private readonly sttProvider: SttProvider,
   ) {}
+
+  async transcribeVoice(
+    consultationId: string,
+    physicianId: string,
+    file: Express.Multer.File | undefined,
+  ) {
+    await this.consultationAccess.assertPhysicianOwns(consultationId, physicianId);
+    if (!file?.buffer?.length) {
+      throw new BadRequestException('音声データがありません');
+    }
+    try {
+      const segments = await this.sttProvider.transcribeFinal(file.buffer, consultationId, {
+        whisperPrompt:
+          '内科クリニックの医師がAIアシスタントへ出す短い指示。薬剤名・病名・病院名・用法を正確に。アムロジピン、メトホルミン、ムコダイン、HbA1c、eGFR、紹介状、処方継続。例: アムロジピン継続。紹介状を市立病院向けに作って。',
+      });
+      const text = segments
+        .map((s) => s.text.trim())
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+      if (!text) {
+        throw new BadRequestException('音声を認識できませんでした。もう一度お話しください。');
+      }
+      return { text };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      if (/短すぎ/.test(message)) {
+        throw new BadRequestException('音声が短すぎます。マイクに向かってもう一度お話しください。');
+      }
+      throw error;
+    }
+  }
 
   async list(consultationId: string, physicianId: string) {
     await this.consultationAccess.assertPhysicianOwns(consultationId, physicianId);
@@ -138,11 +184,12 @@ export class ChatService {
       ...result,
       documentPatches: undefined,
     }, context);
-    const generated = await this.runGenerateDocuments(
+    const generatedResult = await this.runGenerateDocuments(
       consultationId,
       physicianId,
       result.generateDocuments,
     );
+    const generated = generatedResult.documents;
     const patchedDocs = result.documentPatches?.length
       ? await this.applyPatches(
           consultationId,
@@ -161,6 +208,9 @@ export class ChatService {
     if (generated.length && !/作成|生成/.test(reply)) {
       reply = `${reply}\n書類を${generated.length}件作成しました。`;
     }
+    if (generatedResult.error) {
+      reply = `${reply}\n\n【書類生成に失敗】${generatedResult.error}\n再送するか、「書類を全部作る」から再試行してください。だめなら紙カルテで継続してください。`;
+    }
 
     const assistant = await this.prisma.consultationChatMessage.create({
       data: { consultationId, role: 'assistant', content: reply },
@@ -171,6 +221,7 @@ export class ChatService {
       soap: applied.soap,
       note: applied.note,
       documents: documents.length ? documents : undefined,
+      documentGenerationError: generatedResult.error,
     };
   }
 
@@ -178,11 +229,13 @@ export class ChatService {
     consultationId: string,
     physicianId: string,
     generate?: SubkarteLlmResult['generateDocuments'],
-  ): Promise<DocReturn[]> {
-    if (!generate) return [];
+  ): Promise<{ documents: DocReturn[]; error?: string }> {
+    if (!generate) return { documents: [] };
     try {
       if (generate === 'all') {
-        return await this.documentsService.generateAll(consultationId, physicianId);
+        return {
+          documents: await this.documentsService.generateAll(consultationId, physicianId),
+        };
       }
       const out: DocReturn[] = [];
       for (const front of generate) {
@@ -191,10 +244,11 @@ export class ChatService {
         const doc = await this.documentsService.generateOne(consultationId, backendType);
         out.push(doc);
       }
-      return out;
-    } catch {
-      // SOAP未生成などで失敗してもチャット自体は成功扱いにする
-      return [];
+      return { documents: out };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : '書類の生成に失敗しました';
+      return { documents: [], error: message };
     }
   }
 
@@ -204,6 +258,9 @@ export class ChatService {
       include: {
         soapDocuments: { orderBy: { version: 'desc' }, take: 1 },
         clinicalNotes: { orderBy: { version: 'desc' }, take: 1 },
+        patient: true,
+        anonymousCase: true,
+        structuredData: true,
       },
     });
 
@@ -230,10 +287,28 @@ export class ChatService {
       }
     }
 
+    const patientName =
+      consultation?.patient?.name ?? consultation?.anonymousCase?.displayName ?? '';
+    const sexRaw = consultation?.patient?.sex ?? consultation?.anonymousCase?.sex;
+    const sex = sexRaw === 'F' ? '女' : sexRaw === 'M' ? '男' : '';
+    const age =
+      consultation?.anonymousCase?.age ??
+      (consultation?.patient?.dateOfBirth
+        ? Math.floor(
+            (Date.now() - consultation.patient.dateOfBirth.getTime()) /
+              (365.25 * 24 * 60 * 60 * 1000),
+          )
+        : null);
+    const patientSummary = patientName
+      ? `${patientName}（${sex || '—'}、${age ?? '—'}歳）`
+      : '';
+
     return {
       soap,
       note,
       documents: Object.fromEntries(latestByType),
+      patientSummary,
+      structured: consultation?.structuredData?.data ?? undefined,
     };
   }
 

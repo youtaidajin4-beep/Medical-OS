@@ -1,4 +1,6 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+export const SINGLE_CLINIC_MODE =
+  process.env.NEXT_PUBLIC_SINGLE_CLINIC_MODE === 'true';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -15,6 +17,7 @@ export function isUnauthorizedError(error: unknown): boolean {
 }
 
 export function getToken(): string | null {
+  if (SINGLE_CLINIC_MODE) return 'single-clinic';
   if (typeof window === 'undefined') return null;
   return localStorage.getItem('accessToken');
 }
@@ -217,6 +220,7 @@ export const api = {
       id: string;
       status: string;
       pipelineError?: string;
+      hasAudio?: boolean;
       patient?: {
         name: string;
         patientCode: string;
@@ -254,6 +258,12 @@ export const api = {
     request(`/consultations/${id}/recording/start`, { method: 'POST' }),
   stopRecording: (id: string) =>
     request(`/consultations/${id}/recording/stop`, { method: 'POST' }),
+  reprocessConsultation: (id: string) =>
+    request<{ id: string; status: string; hasAudio?: boolean }>(`/consultations/${id}/reprocess`, {
+      method: 'POST',
+    }),
+  resetRecording: (id: string) =>
+    request(`/consultations/${id}/recording/reset`, { method: 'POST' }),
   uploadChunk: (consultationId: string, sequenceNumber: number, blob: Blob, checksum?: string) => {
     const form = new FormData();
     form.append('audio', blob, `chunk-${sequenceNumber}.webm`);
@@ -460,6 +470,14 @@ export const api = {
     request<Array<{ id: string; role: string; content: string; createdAt: string }>>(
       `/consultations/${consultationId}/chat`,
     ),
+  transcribeChatAudio: (consultationId: string, blob: Blob) => {
+    const form = new FormData();
+    form.append('audio', blob, 'chat-voice.webm');
+    return request<{ text: string }>(`/consultations/${consultationId}/chat/transcribe`, {
+      method: 'POST',
+      body: form,
+    });
+  },
   askChat: (consultationId: string, content: string) =>
     request<{
       message: { id: string; role: string; content: string; createdAt?: string };
@@ -476,6 +494,7 @@ export const api = {
         content: Record<string, unknown>;
         version?: number;
       }>;
+      documentGenerationError?: string;
     }>(`/consultations/${consultationId}/chat`, {
       method: 'POST',
       body: JSON.stringify({ content }),
@@ -509,8 +528,18 @@ export const api = {
       id: string;
       fileName: string;
       ocrText: string | null;
+      documentKind?: string;
     }>;
   },
+  applyQuestionnaire: (consultationId: string, attachmentId: string) =>
+    request<{
+      attachmentId: string;
+      ocrText: string;
+      soap: { subjective: string; objective: string; assessment: string; plan: string } | null;
+      patientMemo: string | null;
+    }>(`/consultations/${consultationId}/attachments/${attachmentId}/apply-questionnaire`, {
+      method: 'POST',
+    }),
   getTimeline: (consultationId: string) =>
     request<{
       current: {

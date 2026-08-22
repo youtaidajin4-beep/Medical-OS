@@ -14,7 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { api, clearToken } from '@/lib/api-client';
+import { api, clearToken, SINGLE_CLINIC_MODE } from '@/lib/api-client';
 import { DemoBanner } from './demo-banner';
 import { AiStatusBanner } from './ai-status-banner';
 
@@ -26,15 +26,19 @@ const NAV = [
   { href: '/settings', label: '設定', icon: Settings },
 ] as const;
 
-function BrandLogo() {
+function BrandLogo({ inverted = false }: { inverted?: boolean }) {
   return (
     <div className="flex items-center gap-2.5">
-      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-white shadow-sm">
+      <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#e8c98a] text-[#0c2f2c] shadow-sm">
         <Stethoscope className="h-5 w-5" />
       </div>
       <div className="leading-tight">
-        <h1 className="text-base font-bold tracking-tight text-slate-900">Medical OS</h1>
-        <p className="text-xs text-slate-500">くしま内科</p>
+        <p className={cn('text-[10px] font-semibold tracking-[0.22em]', inverted ? 'text-[#c9ddd8]' : 'text-[#6f8f88]')}>
+          KUSHIMA INTERNAL MEDICINE
+        </p>
+        <h1 className={cn('text-base font-semibold tracking-tight', inverted ? 'text-[#f3efe4]' : 'text-[#0c2f2c]')}>
+          Medical OS
+        </h1>
       </div>
     </div>
   );
@@ -61,15 +65,15 @@ function NavLinks({
             href={href}
             onClick={onNavigate}
             className={cn(
-              'flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+              'flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
               active
-                ? 'bg-brand-50 text-brand-700'
-                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+                ? 'bg-[#eef8f5] text-[#0c2f2c]'
+                : 'text-slate-600 hover:bg-white hover:text-slate-900',
             )}
           >
-            <Icon className={cn('h-4 w-4', active ? 'text-brand-600' : 'text-slate-400')} />
+            <Icon className={cn('h-4 w-4', active ? 'text-[#0f766e]' : 'text-slate-400')} />
             {label}
-            {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-brand-500" />}
+            {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#0c2f2c]" />}
           </Link>
         );
       })}
@@ -78,14 +82,16 @@ function NavLinks({
           <p className="text-xs text-slate-400">ログイン中</p>
           <p className="truncate text-sm font-medium text-slate-700">{userName}</p>
         </div>
-        <button
-          type="button"
-          onClick={onLogout}
-          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-red-50 hover:text-red-700"
-        >
-          <LogOut className="h-4 w-4 text-slate-400" />
-          ログアウト
-        </button>
+        {!SINGLE_CLINIC_MODE && (
+          <button
+            type="button"
+            onClick={onLogout}
+            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-red-50 hover:text-red-700"
+          >
+            <LogOut className="h-4 w-4 text-slate-400" />
+            ログアウト
+          </button>
+        )}
       </div>
     </nav>
   );
@@ -110,25 +116,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#eef3f0]">
       <DemoBanner />
       <AiStatusBanner />
       <div className="mx-auto flex max-w-7xl">
-        <aside className="no-print sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-slate-200 bg-white p-4 md:flex">
+        <aside className="no-print sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-[#d7e2dd] bg-[#0c2f2c] p-4 md:flex">
           <div className="mb-8 px-1 pt-1">
-            <BrandLogo />
+            <BrandLogo inverted />
           </div>
-          <NavLinks pathname={pathname} onLogout={logout} userName={userName || '—'} />
+          <div className="flex min-h-0 flex-1 flex-col rounded-2xl bg-[#fbfaf6] p-2">
+            <NavLinks pathname={pathname} onLogout={logout} userName={userName || '—'} />
+          </div>
         </aside>
 
         <div className="min-w-0 flex-1">
-          <header className="no-print sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur md:hidden">
-            <BrandLogo />
+          <header className="no-print sticky top-0 z-30 flex items-center justify-between border-b border-white/10 bg-[#0c2f2c]/95 px-4 py-3 backdrop-blur md:hidden">
+            <BrandLogo inverted />
             <button
               type="button"
               aria-label="メニューを開く"
               onClick={() => setDrawerOpen(true)}
-              className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"
+              className="rounded-lg p-2 text-[#f3efe4] hover:bg-white/10"
             >
               <Menu className="h-5 w-5" />
             </button>

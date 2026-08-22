@@ -14,7 +14,9 @@ import { STORAGE_PROVIDER } from './storage.provider';
         if (provider === 'minio') {
           return new MinioStorageProvider(config);
         }
-        return new LocalFsStorageProvider();
+        return new LocalFsStorageProvider(
+          config.get<string>('STORAGE_PATH') || undefined,
+        );
       },
       inject: [ConfigService],
     },

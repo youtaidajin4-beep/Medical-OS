@@ -26,6 +26,12 @@ export type DocumentGenerationContext = {
   referralPattern?: 'simple' | 'complex';
   /** 医師サブカルテ（チャットの user 発話）。書類生成時は SOAP より優先。 */
   physicianSubkarte: string;
+  /** 本日の日付（和暦）。発行日・記入日に使用。 */
+  todayJa: string;
+  /** 補正済み文字起こしの抜粋。SOAPに載っていない詳細の補完用。 */
+  transcriptExcerpt?: string;
+  /** 問診票OCRテキスト。既往・服薬・アレルギー等の転記元。 */
+  questionnaireText?: string;
 };
 
 export const GENERATED_DOCUMENT_TYPES: GeneratedDocumentType[] = [

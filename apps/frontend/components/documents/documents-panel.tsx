@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ArrowLeft,
   Check,
@@ -18,13 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api-client';
-import { buildConsultationContext, generateDocuments } from '@/lib/mock-documents/generate-documents';
-import type {
-  ConsultationContext,
-  DocumentTypeId,
-  GeneratedDocuments,
-  SoapData,
-} from '@/lib/mock-documents/types';
+import type { DocumentTypeId, GeneratedDocuments, SoapData } from '@/lib/mock-documents/types';
 import { ReferralLetter } from './referral-letter';
 import { PrescriptionList } from './prescription-list';
 import { MedicalCertificate } from './medical-certificate';
@@ -57,11 +51,101 @@ const API_TYPE_TO_KEY: Record<string, keyof GeneratedDocuments> = {
   'info-combined': 'infoCombined',
 };
 
+function emptyGenerated(): GeneratedDocuments {
+  return {
+    referral: {
+      issuedDate: '',
+      recipientHospital: '',
+      recipientDepartment: '',
+      recipientDoctor: '',
+      patientName: '',
+      patientNameKana: '',
+      sex: '',
+      address: '',
+      phone: '',
+      dateOfBirth: '',
+      age: null,
+      occupation: '',
+      diagnosis: '',
+      purpose: '',
+      pastHistory: '',
+      examResults: '',
+      clinicalCourse: '',
+      greeting: '',
+      remarks: '',
+    },
+    prescription: { items: [] },
+    certificate: {
+      issuedDate: '',
+      patientName: '',
+      dateOfBirth: '',
+      age: null,
+      examDate: '',
+      interview: '',
+      smokingMeds: '',
+      symptoms: '',
+      height: '',
+      weight: '',
+      waist: '',
+      bmi: '',
+      hearing: '',
+      vision: '',
+      bloodPressure: '',
+      pulse: '',
+      urinalysis: '',
+      chestXray: '',
+      ecg: '',
+      bloodTests: '',
+      doctorDiagnosis: '',
+      overallGrade: '',
+      remarks: '',
+    },
+    careOpinion1: {
+      municipalityCode: '',
+      doctorNumber: '',
+      applicationDate: '',
+      entryDate: '',
+      patientName: '',
+      patientNameKana: '',
+      dateOfBirth: '',
+      age: null,
+      contact: '',
+      diagnoses: [],
+      stability: 'unknown',
+      treatmentCourse: '',
+      independencePhysical: '',
+      independenceCognitive: '',
+      specialMedicalCare: [],
+      coreSymptoms: {},
+      peripheralSymptoms: [],
+      otherPsychSymptoms: '',
+    },
+    careOpinion2: {
+      municipalityCode: '',
+      entryDate: '',
+      dominantHand: 'right',
+      height: '',
+      weight: '',
+      weightChange: 'maintain',
+      physicalImpairments: [],
+      mobility: [],
+      nutrition: '',
+      risks: [],
+      riskPolicy: '',
+      serviceOutlook: '',
+      medicalManagement: [],
+      servicePrecautions: '',
+      infectiousDisease: '',
+      specialNotes: '',
+    },
+  };
+}
+
 function apiDocsToGenerated(
   apiDocs: Array<{ type: string; content: Record<string, unknown> }>,
-  fallback: GeneratedDocuments,
+  base?: GeneratedDocuments | null,
 ): GeneratedDocuments {
-  const result = { ...fallback };
+  const result = base ? { ...base } : emptyGenerated();
   for (const doc of apiDocs) {
     const key = API_TYPE_TO_KEY[doc.type];
     if (key === 'infoCombined') {
@@ -75,7 +159,7 @@ function apiDocsToGenerated(
 
 export function DocumentsPanel({
   consultationId,
-  documentInput,
+  documentInput: _documentInput,
   approved,
   onBack,
   autoGenerate,
@@ -117,32 +201,26 @@ export function DocumentsPanel({
   const [error, setError] = useState('');
   const [hasApiDocs, setHasApiDocs] = useState(false);
 
-  const ctx: ConsultationContext = useMemo(
-    () => buildConsultationContext(documentInput),
-    [documentInput],
-  );
-
-  const mockFallback = useMemo(() => generateDocuments(ctx), [ctx]);
-
   const loadDocuments = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
       const apiDocs = await api.getDocuments(consultationId);
       if (apiDocs.length > 0) {
-        setDocs(apiDocsToGenerated(apiDocs, mockFallback));
+        setDocs(apiDocsToGenerated(apiDocs));
         setHasApiDocs(true);
       } else {
-        setDocs(mockFallback);
+        setDocs(null);
         setHasApiDocs(false);
       }
     } catch {
-      setDocs(mockFallback);
+      setDocs(null);
       setHasApiDocs(false);
+      setError('書類を読み込めませんでした');
     } finally {
       setLoading(false);
     }
-  }, [consultationId, mockFallback]);
+  }, [consultationId]);
 
   useEffect(() => {
     void loadDocuments();
@@ -164,14 +242,12 @@ export function DocumentsPanel({
 
   useEffect(() => {
     if (!pendingDocPatches?.length) return;
-    setDocs((prev) => {
-      const base = prev ?? mockFallback;
-      const next = apiDocsToGenerated(
+    setDocs((prev) =>
+      apiDocsToGenerated(
         pendingDocPatches.map((p) => ({ type: p.type, content: p.content })),
-        base,
-      );
-      return next;
-    });
+        prev,
+      ),
+    );
     setHasApiDocs(true);
     onPendingDocPatchesApplied?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -184,7 +260,7 @@ export function DocumentsPanel({
       const apiDocs = await api.generateAllDocuments(consultationId, {
         referralPattern: referralPattern ?? 'simple',
       });
-      setDocs(apiDocsToGenerated(apiDocs, mockFallback));
+      setDocs(apiDocsToGenerated(apiDocs));
       setHasApiDocs(true);
       setSelected((prev) =>
         prev.length ? prev : [...DEFAULT_SELECTED],
@@ -233,11 +309,7 @@ export function DocumentsPanel({
   }
 
   function handleReset() {
-    if (hasApiDocs) {
-      void loadDocuments();
-    } else {
-      setDocs(mockFallback);
-    }
+    void loadDocuments();
   }
 
   function handlePrint() {
@@ -318,6 +390,12 @@ export function DocumentsPanel({
         <Alert variant="error" className="no-print">
           {error}
         </Alert>
+      )}
+
+      {!hasApiDocs && !docs && !generating && (
+        <div className="rounded-[2rem] border border-dashed border-[#b7cfc8] bg-[#fbfaf6] px-6 py-10 text-center">
+          <p className="text-sm text-slate-500">まだ書類がありません。確認済みにしたあと、下のボタンで作成できます。</p>
+        </div>
       )}
 
       <div className="no-print flex flex-wrap gap-2">

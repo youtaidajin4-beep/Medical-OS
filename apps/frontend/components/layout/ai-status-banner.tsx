@@ -29,7 +29,7 @@ export function AiStatusBanner() {
   if (!isRealAi) {
     return (
       <div className="no-print flex items-center justify-center gap-2 bg-amber-600 px-4 py-1.5 text-xs font-medium text-white">
-        AI: mock モード（実音声・実AIには OpenAI 設定が必要です）
+        AI未接続です。実音声の文字起こしには設定が必要です。
       </div>
     );
   }
