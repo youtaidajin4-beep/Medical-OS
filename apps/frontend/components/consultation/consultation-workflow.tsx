@@ -9,6 +9,7 @@ import { RecordingPhase } from '@/components/consultation/recording-phase';
 import { ProcessingPhase } from '@/components/consultation/processing-phase';
 import { ErrorPhase } from '@/components/consultation/error-phase';
 import { ReviewPhase } from '@/components/consultation/review-phase';
+import { formatSoapForChartCopy, type VisitType } from '@/lib/soap-visit';
 
 type Soap = { subjective: string; objective: string; assessment: string; plan: string };
 type Warning = { id: string; message: string; severity: string };
@@ -56,6 +57,7 @@ export function ConsultationWorkflow({
   const [copyMsg, setCopyMsg] = useState('');
   const [saveMsg, setSaveMsg] = useState('');
   const [caseName, setCaseName] = useState('');
+  const [visitType, setVisitType] = useState<VisitType>('ROUTINE');
   const [errorMessage, setErrorMessage] = useState('');
   const [canReprocess, setCanReprocess] = useState(false);
   const [errorBusy, setErrorBusy] = useState(false);
@@ -87,6 +89,7 @@ export function ConsultationWorkflow({
       const data = await api.getConsultation(id);
       const patientName = data.patient?.name ?? data.anonymousCase?.displayName ?? '症例';
       setCaseName(patientName);
+      setVisitType(data.visitType === 'CHECKUP' ? 'CHECKUP' : 'ROUTINE');
 
       const caseCode = data.patient?.patientCode ?? data.anonymousCase?.caseCode ?? '—';
       const currentSoap = data.soapDocuments?.[0] ?? {
@@ -182,7 +185,7 @@ export function ConsultationWorkflow({
 
   async function handleCopySoap() {
     if (!approved) return;
-    const text = `S: ${soap.subjective}\nO: ${soap.objective}\nA: ${soap.assessment}\nP: ${soap.plan}`;
+    const text = formatSoapForChartCopy(soap, visitType);
     await navigator.clipboard.writeText(text);
     await api.copied(id);
     setCopyMsg('SOAP をコピーしました — CLINICS に貼り付けてください');
@@ -338,6 +341,7 @@ export function ConsultationWorkflow({
     <ReviewPhase
       consultationId={id}
       caseName={caseName}
+      visitType={visitType}
       soap={soap}
       note={note}
       warnings={warnings}

@@ -191,8 +191,15 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(name ? { name } : {}),
     }),
-  createConsultation: (data: { patientId?: string; anonymousCaseId?: string }) =>
-    request<{ id: string }>('/consultations', { method: 'POST', body: JSON.stringify(data) }),
+  createConsultation: (data: {
+    patientId?: string;
+    anonymousCaseId?: string;
+    visitType?: 'ROUTINE' | 'CHECKUP';
+  }) =>
+    request<{ id: string; visitType?: string }>('/consultations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
   consultations: () =>
     request<
       Array<{
@@ -219,6 +226,7 @@ export const api = {
     request<{
       id: string;
       status: string;
+      visitType?: 'ROUTINE' | 'CHECKUP';
       pipelineError?: string;
       hasAudio?: boolean;
       patient?: {

@@ -27,6 +27,7 @@ import { PaperCapturePanel } from '@/components/consultation/paper-capture-panel
 import { KnowledgeTranscriptPanel } from '@/components/consultation/knowledge-transcript-panel';
 import { cn } from '@/lib/utils';
 import type { SoapData } from '@/lib/mock-documents/types';
+import { formatRoutineApCombined, type VisitType } from '@/lib/soap-visit';
 
 type Soap = SoapData;
 type Warning = { id: string; message: string; severity: string };
@@ -62,6 +63,7 @@ function warningVariant(severity: string): 'warning' | 'critical' | 'info' {
 export function ReviewPhase({
   consultationId,
   caseName,
+  visitType = 'ROUTINE',
   soap,
   note,
   warnings,
@@ -92,6 +94,7 @@ export function ReviewPhase({
 }: {
   consultationId: string;
   caseName: string;
+  visitType?: VisitType;
   soap: Soap;
   note: string;
   warnings: Warning[];
@@ -202,6 +205,10 @@ export function ReviewPhase({
     if (onGenerateAll) void onGenerateAll();
   }
 
+  const visitLabel = visitType === 'CHECKUP' ? '健診' : '通常診察';
+  const apCombined =
+    visitType === 'ROUTINE' ? formatRoutineApCombined(soap.assessment, soap.plan) : '';
+
   const primaryAction = !approved ? (
     <Button className="w-full" icon={<CheckCircle2 />} onClick={onApprove}>
       確認済みにする
@@ -230,7 +237,12 @@ export function ReviewPhase({
 
         <div className="no-print flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="truncate text-xs text-slate-500">{caseName}</p>
+            <p className="truncate text-xs text-slate-500">
+              {caseName}
+              <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                {visitLabel}
+              </span>
+            </p>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-lg font-bold tracking-tight text-slate-900">SOAP</h1>
               {approved ? (
@@ -304,6 +316,17 @@ export function ReviewPhase({
                   />
                 </div>
               ))}
+              {visitType === 'ROUTINE' && apCombined ? (
+                <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                  <p className="font-semibold text-slate-700">カルテ貼付時（A/P 結合）</p>
+                  <p className="mt-1 whitespace-pre-wrap font-mono text-[11px]">{apCombined}</p>
+                </div>
+              ) : null}
+              {visitType === 'CHECKUP' ? (
+                <p className="text-[11px] leading-relaxed text-slate-500">
+                  健診定型: O に身体所見・CXR・ECG を含みます。根拠のない A/P は空のままにしてください。
+                </p>
+              ) : null}
               <Button variant="secondary" size="sm" icon={<Save />} onClick={onSaveSoap}>
                 SOAP を保存
               </Button>
@@ -416,6 +439,7 @@ export function ReviewPhase({
           </div>
           <div className="min-w-0">
             <p className="truncate font-semibold text-[#0c2f2c]">{caseName}</p>
+            <p className="text-xs text-[#6f8f88]">{visitLabel}</p>
             <p className="text-xs text-slate-500">
               {approved ? '確認済み' : '下書き — 確認後にコピー・印刷できます'}
             </p>
@@ -619,6 +643,19 @@ export function ReviewPhase({
                 />
               </div>
             ))}
+            {visitType === 'ROUTINE' && apCombined ? (
+              <div className="rounded-[1.5rem] border border-dashed border-[#d7e2dd] bg-[#f7faf8] px-4 py-3 text-sm text-slate-600">
+                <p className="text-[11px] font-semibold tracking-wide text-[#6f8f88]">
+                  カルテ貼付時（A/P 結合）
+                </p>
+                <p className="mt-1 whitespace-pre-wrap font-mono text-xs text-[#0c2f2c]">{apCombined}</p>
+              </div>
+            ) : null}
+            {visitType === 'CHECKUP' ? (
+              <p className="text-xs leading-relaxed text-[#6f8f88]">
+                健診定型: O に身体所見・CXR・ECG を含みます。根拠のない A/P は空のままにしてください。
+              </p>
+            ) : null}
             <Button variant="secondary" className="w-full rounded-2xl" icon={<Save />} onClick={onSaveSoap}>
               SOAP を保存
             </Button>

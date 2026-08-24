@@ -81,6 +81,7 @@ export default function HomePage() {
   const [saving, setSaving] = useState(false);
   const [questionnaireFile, setQuestionnaireFile] = useState<File | null>(null);
   const [questionnairePreview, setQuestionnairePreview] = useState('');
+  const [visitType, setVisitType] = useState<'ROUTINE' | 'CHECKUP'>('ROUTINE');
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -169,9 +170,10 @@ export default function HomePage() {
     setStarting(true);
     try {
       const consultation = patientId
-        ? await api.createConsultation({ patientId })
+        ? await api.createConsultation({ patientId, visitType })
         : await api.createConsultation({
             anonymousCaseId: (await api.createAnonymousCase({ displayName: '本日の診療' })).id,
+            visitType,
           });
       if (questionnaireFile) {
         await api.uploadAttachment(consultation.id, questionnaireFile, 'questionnaire');
@@ -220,6 +222,38 @@ export default function HomePage() {
             ) : (
               <p className="text-sm text-slate-500">患者を選ぶか、追加してから開始できます。未選択のまま始めると一時診療になります。</p>
             )}
+
+            <div className="space-y-2">
+              <p className="text-xs font-semibold tracking-wide text-slate-500">診療タイプ</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setVisitType('ROUTINE')}
+                  className={cn(
+                    'rounded-xl border px-3 py-2.5 text-left text-sm transition',
+                    visitType === 'ROUTINE'
+                      ? 'border-[#0c2f2c] bg-[#0c2f2c] text-[#f3efe4]'
+                      : 'border-[#d7e2dd] bg-white text-slate-700 hover:border-[#0c2f2c]/40',
+                  )}
+                >
+                  <span className="block font-semibold">通常診察</span>
+                  <span className="mt-0.5 block text-[11px] opacity-80">A/P 定型・フォロー向け</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVisitType('CHECKUP')}
+                  className={cn(
+                    'rounded-xl border px-3 py-2.5 text-left text-sm transition',
+                    visitType === 'CHECKUP'
+                      ? 'border-[#0c2f2c] bg-[#0c2f2c] text-[#f3efe4]'
+                      : 'border-[#d7e2dd] bg-white text-slate-700 hover:border-[#0c2f2c]/40',
+                  )}
+                >
+                  <span className="block font-semibold">健診</span>
+                  <span className="mt-0.5 block text-[11px] opacity-80">CXR / ECG 定型つき</span>
+                </button>
+              </div>
+            </div>
 
             <input
               ref={photoInputRef}

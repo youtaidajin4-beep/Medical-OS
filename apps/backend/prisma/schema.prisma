@@ -21,6 +21,11 @@ enum ConsultationStatus {
   COMPLETED
 }
 
+enum VisitType {
+  ROUTINE
+  CHECKUP
+}
+
 enum SpeakerLabel {
   PHYSICIAN
   PATIENT
@@ -134,6 +139,7 @@ model Consultation {
   patientId       String?            @map("patient_id")
   anonymousCaseId String?            @map("anonymous_case_id")
   status          ConsultationStatus @default(DRAFT)
+  visitType       VisitType          @default(ROUTINE) @map("visit_type")
   startedAt       DateTime?          @map("started_at")
   endedAt         DateTime?          @map("ended_at")
   approvedAt      DateTime?          @map("approved_at")

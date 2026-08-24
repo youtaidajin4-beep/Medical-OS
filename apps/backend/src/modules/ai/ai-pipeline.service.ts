@@ -15,6 +15,10 @@ import { buildWhisperPrompt, resolveMedicalGlossary } from '../../providers/ai/m
 import { correctMedicalTerms } from '../../providers/ai/medical-term-corrector';
 import { validateStructuredData } from '../../providers/ai/clinical-data-validator';
 import { redistributeCorrectedLines } from '../../providers/ai/speaker-role-mapper';
+import {
+  resolveSoapVisitType,
+  SOAP_TEMPLATE_FLOORS,
+} from '../../providers/ai/soap-templates';
 import { MedicalKnowledgeService } from '../medical-knowledge/medical-knowledge.service';
 import { logAiExecution } from './ai-execution.helper';
 
@@ -271,10 +275,14 @@ export class AiPipelineService {
       const soapRevisionExamples = soapRevisions
         .map((r) => `[${r.fieldName}] 「${r.beforeValue}」→「${r.afterValue}」`)
         .join('\n');
+      const visitType = resolveSoapVisitType(consultation.visitType);
+      const templateFloor = SOAP_TEMPLATE_FLOORS[visitType];
       const generatedSoap = await this.llmProvider.generateSoap(structured, consultationId, {
         revisionExamples: soapRevisionExamples || undefined,
         greeting: physicianRules.fixedPhrases?.greeting,
         closing: physicianRules.fixedPhrases?.closing,
+        visitType,
+        templateFloor,
       });
       const soap = { ...generatedSoap };
       const questionnaire = await this.prisma.consultationAttachment.findFirst({

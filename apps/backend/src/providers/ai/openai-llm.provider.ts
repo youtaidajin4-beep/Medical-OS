@@ -29,26 +29,34 @@ export type ChatResult = {
 const EXTRACTION_SYSTEM = `あなたは日本のクリニック向け医療情報抽出アシスタントです。
 文字起こしに明示されている事実のみを抽出してください。
 推測・診断の追加・処方の創作・検査値の捏造は禁止です。
+各フィールドは短い事実句のみ（例: 「発熱38.0℃」「咳3日」「右下肺 wheeze」）。
+「認めます」「疑いです」「考えます」などの説明文・診断作文は書かない。
 不明な項目は省略するか、薬剤名に「（要確認）」を付けてください。
 出力は有効なJSONのみとします。`;
 
 const EXTRACTION_SCHEMA = `{
-  "chiefComplaint": "string (optional)",
-  "presentIllness": "string (optional)",
+  "chiefComplaint": "string (optional) — 短い事実のみ",
+  "presentIllness": "string (optional) — 期間・症状の事実列挙",
   "pastHistory": "string (optional)",
   "medications": ["string"] (optional),
   "allergies": ["string"] (optional),
-  "vitals": "string (optional)",
-  "physicalExam": "string (optional)",
-  "assessment": "string (optional) — 医師が述べた印象のみ。AIの診断は不可",
-  "plan": "string (optional)"
+  "vitals": "string (optional) — 例: BP 128/78, 体温38.0℃",
+  "physicalExam": "string (optional) — 所見の短句列挙",
+  "assessment": "string (optional) — 医師が述べた病名/印象の短句のみ。散文・疑い作文禁止",
+  "plan": "string (optional) — 処方名・方針の短句のみ"
 }`;
 
 const SOAP_SYSTEM = `あなたは日本のクリニック向けSOAP作成アシスタントです。
-検証済みの構造化診療データのみからSOAPを作成します。
-会話調ではなくカルテ調の日本語で記載してください。
-データにない情報は追加しないでください。
-出力は次の4キーのみ。各値は必ずプレーンテキストの文字列（ネストしたオブジェクト不可）:
+検証済みの構造化診療データと、指定された定型床（テンプレート）のみからSOAPを作成します。
+
+厳守:
+- 事実の最小抽出のみ。説明文・診断作文は禁止（「認めます」「疑いです」「考えます」「印象です」等を使わない）
+- 各欄は短い事実句（例: 「発熱38.0℃」「咳3日」「右下肺 wheeze」「ムコダイン継続」）。1行1事実を基本とする
+- データにない情報・検査・診断を追加しない
+- 定型床は「変化がないときの下書き」。構造化データに具体事実があれば床を上書きする
+- 通常診察(ROUTINE)で差分がなければ assessment=stable / plan=定時薬を継続する。 を使う
+- 健診(CHECKUP)で差分がなければ床の S/O を使い、A/P は根拠がなければ空文字
+- 出力は次の4キーのみ。各値は必ずプレーンテキストの文字列（ネストしたオブジェクト不可）:
 subjective, objective, assessment, plan`;
 
 function normalizeSoapField(value: unknown): string {
@@ -132,12 +140,16 @@ export class OpenAiLlmProvider implements LlmProvider {
       styleHints?.revisionExamples
         ? `医師の過去の修正例（文体を合わせること）:\n${styleHints.revisionExamples}`
         : '',
+      styleHints?.visitType ? `visitType: ${styleHints.visitType}` : '',
+      styleHints?.templateFloor
+        ? `定型床（差分がなければこれをベースに）:\n${JSON.stringify(styleHints.templateFloor, null, 2)}`
+        : '',
     ]
       .filter(Boolean)
       .join('\n');
     const result = await this.chatJson(
       SOAP_SYSTEM,
-      `構造化データ:\n${JSON.stringify(data, null, 2)}\n${styleBlock ? `\n${styleBlock}\n` : ''}\nkeys: subjective, objective, assessment, plan のSOAPをJSONで生成。各値は文字列のみ。`,
+      `構造化データ:\n${JSON.stringify(data, null, 2)}\n${styleBlock ? `\n${styleBlock}\n` : ''}\nkeys: subjective, objective, assessment, plan のSOAPをJSONで生成。各値は事実の短句のみ（文字列）。散文禁止。`,
     );
     const parsed = JSON.parse(result.content) as Record<string, unknown>;
     return {

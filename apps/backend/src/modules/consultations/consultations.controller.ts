@@ -7,7 +7,8 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { VisitType } from '@prisma/client';
 import { ConsultationsService } from './consultations.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -21,6 +22,10 @@ class CreateConsultationDto {
   @IsOptional()
   @IsUUID()
   anonymousCaseId?: string;
+
+  @IsOptional()
+  @IsEnum(VisitType)
+  visitType?: VisitType;
 }
 
 class UpdateSoapDto {

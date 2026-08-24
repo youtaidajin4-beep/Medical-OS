@@ -23,6 +23,7 @@ describe('AiPipelineService integration shape', () => {
         id: 'consultation-1',
         clinicId: 'clinic-1',
         physicianId: 'physician-1',
+        visitType: 'ROUTINE',
         patient: { patientCode: 'P-001' },
         anonymousCase: null,
       }),

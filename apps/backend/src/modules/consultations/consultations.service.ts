@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
-import { ConsultationStatus, DocumentType } from '@prisma/client';
+import { ConsultationStatus, DocumentType, VisitType } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { AiPipelineService } from '../ai/ai-pipeline.service';
@@ -23,7 +23,7 @@ export class ConsultationsService {
   async create(
     physicianId: string,
     clinicId: string,
-    data: { patientId?: string; anonymousCaseId?: string },
+    data: { patientId?: string; anonymousCaseId?: string; visitType?: VisitType },
   ) {
     if (!data.patientId && !data.anonymousCaseId) {
       throw new BadRequestException('Patient or anonymous case required');
@@ -34,6 +34,7 @@ export class ConsultationsService {
         physicianId,
         patientId: data.patientId,
         anonymousCaseId: data.anonymousCaseId,
+        visitType: data.visitType === VisitType.CHECKUP ? VisitType.CHECKUP : VisitType.ROUTINE,
         status: ConsultationStatus.DRAFT,
       },
       include: { patient: true, anonymousCase: true },

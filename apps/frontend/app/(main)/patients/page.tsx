@@ -59,6 +59,7 @@ export default function PatientsPage() {
   const [mode, setMode] = useState<'create' | 'edit'>('create');
   const [saving, setSaving] = useState(false);
   const [startingId, setStartingId] = useState<string | null>(null);
+  const [visitType, setVisitType] = useState<'ROUTINE' | 'CHECKUP'>('ROUTINE');
 
   const load = useCallback(async () => {
     const res = await api.patients();
@@ -140,7 +141,7 @@ export default function PatientsPage() {
     setStartingId(patientId);
     setError('');
     try {
-      const consultation = await api.createConsultation({ patientId });
+      const consultation = await api.createConsultation({ patientId, visitType });
       router.push(`/consultation/${consultation.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : '診療を開始できませんでした');
@@ -310,21 +311,49 @@ export default function PatientsPage() {
                 {saving ? '保存中…' : mode === 'edit' ? '更新する' : '登録する'}
               </Button>
               {mode === 'edit' && selectedId && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  icon={
-                    startingId === selectedId ? (
-                      <Spinner />
-                    ) : (
-                      <Mic className="h-4 w-4" />
-                    )
-                  }
-                  disabled={startingId === selectedId}
-                  onClick={() => void startConsultation(selectedId)}
-                >
-                  {startingId === selectedId ? '開始中…' : 'この患者で診療開始'}
-                </Button>
+                <>
+                  <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+                    <button
+                      type="button"
+                      onClick={() => setVisitType('ROUTINE')}
+                      className={cn(
+                        'rounded-lg border px-2.5 py-1.5 text-xs font-medium',
+                        visitType === 'ROUTINE'
+                          ? 'border-brand-700 bg-brand-700 text-white'
+                          : 'border-slate-200 bg-white text-slate-600',
+                      )}
+                    >
+                      通常診察
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setVisitType('CHECKUP')}
+                      className={cn(
+                        'rounded-lg border px-2.5 py-1.5 text-xs font-medium',
+                        visitType === 'CHECKUP'
+                          ? 'border-brand-700 bg-brand-700 text-white'
+                          : 'border-slate-200 bg-white text-slate-600',
+                      )}
+                    >
+                      健診
+                    </button>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    icon={
+                      startingId === selectedId ? (
+                        <Spinner />
+                      ) : (
+                        <Mic className="h-4 w-4" />
+                      )
+                    }
+                    disabled={startingId === selectedId}
+                    onClick={() => void startConsultation(selectedId)}
+                  >
+                    {startingId === selectedId ? '開始中…' : 'この患者で診療開始'}
+                  </Button>
+                </>
               )}
             </div>
           </form>

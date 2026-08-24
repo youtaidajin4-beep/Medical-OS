@@ -32,6 +32,13 @@ export type SoapStyleHints = {
   revisionExamples?: string;
   greeting?: string;
   closing?: string;
+  visitType?: 'ROUTINE' | 'CHECKUP';
+  templateFloor?: {
+    subjective: string;
+    objective: string;
+    assessment: string;
+    plan: string;
+  };
 };
 
 export interface LlmProvider {
@@ -114,14 +121,28 @@ export class MockLlmProvider implements LlmProvider {
   async generateSoap(
     data: StructuredClinicalDataPayload,
     _consultationId?: string,
-    _styleHints?: import('./llm.provider').SoapStyleHints,
+    styleHints?: import('./llm.provider').SoapStyleHints,
   ) {
-    return {
-      subjective: `主訴: ${data.chiefComplaint ?? ''}\n現病歴: ${data.presentIllness ?? ''}`,
-      objective: [data.vitals, data.physicalExam].filter(Boolean).join('\n'),
-      assessment: data.assessment ?? '',
-      plan: data.plan ?? '',
-    };
+    const floor = styleHints?.templateFloor;
+    const visitType = styleHints?.visitType ?? 'ROUTINE';
+    const hasChief = Boolean(data.chiefComplaint?.trim());
+    const hasExam = Boolean(data.physicalExam?.trim() || data.vitals?.trim());
+    const hasAssessment = Boolean(data.assessment?.trim());
+    const hasPlan = Boolean(data.plan?.trim());
+
+    const subjective = hasChief
+      ? [data.chiefComplaint, data.presentIllness].filter(Boolean).join('\n')
+      : floor?.subjective ?? '';
+    const objective = hasExam
+      ? [data.vitals, data.physicalExam].filter(Boolean).join('\n')
+      : floor?.objective ?? '';
+
+    let assessment = hasAssessment ? (data.assessment ?? '') : floor?.assessment ?? '';
+    let plan = hasPlan ? (data.plan ?? '') : floor?.plan ?? '';
+    if (visitType === 'CHECKUP' && !hasAssessment) assessment = '';
+    if (visitType === 'CHECKUP' && !hasPlan) plan = '';
+
+    return { subjective, objective, assessment, plan };
   }
 
   async generateClinicalNote(data: StructuredClinicalDataPayload, _consultationId?: string) {
