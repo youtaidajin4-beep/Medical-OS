@@ -14,6 +14,7 @@ import { localizeOpenAiError } from '../../providers/ai/openai-retry.util';
 import { buildWhisperPrompt, resolveMedicalGlossary } from '../../providers/ai/medical-glossary';
 import { correctMedicalTerms } from '../../providers/ai/medical-term-corrector';
 import { validateStructuredData } from '../../providers/ai/clinical-data-validator';
+import { redistributeCorrectedLines } from '../../providers/ai/speaker-role-mapper';
 import { MedicalKnowledgeService } from '../medical-knowledge/medical-knowledge.service';
 import { logAiExecution } from './ai-execution.helper';
 
@@ -108,6 +109,10 @@ export class AiPipelineService {
       const sttStart = Date.now();
       await this.transcriptService.finalizeFromAudio(consultationId, audio, {
         whisperPrompt,
+        resolvePhysicianLabel: isMock
+          ? undefined
+          : async (_labelA, _labelB, sampleA, sampleB) =>
+              this.resolvePhysicianSpeaker(sampleA, sampleB),
       });
       await logAiExecution(this.prisma, {
         consultationId,
@@ -115,13 +120,13 @@ export class AiPipelineService {
         provider: this.sttProvider.name,
         status: 'completed',
         durationMs: Date.now() - sttStart,
-        promptVersion: isMock ? 'mock-v1' : 'openai-whisper-v1',
+        promptVersion: isMock ? 'mock-v1' : 'openai-diarize-v1',
       });
 
       const segments = await this.transcriptService.getSegments(consultationId, { final: true });
       const rawText = segments.map((s) => s.rawText ?? s.text).join('\n');
-      let fullText = rawText;
-      if (!fullText.trim()) {
+      let segmentTexts = segments.map((s) => s.text);
+      if (!rawText.trim()) {
         throw new Error(
           '文字起こし結果が空です。マイク入力とSTT設定を確認してください。',
         );
@@ -129,8 +134,9 @@ export class AiPipelineService {
 
       // Legacy glossary homophone pass (kept for backward compatibility)
       const dictStart = Date.now();
-      const dictResult = correctMedicalTerms(fullText, glossary);
-      fullText = dictResult.text;
+      const dictJoined = segmentTexts.join('\n');
+      const dictResult = correctMedicalTerms(dictJoined, glossary);
+      segmentTexts = redistributeCorrectedLines(segmentTexts, dictResult.text);
       await logAiExecution(this.prisma, {
         consultationId,
         step: 'dict_correction_complete',
@@ -148,11 +154,12 @@ export class AiPipelineService {
       const knowledgeStart = Date.now();
       const patientMeds = glossary.drugNames ?? [];
       const patientDx = glossary.diagnoses ?? [];
-      const knowledgeResult = this.medicalKnowledge.correct(fullText, {
+      const knowledgeJoined = segmentTexts.join('\n');
+      const knowledgeResult = this.medicalKnowledge.correct(knowledgeJoined, {
         medications: patientMeds,
         diagnoses: patientDx,
       });
-      fullText = knowledgeResult.correctedText;
+      segmentTexts = redistributeCorrectedLines(segmentTexts, knowledgeResult.correctedText);
       await this.medicalKnowledge.persistCorrectionResult({
         clinicId: consultation.clinicId,
         physicianId: consultation.physicianId,
@@ -173,18 +180,25 @@ export class AiPipelineService {
         }),
       });
 
-      // Append [要確認] markers for high-risk unresolved items before SOAP
-      const reviewFlags = knowledgeResult.entities
-        .filter((e) => e.needsReview && e.normalizedValue)
-        .slice(0, 12)
-        .map((e) => `[要確認:${e.entityType}:${e.rawValue}→${e.normalizedValue}]`);
-      if (reviewFlags.length) {
-        fullText = `${fullText}\n\n${reviewFlags.join('\n')}`;
-      }
-
       if (!isMock) {
         const llmCorrectStart = Date.now();
-        fullText = await this.llmProvider.correctTranscript(fullText, glossary, consultationId);
+        const beforeLlm = segmentTexts;
+        const llmCorrected = await this.llmProvider.correctTranscript(
+          segmentTexts.join('\n'),
+          glossary,
+          consultationId,
+        );
+        const redistributed = redistributeCorrectedLines(beforeLlm, llmCorrected);
+        if (redistributed.join('\n') !== beforeLlm.join('\n')) {
+          segmentTexts = redistributed;
+        } else if (beforeLlm.length === 1 && llmCorrected.trim()) {
+          segmentTexts = [llmCorrected.trim()];
+        } else if (llmCorrected.trim() && llmCorrected.trim() !== beforeLlm.join('\n')) {
+          // Line count changed: correct each segment independently to keep speakers
+          segmentTexts = await Promise.all(
+            beforeLlm.map((t) => this.llmProvider.correctTranscript(t, glossary, consultationId)),
+          );
+        }
         await logAiExecution(this.prisma, {
           consultationId,
           step: 'llm_correction_complete',
@@ -196,11 +210,25 @@ export class AiPipelineService {
         });
       }
 
-      // Updates corrected text only — rawText preserved on TranscriptSegment
-      await this.transcriptService.replaceFinalTranscript(consultationId, fullText);
+      // Preserve diarized speakers — update display text per segment only
+      const updatedSegments = await this.transcriptService.updateFinalSegmentTexts(
+        consultationId,
+        segments.map((seg, i) => ({ id: seg.id, text: segmentTexts[i] ?? seg.text })),
+      );
+
+      const reviewFlags = knowledgeResult.entities
+        .filter((e) => e.needsReview && e.normalizedValue)
+        .slice(0, 12)
+        .map((e) => `[要確認:${e.entityType}:${e.rawValue}→${e.normalizedValue}]`);
+
+      // Speaker-prefixed transcript for SOAP / structured extraction
+      let soapSource = this.transcriptService.toSpeakerPrefixedText(updatedSegments);
+      if (reviewFlags.length) {
+        soapSource = `${soapSource}\n\n${reviewFlags.join('\n')}`;
+      }
 
       const extractStart = Date.now();
-      const structured = await this.llmProvider.extractStructured(fullText, consultationId);
+      const structured = await this.llmProvider.extractStructured(soapSource, consultationId);
       StructuredClinicalDataSchema.parse(structured);
       await logAiExecution(this.prisma, {
         consultationId,
@@ -317,6 +345,32 @@ export class AiPipelineService {
       throw new Error(message);
     } finally {
       mockScenarioContext.clear(consultationId);
+    }
+  }
+
+  private async resolvePhysicianSpeaker(
+    sampleA: string,
+    sampleB: string,
+  ): Promise<'A' | 'B' | null> {
+    if (!this.llmProvider.consultChat) return null;
+    try {
+      const reply = await this.llmProvider.consultChat(
+        'あなたは診察音声の話者判定のみを行う。回答は A または B の1文字だけ。説明不要。',
+        [
+          {
+            role: 'user',
+            content: `次の2クラスタのどちらが医師の発話か判定してください。\n\n【A】\n${sampleA}\n\n【B】\n${sampleB}\n\n答えは A または B のみ。`,
+          },
+        ],
+      );
+      const letter = reply.trim().toUpperCase().match(/[AB]/)?.[0];
+      if (letter === 'A' || letter === 'B') return letter;
+      return null;
+    } catch (error) {
+      this.logger.warn(
+        `Speaker role LLM tie-break failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return null;
     }
   }
 

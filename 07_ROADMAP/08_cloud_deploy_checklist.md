@@ -22,6 +22,7 @@
 6. [ ] Railway `FRONTEND_URL` = Vercel URL
 7. [ ] `curl .../api/v1/health/ai` → `apiKeyConfigured` / `ffmpegAvailable`
 8. [ ] 通し: ログイン → `/home` → 録音30秒 → SOAP → チャット書類 → 再試行
+9. [ ] Railway: `OPENAI_WHISPER_MODEL=gpt-4o-transcribe-diarize` / `OPENAI_STT_FALLBACK_MODEL=whisper-1` → レビューで医師/患者が分かれること
 
 詳細は [`06_deploy_guide.md`](./06_deploy_guide.md) / [`07_onsite_cheatsheet.md`](./07_onsite_cheatsheet.md)。
 

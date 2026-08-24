@@ -9,9 +9,16 @@ describe('TranscriptNormalizer', () => {
     expect(result[0]?.text).toBe('咳が出る。');
   });
 
-  it('maps low confidence speakers to unknown', () => {
+  it('keeps assigned physician/patient even when confidence is low', () => {
     const result = normalizer.normalize([
       { text: 'こんにちは', speaker: 'patient', confidence: 0.5 },
+    ]);
+    expect(result[0]?.speaker).toBe('patient');
+  });
+
+  it('maps low confidence unknown speakers to unknown', () => {
+    const result = normalizer.normalize([
+      { text: 'こんにちは', speaker: 'unknown', confidence: 0.5 },
     ]);
     expect(result[0]?.speaker).toBe('unknown');
   });

@@ -4,6 +4,7 @@ import { SttProvider, SttTranscriptSegment } from './stt.provider';
 export interface OpenAiSttConfig {
   apiKey: string;
   model?: string;
+  fallbackModel?: string;
 }
 
 const MIN_AUDIO_BYTES = 1024;
@@ -17,6 +18,8 @@ const WHISPER_HALLUCINATION_PATTERNS = [
   /チャンネル登録/,
 ];
 
+const DIARIZE_MODEL = 'gpt-4o-transcribe-diarize';
+
 type WhisperSegment = {
   id: number;
   start: number;
@@ -29,15 +32,34 @@ type WhisperVerboseResponse = {
   segments?: WhisperSegment[];
 };
 
+type DiarizedSegment = {
+  speaker?: string;
+  text?: string;
+  start?: number;
+  end?: number;
+};
+
+type DiarizedResponse = {
+  text?: string;
+  segments?: DiarizedSegment[];
+  duration?: number;
+};
+
+function isDiarizeModel(model: string): boolean {
+  return model.includes('diarize');
+}
+
 export class OpenAiSttProvider implements SttProvider {
   readonly name = 'openai';
   private readonly logger = new Logger(OpenAiSttProvider.name);
   private readonly apiKey: string;
   private readonly model: string;
+  private readonly fallbackModel: string;
 
   constructor(config: OpenAiSttConfig) {
     this.apiKey = config.apiKey;
-    this.model = config.model ?? 'whisper-1';
+    this.model = config.model ?? DIARIZE_MODEL;
+    this.fallbackModel = config.fallbackModel ?? 'whisper-1';
   }
 
   async transcribeStream(
@@ -71,7 +93,27 @@ export class OpenAiSttProvider implements SttProvider {
     const isMp3 = isId3 || isMp3Frame;
     const filename = isWav ? 'consultation.wav' : isMp3 ? 'consultation.mp3' : 'consultation.webm';
     const mimeType = isWav ? 'audio/wav' : isMp3 ? 'audio/mpeg' : 'audio/webm';
-    return this.transcribeBuffer(audio, filename, mimeType, options?.whisperPrompt);
+
+    if (isDiarizeModel(this.model)) {
+      try {
+        return await this.transcribeDiarized(audio, filename, mimeType);
+      } catch (error) {
+        this.logger.warn(
+          `Diarize STT failed, falling back to ${this.fallbackModel}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+        return this.transcribeWhisper(
+          audio,
+          filename,
+          mimeType,
+          options?.whisperPrompt,
+          this.fallbackModel,
+        );
+      }
+    }
+
+    return this.transcribeWhisper(audio, filename, mimeType, options?.whisperPrompt, this.model);
   }
 
   private assertApiKey() {
@@ -80,15 +122,16 @@ export class OpenAiSttProvider implements SttProvider {
     }
   }
 
-  private buildForm(
+  private buildWhisperForm(
     audio: Buffer,
     filename: string,
     mimeType: string,
+    model: string,
     whisperPrompt?: string,
   ): FormData {
     const form = new FormData();
     form.append('file', new Blob([audio], { type: mimeType }), filename);
-    form.append('model', this.model);
+    form.append('model', model);
     form.append('language', 'ja');
     form.append('response_format', 'verbose_json');
     form.append('temperature', '0');
@@ -98,13 +141,57 @@ export class OpenAiSttProvider implements SttProvider {
     return form;
   }
 
-  private async transcribeBuffer(
+  private buildDiarizeForm(audio: Buffer, filename: string, mimeType: string): FormData {
+    const form = new FormData();
+    form.append('file', new Blob([audio], { type: mimeType }), filename);
+    form.append('model', this.model);
+    form.append('language', 'ja');
+    form.append('response_format', 'diarized_json');
+    form.append('chunking_strategy', 'auto');
+    return form;
+  }
+
+  private async transcribeDiarized(
     audio: Buffer,
     filename: string,
     mimeType: string,
-    whisperPrompt?: string,
   ): Promise<SttTranscriptSegment[]> {
-    const data = await this.requestWhisper(audio, filename, mimeType, whisperPrompt);
+    const data = await this.requestDiarize(audio, filename, mimeType);
+    const segments = (data.segments ?? [])
+      .map((seg) => ({
+        text: (seg.text ?? '').trim(),
+        speaker: 'unknown' as const,
+        diarizationLabel: (seg.speaker ?? '').trim() || undefined,
+        confidence: 0.9,
+        startMs: Math.round((seg.start ?? 0) * 1000),
+        endMs: Math.round((seg.end ?? seg.start ?? 0) * 1000),
+      }))
+      .filter((seg) => seg.text.length > 0);
+
+    if (segments.length) {
+      const combined = segments.map((s) => s.text).join('');
+      this.assertTranscriptQuality(audio.length, combined);
+      return segments;
+    }
+
+    const text = data.text?.trim();
+    if (!text) {
+      throw new Error(
+        '文字起こし結果が空です。マイク入力または音声形式を確認してください。',
+      );
+    }
+    this.assertTranscriptQuality(audio.length, text);
+    return [{ text, speaker: 'unknown', confidence: 0.85, startMs: 0, endMs: 0 }];
+  }
+
+  private async transcribeWhisper(
+    audio: Buffer,
+    filename: string,
+    mimeType: string,
+    whisperPrompt: string | undefined,
+    model: string,
+  ): Promise<SttTranscriptSegment[]> {
+    const data = await this.requestWhisper(audio, filename, mimeType, whisperPrompt, model);
     const segments = data.segments?.length
       ? data.segments
           .map((seg) => ({
@@ -144,14 +231,52 @@ export class OpenAiSttProvider implements SttProvider {
     }
   }
 
+  private async requestDiarize(
+    audio: Buffer,
+    filename: string,
+    mimeType: string,
+    attempt = 0,
+  ): Promise<DiarizedResponse> {
+    const form = this.buildDiarizeForm(audio, filename, mimeType);
+    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${this.apiKey}` },
+      body: form,
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      if ((response.status === 429 || response.status >= 500) && attempt < MAX_RETRIES - 1) {
+        const delayMs = Math.min(8000, 1000 * 2 ** attempt);
+        this.logger.warn(
+          `Diarize retry ${attempt + 1}/${MAX_RETRIES} after ${response.status} (wait ${delayMs}ms)`,
+        );
+        await new Promise((r) => setTimeout(r, delayMs));
+        return this.requestDiarize(audio, filename, mimeType, attempt + 1);
+      }
+      if (response.status === 429) {
+        throw new Error('混み合っています。しばらく待ってから再試行してください。');
+      }
+      if (response.status >= 500) {
+        throw new Error(
+          '混み合っています。再試行してください。改善しない場合は紙カルテで継続してください。',
+        );
+      }
+      throw new Error(`OpenAI diarize STT failed (${response.status}): ${errorBody}`);
+    }
+
+    return (await response.json()) as DiarizedResponse;
+  }
+
   private async requestWhisper(
     audio: Buffer,
     filename: string,
     mimeType: string,
-    whisperPrompt?: string,
+    whisperPrompt: string | undefined,
+    model: string,
     attempt = 0,
   ): Promise<WhisperVerboseResponse> {
-    const form = this.buildForm(audio, filename, mimeType, whisperPrompt);
+    const form = this.buildWhisperForm(audio, filename, mimeType, model, whisperPrompt);
     const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
       headers: { Authorization: `Bearer ${this.apiKey}` },
@@ -166,12 +291,10 @@ export class OpenAiSttProvider implements SttProvider {
           `Whisper retry ${attempt + 1}/${MAX_RETRIES} after ${response.status} (wait ${delayMs}ms)`,
         );
         await new Promise((r) => setTimeout(r, delayMs));
-        return this.requestWhisper(audio, filename, mimeType, whisperPrompt, attempt + 1);
+        return this.requestWhisper(audio, filename, mimeType, whisperPrompt, model, attempt + 1);
       }
       if (response.status === 429) {
-        throw new Error(
-          '混み合っています。しばらく待ってから再試行してください。',
-        );
+        throw new Error('混み合っています。しばらく待ってから再試行してください。');
       }
       if (response.status >= 500) {
         throw new Error(

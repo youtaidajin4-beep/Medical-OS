@@ -58,7 +58,8 @@ postgresql://postgres.xxxx:password@aws-0-ap-northeast-1.pooler.supabase.com:654
 | `STT_PROVIDER` | `openai` |
 | `LLM_PROVIDER` | `openai` |
 | `OPENAI_API_KEY` | 本番用キー |
-| `OPENAI_WHISPER_MODEL` | `whisper-1` |
+| `OPENAI_WHISPER_MODEL` | `gpt-4o-transcribe-diarize`（話者分離。障害時は `OPENAI_STT_FALLBACK_MODEL`） |
+| `OPENAI_STT_FALLBACK_MODEL` | `whisper-1` |
 | `OPENAI_LLM_MODEL` | `gpt-4o-mini` |
 | `OPENAI_CORRECTION_MODEL` | `gpt-4o` |
 | `OPENAI_DOCUMENT_MODEL` | `gpt-4o` |

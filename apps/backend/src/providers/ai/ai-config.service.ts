@@ -35,7 +35,10 @@ export class AiConfigService implements OnModuleInit {
       llmProvider: this.getLlmProvider(),
       apiKeyConfigured: this.isApiKeyConfigured(),
       ffmpegAvailable: this.ffmpegAvailable,
-      whisperModel: this.config.get<string>('OPENAI_WHISPER_MODEL', 'whisper-1'),
+      whisperModel: this.config.get<string>(
+        'OPENAI_WHISPER_MODEL',
+        'gpt-4o-transcribe-diarize',
+      ),
       llmModel: this.config.get<string>('OPENAI_LLM_MODEL', 'gpt-4o-mini'),
       correctionModel: this.config.get<string>('OPENAI_CORRECTION_MODEL', 'gpt-4o'),
     };

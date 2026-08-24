@@ -6,6 +6,7 @@ export class TranscriptNormalizer {
       ...segment,
       text: this.normalizeText(segment.text),
       speaker: this.normalizeSpeaker(segment),
+      diarizationLabel: segment.diarizationLabel,
     }));
   }
 
@@ -20,6 +21,18 @@ export class TranscriptNormalizer {
   }
 
   private normalizeSpeaker(segment: SttTranscriptSegment): SttTranscriptSegment['speaker'] {
+    // Keep assigned roles from diarization / role mapper even if confidence is modest.
+    if (
+      segment.speaker === 'physician' ||
+      segment.speaker === 'patient' ||
+      segment.speaker === 'other'
+    ) {
+      return segment.speaker;
+    }
+    if (segment.diarizationLabel) {
+      // Label present but not yet mapped — leave unknown for mapper / UI.
+      return 'unknown';
+    }
     if ((segment.confidence ?? 1) < 0.7) {
       return 'unknown';
     }

@@ -53,7 +53,7 @@ describe('OpenAiSttProvider', () => {
   });
 
   it('rejects audio that is too short', async () => {
-    const provider = new OpenAiSttProvider({ apiKey: 'test-key' });
+    const provider = new OpenAiSttProvider({ apiKey: 'test-key', model: 'whisper-1' });
     await expect(provider.transcribeFinal(Buffer.alloc(64))).rejects.toThrow('短すぎ');
   });
 
@@ -65,7 +65,7 @@ describe('OpenAiSttProvider', () => {
       }),
     });
 
-    const provider = new OpenAiSttProvider({ apiKey: 'test-key' });
+    const provider = new OpenAiSttProvider({ apiKey: 'test-key', model: 'whisper-1' });
     const segments = await provider.transcribeFinal(Buffer.alloc(2048));
     expect(segments[0]?.text).toBe('こんにちは');
   });
@@ -78,7 +78,7 @@ describe('OpenAiSttProvider', () => {
       }),
     });
 
-    const provider = new OpenAiSttProvider({ apiKey: 'test-key' });
+    const provider = new OpenAiSttProvider({ apiKey: 'test-key', model: 'whisper-1' });
     await provider.transcribeFinal(Buffer.alloc(2048), undefined, {
       whisperPrompt: '聴診、再診、ムコダイン',
     });
@@ -89,8 +89,63 @@ describe('OpenAiSttProvider', () => {
     expect(body.get('temperature')).toBe('0');
   });
 
+  it('parses diarized_json segments with anonymous speaker labels', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        text: 'こんにちは。熱はありますか。',
+        segments: [
+          { speaker: 'speaker_0', text: 'こんにちは。', start: 0, end: 1.2 },
+          { speaker: 'speaker_1', text: '熱はありますか。', start: 1.2, end: 2.5 },
+        ],
+      }),
+    });
+
+    const provider = new OpenAiSttProvider({
+      apiKey: 'test-key',
+      model: 'gpt-4o-transcribe-diarize',
+    });
+    const segments = await provider.transcribeFinal(Buffer.alloc(2048));
+    expect(segments).toHaveLength(2);
+    expect(segments[0]?.diarizationLabel).toBe('speaker_0');
+    expect(segments[1]?.diarizationLabel).toBe('speaker_1');
+    expect(segments[0]?.speaker).toBe('unknown');
+
+    const [, init] = (global.fetch as jest.Mock).mock.calls[0] as [string, RequestInit];
+    const body = init.body as FormData;
+    expect(body.get('model')).toBe('gpt-4o-transcribe-diarize');
+    expect(body.get('response_format')).toBe('diarized_json');
+    expect(body.get('chunking_strategy')).toBe('auto');
+    expect(body.get('prompt')).toBeNull();
+  });
+
+  it('falls back to whisper-1 when diarize request fails', async () => {
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        text: async () => 'diarize not available',
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          segments: [{ id: 0, start: 0, end: 1, text: 'フォールバック' }],
+        }),
+      });
+
+    const provider = new OpenAiSttProvider({
+      apiKey: 'test-key',
+      model: 'gpt-4o-transcribe-diarize',
+      fallbackModel: 'whisper-1',
+    });
+    const segments = await provider.transcribeFinal(Buffer.alloc(2048));
+    expect(segments[0]?.text).toBe('フォールバック');
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
   it('does not transcribe stream chunks', async () => {
-    const provider = new OpenAiSttProvider({ apiKey: 'test-key' });
+    const provider = new OpenAiSttProvider({ apiKey: 'test-key', model: 'whisper-1' });
     const result = await provider.transcribeStream(Buffer.alloc(2048), 0);
     expect(result).toBeNull();
   });

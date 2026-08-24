@@ -4,6 +4,8 @@ import { MOCK_SCENARIOS } from './mock-scenarios';
 export interface SttTranscriptSegment {
   text: string;
   speaker?: 'physician' | 'patient' | 'other' | 'unknown';
+  /** Anonymous label from diarization API (e.g. speaker_0, A) before role mapping. */
+  diarizationLabel?: string;
   confidence?: number;
   startMs?: number;
   endMs?: number;

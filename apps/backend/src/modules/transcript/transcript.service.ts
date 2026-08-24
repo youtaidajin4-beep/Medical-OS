@@ -6,12 +6,25 @@ import { STT_PROVIDER } from '../../providers/ai/stt.tokens';
 import { TranscriptNormalizer } from '../ai/transcript-normalizer';
 import { extractReplacementCandidates } from '../../providers/ai/transcript-diff.util';
 import { MedicalGlossaryReplacement } from '../../providers/ai/medical-glossary.types';
+import {
+  formatSpeakerPrefixedTranscript,
+  mapSpeakerRoles,
+} from '../../providers/ai/speaker-role-mapper';
 
 const SPEAKER_MAP: Record<string, SpeakerLabel> = {
   physician: SpeakerLabel.PHYSICIAN,
   patient: SpeakerLabel.PATIENT,
   other: SpeakerLabel.OTHER,
   unknown: SpeakerLabel.UNKNOWN,
+};
+
+export type FinalizeAudioOptions = SttOptions & {
+  resolvePhysicianLabel?: (
+    labelA: string,
+    labelB: string,
+    sampleA: string,
+    sampleB: string,
+  ) => Promise<'A' | 'B' | null>;
 };
 
 @Injectable()
@@ -52,12 +65,15 @@ export class TranscriptService {
     });
   }
 
-  async finalizeFromAudio(consultationId: string, audio: Buffer, options?: SttOptions) {
+  async finalizeFromAudio(consultationId: string, audio: Buffer, options?: FinalizeAudioOptions) {
     const rawSegments = await this.sttProvider.transcribeFinal(audio, consultationId, options);
-    const normalizedSegments = this.normalizer.normalize(rawSegments);
+    const withRoles = await mapSpeakerRoles(rawSegments, {
+      resolvePhysicianLabel: options?.resolvePhysicianLabel,
+    });
+    const normalizedSegments = this.normalizer.normalize(withRoles);
 
     await this.prisma.transcriptSegment.deleteMany({
-      where: { consultationId, isFinal: false },
+      where: { consultationId },
     });
 
     const segments = await Promise.all(
@@ -82,6 +98,10 @@ export class TranscriptService {
     return segments;
   }
 
+  /**
+   * @deprecated Prefer updateFinalSegmentTexts to preserve diarized speakers.
+   * Kept for single-segment / empty cases and backward-compatible callers.
+   */
   async replaceFinalTranscript(consultationId: string, correctedText: string) {
     const existing = await this.prisma.transcriptSegment.findMany({
       where: { consultationId, isFinal: true },
@@ -104,27 +124,55 @@ export class TranscriptService {
       });
     }
 
-    const [first, ...rest] = existing;
-    // Preserve rawText forever — only update display/corrected text fields
-    const preservedRaw =
-      first!.rawText ??
-      existing.map((s) => s.rawText ?? s.text).join('\n');
-    await this.prisma.transcriptSegment.update({
-      where: { id: first!.id },
-      data: {
-        rawText: preservedRaw,
-        text: correctedText,
-        normalizedText: correctedText,
-      },
-    });
-    if (rest.length) {
-      await this.prisma.transcriptSegment.deleteMany({
-        where: { id: { in: rest.map((seg) => seg.id) } },
+    if (existing.length === 1) {
+      const first = existing[0]!;
+      return this.prisma.transcriptSegment.update({
+        where: { id: first.id },
+        data: {
+          rawText: first.rawText ?? first.text,
+          text: correctedText,
+          normalizedText: correctedText,
+        },
       });
     }
-    return this.prisma.transcriptSegment.findFirstOrThrow({
-      where: { id: first!.id },
-    });
+
+    const strippedLines = correctedText
+      .split('\n')
+      .map((l) => l.replace(/^(医師|患者|不明)[:：]\s*/, '').trim())
+      .filter((l) => l.length > 0);
+
+    if (strippedLines.length === existing.length) {
+      await this.updateFinalSegmentTexts(
+        consultationId,
+        existing.map((seg, i) => ({ id: seg.id, text: strippedLines[i]! })),
+      );
+      return this.prisma.transcriptSegment.findFirstOrThrow({ where: { id: existing[0]!.id } });
+    }
+
+    // Last resort: do not delete speakers — leave segment texts unchanged for multi-seg mismatch.
+    // Callers should use updateFinalSegmentTexts.
+    return this.prisma.transcriptSegment.findFirstOrThrow({ where: { id: existing[0]!.id } });
+  }
+
+  async updateFinalSegmentTexts(
+    consultationId: string,
+    updates: Array<{ id: string; text: string }>,
+  ) {
+    await Promise.all(
+      updates.map((u) =>
+        this.prisma.transcriptSegment.update({
+          where: { id: u.id },
+          data: { text: u.text, normalizedText: u.text },
+        }),
+      ),
+    );
+    return this.getSegments(consultationId, { final: true });
+  }
+
+  toSpeakerPrefixedText(
+    segments: Array<{ text: string; speaker?: SpeakerLabel | string | null }>,
+  ): string {
+    return formatSpeakerPrefixedTranscript(segments);
   }
 
   async updateSegmentSpeaker(segmentId: string, speaker: SpeakerLabel) {
@@ -138,7 +186,10 @@ export class TranscriptService {
     consultationId: string,
     physicianId: string,
     segments: Array<{ id: string; text: string }>,
-  ): Promise<{ segments: Awaited<ReturnType<TranscriptService['getSegments']>>; suggestedReplacements: MedicalGlossaryReplacement[] }> {
+  ): Promise<{
+    segments: Awaited<ReturnType<TranscriptService['getSegments']>>;
+    suggestedReplacements: MedicalGlossaryReplacement[];
+  }> {
     const existing = await this.getSegments(consultationId, { final: true });
     const beforeText = this.toFullText(existing);
 

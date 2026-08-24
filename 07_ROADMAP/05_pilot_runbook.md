@@ -99,10 +99,20 @@ Patient P-001 または同等の咳・息苦しさケースで、録音後に以
 3. 上表4項目が合格なら OK。不合格語があれば設定画面の「誤認識→正しい表記」に追加
 4. `AIExecution` の `dict_correction_complete` ログで自動置換履歴を確認（開発担当）
 
-### 環境変数（Whisper 精度改善後）
+### 環境変数（話者分離 STT）
 
+- `OPENAI_WHISPER_MODEL=gpt-4o-transcribe-diarize`（医師/患者の自動話者分け）
+- `OPENAI_STT_FALLBACK_MODEL=whisper-1`（diarize 障害時）
 - `OPENAI_CORRECTION_MODEL=gpt-4o`（校正のみ。抽出・SOAP は mini のまま）
 - Railway で ffmpeg 有効（`/api/v1/health/ai` の `ffmpegAvailable: true`）
+
+#### Railway 更新手順（話者分け有効化）
+
+1. Railway → API サービス → Variables
+2. `OPENAI_WHISPER_MODEL` を `gpt-4o-transcribe-diarize` に設定
+3. `OPENAI_STT_FALLBACK_MODEL=whisper-1` を追加（任意だが推奨）
+4. 再デプロイ後、くしま内科で1本通し: レビュー画面で医師/患者が分かれて表示されること
+5. 崩れる場合は Variables で `OPENAI_WHISPER_MODEL=whisper-1` に戻して再デプロイ
 
 ---
 
@@ -165,6 +175,8 @@ Patient P-001 または同等の咳・息苦しさケースで、録音後に以
    - `STT_PROVIDER=openai`
    - `LLM_PROVIDER=openai`
    - `OPENAI_API_KEY`
+   - `OPENAI_WHISPER_MODEL=gpt-4o-transcribe-diarize`
+   - `OPENAI_STT_FALLBACK_MODEL=whisper-1`
    - `OPENAI_DOCUMENT_MODEL=gpt-4o`
    - `STORAGE_PROVIDER=local`
    - `STORAGE_PATH=/data/audio`（Railway Volume 必須）

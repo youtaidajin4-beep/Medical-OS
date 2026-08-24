@@ -17,7 +17,8 @@ import { STT_PROVIDER } from '../../providers/ai/stt.tokens';
         if (provider === 'openai') {
           return new OpenAiSttProvider({
             apiKey: config.get<string>('OPENAI_API_KEY', ''),
-            model: config.get<string>('OPENAI_WHISPER_MODEL', 'whisper-1'),
+            model: config.get<string>('OPENAI_WHISPER_MODEL', 'gpt-4o-transcribe-diarize'),
+            fallbackModel: config.get<string>('OPENAI_STT_FALLBACK_MODEL', 'whisper-1'),
           });
         }
         return new MockSttProvider();
