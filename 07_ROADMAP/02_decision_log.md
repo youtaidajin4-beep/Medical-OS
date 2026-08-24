@@ -36,6 +36,7 @@
 | 2026-07-17 | 先生専用AI: 初期60-70%精度、修正差分で学習 |
 | 2026-07-17 | 8/1パイロット: クラウド（Vercel+Railway）+ 実OpenAI |
 | 2026-07-18 | PostgreSQL 本番DB、GeneratedDocument 永続化、先生ルール設定 |
+| 2026-08-24 | **くしま本番接続（推奨範囲1）**: Supabase `medical-os-kushima` + Nest/Prisma/JWT 維持。テナント `clinics.code=kushima_internal`。Auth/RLS は後続。Bright Dental 非接続 |
 | 2026-07-28 | **谷口優先 Phase 1–5 ロードマップ採用** — ①SOAPコピー→②書類ワンボタン→③学習・紹介パターン→④パネル内チャット→⑤紙OCR・患者蓄積。新機能は `/panel` 内に追加（画面遷移を増やさない） |
 
 ---

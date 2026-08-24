@@ -61,12 +61,14 @@ enum WarningSeverity {
 }
 
 model Clinic {
-  id        String   @id @default(uuid())
-  name      String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  users     User[]
-  patients  Patient[]
+  id         String   @id @default(uuid())
+  /** Stable tenant key within the internal-medicine Supabase project (e.g. kushima_internal). */
+  code       String   @unique
+  name       String
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  users      User[]
+  patients   Patient[]
   anonymousCases AnonymousCase[]
   clinicDictionaryTerms ClinicDictionaryTerm[]
   doctorDictionaryTerms DoctorDictionaryTerm[]

@@ -43,7 +43,7 @@ export class RecordingController {
     @Body() dto: UploadChunkDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    await this.consultationAccess.assertPhysicianOwns(consultationId, user.sub);
+    await this.consultationAccess.assertPhysicianOwns(consultationId, user.sub, user.clinicId);
     if (!file?.buffer?.length) {
       throw new BadRequestException('Audio chunk is empty or missing');
     }
@@ -63,7 +63,7 @@ export class RecordingController {
     @Body() dto: UploadChunkDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    await this.consultationAccess.assertPhysicianOwns(consultationId, user.sub);
+    await this.consultationAccess.assertPhysicianOwns(consultationId, user.sub, user.clinicId);
     if (!file?.buffer?.length) {
       throw new BadRequestException('Audio file is empty or missing');
     }
@@ -79,7 +79,7 @@ export class RecordingController {
     @Param('consultationId') consultationId: string,
     @CurrentUser() user: AuthUser,
   ) {
-    await this.consultationAccess.assertPhysicianOwns(consultationId, user.sub);
+    await this.consultationAccess.assertPhysicianOwns(consultationId, user.sub, user.clinicId);
     return this.recordingService.assembleAudioFile(consultationId);
   }
 }

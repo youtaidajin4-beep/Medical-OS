@@ -9,6 +9,8 @@ import { randomBytes } from 'crypto';
 const prisma = new PrismaClient();
 
 const CLINIC_ID = '00000000-0000-0000-0000-000000000001';
+const CLINIC_CODE = 'kushima_internal';
+const CLINIC_NAME = 'くしま内科';
 
 function resolveSeedPassword(): string {
   const fromEnv = process.env.SEED_PASSWORD?.trim();
@@ -34,16 +36,17 @@ async function main() {
 
   const clinic = await prisma.clinic.upsert({
     where: { id: CLINIC_ID },
-    update: { name: 'くしま内科クリニック' },
+    update: { name: CLINIC_NAME, code: CLINIC_CODE },
     create: {
       id: CLINIC_ID,
-      name: 'くしま内科クリニック',
+      code: CLINIC_CODE,
+      name: CLINIC_NAME,
     },
   });
 
   const demoUser = await prisma.user.upsert({
     where: { email: 'doctor@demo.clinic' },
-    update: { name: '谷口 広明' },
+    update: { name: '谷口 広明', clinicId: clinic.id },
     create: {
       clinicId: clinic.id,
       name: '谷口 広明',
@@ -95,7 +98,8 @@ async function main() {
 
   await seedMedicalKnowledge(prisma);
 
-  console.log('Seed complete: doctor@demo.clinic');
+  console.log(`Seed complete: clinic=${clinic.code} (${clinic.name}) id=${clinic.id}`);
+  console.log('Login: doctor@demo.clinic');
   console.log('Initial login requires password change (mustChangePassword=true).');
   if (process.env.SEED_PASSWORD?.trim()) {
     console.log('Password: value from SEED_PASSWORD environment variable.');

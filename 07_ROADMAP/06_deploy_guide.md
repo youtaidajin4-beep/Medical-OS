@@ -28,7 +28,14 @@
 
 ## Step 1: Supabase（DB）
 
-1. https://supabase.com でプロジェクト作成（Region: Tokyo 推奨）
+**くしま内科本番は既存プロジェクトを使う**（新規作成しない）:
+- プロジェクト名: `medical-os-kushima`
+- ref: `fyzlcteanzwypisvztku`
+- Org: 内科 AI 用の Pro 組織内
+- **Bright Dental / 歯科用プロジェクトには接続しない**
+
+手順:
+1. Supabase Dashboard で上記プロジェクトを開く
 2. **Settings → Database → Connection string → URI** をコピー
 3. `[YOUR-PASSWORD]` を実際のパスワードに置換
 4. 末尾に `?schema=public` がなければ追加（必要なら `sslmode=require`）
@@ -38,10 +45,18 @@
 postgresql://postgres.xxxx:password@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?schema=public
 ```
 
+マルチテナント: 同一 DB 内で `clinics.code`（くしまは `kushima_internal`）+ `clinic_id` で隔離。
+詳細は [07_kushima_production_connect.md](./07_kushima_production_connect.md)。
+
 ---
 
 ## Step 2: Railway（API）
 
+**既存サービスを再利用**（Hobby 有効後に再デプロイ）。新規複製しない。
+- 推奨サービス名（表示名）: `medical-os-api`（任意で `kushima-internal-api`）
+- 公開 URL 例: `https://medical-os-api-production.up.railway.app`
+
+初回のみ / 新規環境の場合:
 1. https://railway.app → New Project → Deploy from GitHub → `Medical-OS`
 2. **Volume を追加**（必須）:
    - Mount path: `/data`
@@ -86,6 +101,7 @@ DATABASE_URL="postgresql://..." SEED_PASSWORD="your-unique-secure-password" pnpm
 ```
 
 - ログイン: `doctor@demo.clinic` / 上記 `SEED_PASSWORD`
+- シード後のクリニック: `code=kushima_internal` / 名称「くしま内科」
 - 初回ログイン時は **パスワード変更画面** に誘導されます
 - 本番で既存ユーザーのパスワードだけ更新する場合:
 

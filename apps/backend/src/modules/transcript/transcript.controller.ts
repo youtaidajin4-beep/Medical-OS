@@ -49,7 +49,7 @@ export class TranscriptController {
     @CurrentUser() user: AuthUser,
     @Query() query: TranscriptQueryDto,
   ) {
-    await this.consultationAccess.assertPhysicianOwns(consultationId, user.sub);
+    await this.consultationAccess.assertPhysicianOwns(consultationId, user.sub, user.clinicId);
     return this.transcriptService.getSegments(consultationId, { final: query.final });
   }
 
@@ -60,7 +60,7 @@ export class TranscriptController {
     @CurrentUser() user: AuthUser,
     @Body() dto: UpdateSpeakerDto,
   ) {
-    await this.consultationAccess.assertPhysicianOwns(consultationId, user.sub);
+    await this.consultationAccess.assertPhysicianOwns(consultationId, user.sub, user.clinicId);
     return this.transcriptService.updateSegmentSpeaker(segmentId, dto.speaker);
   }
 
@@ -70,7 +70,7 @@ export class TranscriptController {
     @CurrentUser() user: AuthUser,
     @Body() dto: SaveTranscriptDto,
   ) {
-    await this.consultationAccess.assertPhysicianOwns(consultationId, user.sub);
+    await this.consultationAccess.assertPhysicianOwns(consultationId, user.sub, user.clinicId);
     return this.transcriptService.saveTranscriptEdits(consultationId, user.sub, dto.segments);
   }
 }

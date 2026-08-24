@@ -158,14 +158,17 @@ Patient P-001 または同等の咳・息苦しさケースで、録音後に以
 
 ### 1. Supabase（PostgreSQL）
 
+くしま本番は **`medical-os-kushima`（`fyzlcteanzwypisvztku`）** を使う。歯科プロジェクトは使わない。
+詳細: [07_kushima_production_connect.md](./07_kushima_production_connect.md)
+
 ```bash
-# DATABASE_URL を Supabase から取得
+# DATABASE_URL を medical-os-kushima から取得
 # 例: postgresql://postgres:xxx@db.xxx.supabase.co:5432/postgres
 ```
 
 ### 2. Railway（バックエンド）
 
-1. GitHub リポジトリを接続
+1. 既存サービス `medical-os-api` を Hobby で再デプロイ（新規複製しない）
 2. `railway.toml` を参照してビルド
 3. 環境変数を設定:
    - `DATABASE_URL`
