@@ -31,12 +31,12 @@ export function resolveMedicalGlossary(rules?: PhysicianRules): MedicalGlossary 
   };
 }
 
-/** Whisper prompt parameter (keep under ~224 tokens). */
+/** Whisper prompt parameter (keep under ~224 tokens). Compact pack hints only. */
 export function buildWhisperPrompt(glossary: MedicalGlossary): string {
   const pack = knowledgePackGlossaryDefaults();
-  const diagnoses = uniqueTerms([...glossary.diagnoses, ...pack.diagnoses]).slice(0, 18);
-  const drugs = uniqueTerms([...glossary.drugNames, ...pack.drugNames]).slice(0, 20);
-  const spoken = pack.spokenHints.slice(0, 12);
+  const diagnoses = uniqueTerms([...glossary.diagnoses, ...pack.diagnoses]).slice(0, 12);
+  const drugs = uniqueTerms([...glossary.drugNames, ...pack.drugNames]).slice(0, 14);
+  const spoken = pack.spokenHints.slice(0, 10);
   return [
     BASE_PROMPT,
     `診断:${diagnoses.join('、')}`,
@@ -48,18 +48,46 @@ export function buildWhisperPrompt(glossary: MedicalGlossary): string {
     .join(' ');
 }
 
-export function glossaryToLlmHint(glossary: MedicalGlossary): string {
+export type SessionKnowledgeHint = {
+  rawValue: string;
+  normalizedValue: string | null;
+  entityType: string;
+  needsReview: boolean;
+};
+
+/**
+ * LLM hints: small fixed clinic glossary + this consultation's knowledge hits only.
+ * Never dump the full 1000+ term pack.
+ */
+export function glossaryToLlmHint(
+  glossary: MedicalGlossary,
+  sessionHits?: SessionKnowledgeHint[],
+): string {
   const pack = knowledgePackGlossaryDefaults();
   const lines = [
-    `常用診断: ${uniqueTerms([...glossary.diagnoses, ...pack.diagnoses.slice(0, 40)]).join('、')}`,
-    `常用薬剤: ${uniqueTerms([...glossary.drugNames, ...pack.drugNames.slice(0, 40)]).join('、')}`,
-    `音声別名ヒント: ${pack.spokenHints.slice(0, 30).join('、')}`,
+    `常用診断: ${uniqueTerms([...glossary.diagnoses, ...pack.diagnoses]).slice(0, 20).join('、')}`,
+    `常用薬剤: ${uniqueTerms([...glossary.drugNames, ...pack.drugNames]).slice(0, 20).join('、')}`,
+    `音声別名ヒント: ${pack.spokenHints.slice(0, 16).join('、')}`,
   ];
   if (glossary.customReplacements.length) {
     lines.push(
       'クリニック置換例: ' +
         glossary.customReplacements
+          .slice(0, 12)
           .map((r) => `${r.wrong}→${r.correct}`)
+          .join('、'),
+    );
+  }
+  if (sessionHits?.length) {
+    lines.push(
+      '今回ヒット候補（要確認含む・全件辞典ではない）: ' +
+        sessionHits
+          .slice(0, 24)
+          .map((h) =>
+            h.normalizedValue
+              ? `${h.rawValue}→${h.normalizedValue}${h.needsReview ? '(要確認)' : ''}`
+              : h.rawValue,
+          )
           .join('、'),
     );
   }

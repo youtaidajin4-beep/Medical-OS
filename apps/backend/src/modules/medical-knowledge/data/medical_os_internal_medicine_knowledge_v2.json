@@ -1,0 +1,7402 @@
+{
+  "name": "Medical OS Internal Medicine Knowledge v2",
+  "version": "2.0",
+  "purpose": "内科診療の音声認識補正、医療エンティティ抽出、候補ランキング、SOAP生成前の品質チェック。診断判断エンジンではない。",
+  "safety_rules": [
+    "RAW transcriptは上書きしない",
+    "薬剤名、用量、単位、検査値、バイタル、アレルギー、否定表現、左右、治療アクションは曖昧ならneeds_review=true",
+    "患者コンテキストは候補順位付けに使うが、発話内容を書き換える根拠にしない",
+    "医師承認前に最終文書へ確定反映しない"
+  ],
+  "terms": [
+    {
+      "canonical_name": "高血圧",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "本態性高血圧症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "二次性高血圧",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "白衣高血圧",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "仮面高血圧",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "低血圧",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "起立性低血圧",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "心不全",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "急性心不全",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "慢性心不全",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "うっ血性心不全",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "右心不全",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "左心不全",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "HFpEF",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "HFrEF",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "狭心症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "安定狭心症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "不安定狭心症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "冠攣縮性狭心症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "心筋梗塞",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "急性心筋梗塞",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "陳旧性心筋梗塞",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "虚血性心疾患",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "冠動脈疾患",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "心房細動",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "発作性心房細動",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "持続性心房細動",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "永続性心房細動",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "心房粗動",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "上室性頻拍",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "発作性上室性頻拍",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "心室頻拍",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "心室細動",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "期外収縮",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "心室性期外収縮",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "上室性期外収縮",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "徐脈",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "頻脈",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "不整脈",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "洞性徐脈",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "洞性頻脈",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "房室ブロック",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "洞不全症候群",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "WPW症候群",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "心筋症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "肥大型心筋症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "拡張型心筋症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "心膜炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "心筋炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "感染性心内膜炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "弁膜症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "大動脈弁狭窄症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "大動脈弁閉鎖不全症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "僧帽弁狭窄症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "僧帽弁閉鎖不全症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "動脈硬化",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "閉塞性動脈硬化症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "末梢動脈疾患",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "深部静脈血栓症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "肺血栓塞栓症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "大動脈瘤",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "腹部大動脈瘤",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "胸部大動脈瘤",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "大動脈解離",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "糖尿病",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "1型糖尿病",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "2型糖尿病",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "妊娠糖尿病",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "耐糖能異常",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "境界型糖尿病",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "糖尿病性腎症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "糖尿病性神経障害",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "糖尿病性網膜症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "糖尿病性ケトアシドーシス",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "高浸透圧高血糖状態",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "高血糖",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "低血糖",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "脂質異常症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "高LDLコレステロール血症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "高トリグリセリド血症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "低HDLコレステロール血症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "家族性高コレステロール血症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "高尿酸血症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "痛風",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "肥満",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "肥満症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "メタボリックシンドローム",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "慢性腎臓病",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "CKD",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "急性腎障害",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "AKI",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "慢性腎不全",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "末期腎不全",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "腎機能障害",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "蛋白尿",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "血尿",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "微量アルブミン尿",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "糸球体腎炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "急速進行性糸球体腎炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "IgA腎症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ネフローゼ症候群",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "多発性嚢胞腎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "尿路感染症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "膀胱炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "腎盂腎炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "尿路結石",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "腎結石",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "前立腺肥大症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "過活動膀胱",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "気管支喘息",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "喘息",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "咳喘息",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "COPD",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "慢性閉塞性肺疾患",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "肺気腫",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "慢性気管支炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "急性気管支炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "肺炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "市中肺炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "院内肺炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "誤嚥性肺炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "間質性肺炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "特発性肺線維症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "肺線維症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "気胸",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "胸水",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "肺結核",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "非結核性抗酸菌症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "睡眠時無呼吸症候群",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "SAS",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "閉塞性睡眠時無呼吸",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "OSAS",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "感冒",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "かぜ",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "急性上気道炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "咽頭炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "扁桃炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "喉頭炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "副鼻腔炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "インフルエンザ",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "新型コロナウイルス感染症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "COVID-19",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "感染性胃腸炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "細菌感染症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ウイルス感染症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "帯状疱疹",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "単純ヘルペス",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "蜂窩織炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "敗血症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "菌血症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "胃炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "急性胃炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "慢性胃炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "萎縮性胃炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "逆流性食道炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "GERD",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "胃食道逆流症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "胃潰瘍",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "十二指腸潰瘍",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "機能性ディスペプシア",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "FD",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "胃腸炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "過敏性腸症候群",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "IBS",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "便秘症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "慢性便秘症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "下痢症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "大腸憩室症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "大腸ポリープ",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "胆石症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "胆嚢炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "胆管炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "膵炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "急性膵炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "慢性膵炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "潰瘍性大腸炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "クローン病",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "腸閉塞",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "イレウス",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "肝機能障害",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "脂肪肝",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "MASLD",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "MASH",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "B型肝炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "C型肝炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "慢性肝炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "肝硬変",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "アルコール性肝障害",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "薬剤性肝障害",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "肝性脳症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "甲状腺機能低下症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "甲状腺機能亢進症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "橋本病",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "慢性甲状腺炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "バセドウ病",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "甲状腺腫",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "甲状腺結節",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "副腎不全",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "原発性アルドステロン症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "クッシング症候群",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "貧血",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "鉄欠乏性貧血",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "巨赤芽球性貧血",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ビタミンB12欠乏性貧血",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "葉酸欠乏性貧血",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "溶血性貧血",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "腎性貧血",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "白血球減少症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "好中球減少症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "血小板減少症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "多血症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "脳梗塞",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "脳出血",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "くも膜下出血",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "一過性脳虚血発作",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "TIA",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "認知症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "アルツハイマー型認知症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "血管性認知症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "レビー小体型認知症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "パーキンソン病",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "片頭痛",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "緊張型頭痛",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "末梢神経障害",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "てんかん",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "失神",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "アレルギー性鼻炎",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "花粉症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "蕁麻疹",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "アナフィラキシー",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "骨粗鬆症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "変形性関節症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "関節リウマチ",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "リウマチ性多発筋痛症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "サルコペニア",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "フレイル",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "脱水症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "熱中症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "低ナトリウム血症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "高ナトリウム血症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "低カリウム血症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "高カリウム血症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "低カルシウム血症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "高カルシウム血症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "低マグネシウム血症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "高マグネシウム血症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "低リン血症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "高リン血症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "低アルブミン血症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "低栄養",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ビタミンD欠乏症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ビタミンB12欠乏症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "葉酸欠乏症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "不眠症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "せん妄",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "うつ状態",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "不安症",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "適応障害",
+      "category": "diagnoses",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "発熱",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "微熱",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "高熱",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "悪寒",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "悪寒戦慄",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "倦怠感",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "全身倦怠感",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "易疲労感",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "食欲不振",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "食欲低下",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "体重減少",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "体重増加",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "寝汗",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "脱水",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "口渇",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "多飲",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "多尿",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "むくみ",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "浮腫",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "下腿浮腫",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "顔面浮腫",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "頭痛",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "めまい",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "回転性めまい",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ふらつき",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "立ちくらみ",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "意識障害",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "しびれ",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "麻痺",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "脱力",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "筋力低下",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "振戦",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "けいれん",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "構音障害",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "嚥下障害",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "物忘れ",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "認知機能低下",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "咳",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "咳嗽",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "乾性咳嗽",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "湿性咳嗽",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "痰",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "喀痰",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "血痰",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "喀血",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "鼻汁",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "鼻水",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "鼻閉",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "咽頭痛",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "嗄声",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "呼吸困難",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "呼吸苦",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "息切れ",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "労作時呼吸困難",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "起坐呼吸",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "喘鳴",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "胸痛",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "胸部圧迫感",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "胸部違和感",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "動悸",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "頻脈感",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "徐脈感",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "冷汗",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "腹痛",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "心窩部痛",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "右季肋部痛",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "左季肋部痛",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "下腹部痛",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "腹部膨満",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "腹部不快感",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "悪心",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "嘔気",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "嘔吐",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "胸やけ",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "げっぷ",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "下痢",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "水様便",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "軟便",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "便秘",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "黒色便",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "血便",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "下血",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "粘血便",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "黄疸",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "頻尿",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "夜間頻尿",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "排尿痛",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "残尿感",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "尿失禁",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "尿閉",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "腰痛",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "背部痛",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "関節痛",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "筋肉痛",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "肩痛",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "膝痛",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "発疹",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "皮疹",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "紅斑",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "掻痒感",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "かゆみ",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "紫斑",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "睡眠障害",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "不眠",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "中途覚醒",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "早朝覚醒",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "いびき",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "日中傾眠",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "眠気",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "動作緩慢",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "歩行障害",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "転倒",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "食事摂取不良",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "水分摂取不良",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "活動性低下",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ADL低下",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "息苦しさ",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "息が吸いにくい",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "息が吐きにくい",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "胸が苦しい",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "胸が締め付けられる",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "息が上がる",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "声が出にくい",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "のどが痛い",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "のどの違和感",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "鼻がつまる",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "鼻が出る",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "熱っぽい",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "寒気",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "だるい",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "しんどい",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "食べられない",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "飲めない",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "吐き気",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "気持ち悪い",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "お腹が張る",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "お腹が痛い",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "便が出ない",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "便がゆるい",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "尿が近い",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "尿が出にくい",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "夜何回もトイレ",
+      "category": "symptoms_findings",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "血圧",
+      "category": "vitals",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "収縮期血圧",
+      "category": "vitals",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "拡張期血圧",
+      "category": "vitals",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "上の血圧",
+      "category": "vitals",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "下の血圧",
+      "category": "vitals",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "脈拍",
+      "category": "vitals",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "心拍数",
+      "category": "vitals",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "体温",
+      "category": "vitals",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "呼吸数",
+      "category": "vitals",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "SpO2",
+      "category": "vitals",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "酸素飽和度",
+      "category": "vitals",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "サチュレーション",
+      "category": "vitals",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "サット",
+      "category": "vitals",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "身長",
+      "category": "vitals",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "体重",
+      "category": "vitals",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "BMI",
+      "category": "vitals",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "腹囲",
+      "category": "vitals",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "意識レベル",
+      "category": "vitals",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "JCS",
+      "category": "vitals",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "GCS",
+      "category": "vitals",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "WBC",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "白血球",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "RBC",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "赤血球",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Hb",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Hgb",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ヘモグロビン",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Ht",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ヘマトクリット",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "MCV",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "MCH",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "MCHC",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Plt",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "血小板",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "好中球",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Neut",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "リンパ球",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Lymph",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "単球",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Mono",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "好酸球",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Eos",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "好塩基球",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Baso",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "網赤血球",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Ret",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "CRP",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "高感度CRP",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "赤沈",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ESR",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "プロカルシトニン",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "PCT",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "血糖",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "BS",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "血糖値",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "空腹時血糖",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "FBS",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "随時血糖",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "HbA1c",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "A1c",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "グリコアルブミン",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "GA",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "インスリン",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Cペプチド",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "BUN",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "尿素窒素",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "クレアチニン",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Cre",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Cr",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "eGFR",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "シスタチンC",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "尿酸",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "UA",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "尿蛋白",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "尿糖",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "尿潜血",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "尿アルブミン",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "尿中アルブミン",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "尿蛋白クレアチニン比",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "UACR",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "UPCR",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "AST",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "GOT",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ALT",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "GPT",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ALP",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "γ-GTP",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ガンマGTP",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "LDH",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "総ビリルビン",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "T-Bil",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "直接ビリルビン",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "D-Bil",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "アルブミン",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Alb",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "総蛋白",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "TP",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "コリンエステラーゼ",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ChE",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "総コレステロール",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "TC",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "LDL",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "LDL-C",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "HDL",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "HDL-C",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "中性脂肪",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "TG",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "トリグリセリド",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "non-HDL",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Na",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ナトリウム",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "K",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "カリウム",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Cl",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "クロール",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Ca",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "カルシウム",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "補正カルシウム",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "P",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "リン",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Mg",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "マグネシウム",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Fe",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "血清鉄",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "フェリチン",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "TIBC",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "UIBC",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "亜鉛",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Zn",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "銅",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Cu",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "BNP",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "NT-proBNP",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "トロポニン",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "トロポニンT",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "トロポニンI",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "CK",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "CPK",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "CK-MB",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ミオグロビン",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "PT",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "PT-INR",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "INR",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "APTT",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Dダイマー",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "フィブリノゲン",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "FDP",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "TSH",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "FT3",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "FT4",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Free T3",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Free T4",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "サイログロブリン",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "抗TPO抗体",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "抗サイログロブリン抗体",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "TRAb",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ACTH",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "コルチゾール",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ビタミンB12",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "葉酸",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "25-OHビタミンD",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ビタミンD",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "アンモニア",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "NH3",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "アミラーゼ",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Amy",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "リパーゼ",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "Lipase",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "HBs抗原",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "HBs抗体",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "HBc抗体",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "HCV抗体",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "HCV-RNA",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "インフルエンザ抗原",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "COVID抗原",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "SARS-CoV-2",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "PCR",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "尿定性",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "尿沈渣",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "便潜血",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "便潜血反応",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "便培養",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "血液培養",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "尿培養",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "喀痰培養",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "抗酸菌塗抹",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "抗酸菌培養",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "IGRA",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "クオンティフェロン",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "T-SPOT",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "CEA",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "CA19-9",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "AFP",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "PIVKA-II",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "PSA",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "CA125",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "KL-6",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "SP-D",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "IgG",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "IgA",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "IgM",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "IgE",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ANA",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "抗核抗体",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "RF",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "リウマトイド因子",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "抗CCP抗体",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "補体",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "C3",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "C4",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "CH50",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ASO",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "MMP-3",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "心電図",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ECG",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "EKG",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "12誘導心電図",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ホルター心電図",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "24時間心電図",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "イベント心電図",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ABI",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "PWV",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "CAVI",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "胸部X線",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "胸部レントゲン",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "レントゲン",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "XP",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "腹部X線",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "CT",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "胸部CT",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "腹部CT",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "頭部CT",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "造影CT",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "単純CT",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "冠動脈CT",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "MRI",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "頭部MRI",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "腰椎MRI",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "MRA",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "超音波",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "エコー",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "腹部エコー",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "心エコー",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "甲状腺エコー",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "頸動脈エコー",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "腎エコー",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "肺機能検査",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "スパイロメトリー",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ピークフロー",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "上部消化管内視鏡",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "胃カメラ",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "EGD",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "下部消化管内視鏡",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "大腸カメラ",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "CS",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "24時間血圧測定",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "ABPM",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "睡眠検査",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "簡易PSG",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "PSG",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "骨密度",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "DEXA",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "DXA",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "眼底検査",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "神経伝導検査",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "針筋電図",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "脳波",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "EEG",
+      "category": "imaging_procedures",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "アムロジピン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ニフェジピン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "アゼルニジピン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "シルニジピン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ベニジピン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ジルチアゼム",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ベラパミル",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "テルミサルタン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "オルメサルタン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "カンデサルタン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "アジルサルタン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ロサルタン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "イルベサルタン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "バルサルタン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "エナラプリル",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ペリンドプリル",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "イミダプリル",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "リシノプリル",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ビソプロロール",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "カルベジロール",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "アテノロール",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "メトプロロール",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "プロプラノロール",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "トリクロルメチアジド",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ヒドロクロロチアジド",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "インダパミド",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "フロセミド",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "アゾセミド",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "トラセミド",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "スピロノラクトン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "エプレレノン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "エサキセレノン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "サクビトリルバルサルタン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "イバブラジン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ジゴキシン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ニコランジル",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "硝酸イソソルビド",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ニトログリセリン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "メトホルミン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "グリメピリド",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "グリクラジド",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "シタグリプチン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "リナグリプチン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ビルダグリプチン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "アログリプチン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "テネリグリプチン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "サキサグリプチン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ダパグリフロジン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "エンパグリフロジン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "イプラグリフロジン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ルセオグリフロジン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "トホグリフロジン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "カナグリフロジン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ボグリボース",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "アカルボース",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ミグリトール",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ピオグリタゾン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "セマグルチド",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "デュラグルチド",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "リラグルチド",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "チルゼパチド",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "インスリンアスパルト",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "インスリンリスプロ",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "インスリングラルギン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "インスリンデグルデク",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "インスリングルリジン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ロスバスタチン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "アトルバスタチン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ピタバスタチン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "プラバスタチン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "シンバスタチン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "エゼチミブ",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ペマフィブラート",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "フェノフィブラート",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ベザフィブラート",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ワルファリン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "アピキサバン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "エドキサバン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "リバーロキサバン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ダビガトラン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "アスピリン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "クロピドグレル",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "プラスグレル",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "シロスタゾール",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ボノプラザン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "エソメプラゾール",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ランソプラゾール",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ラベプラゾール",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "オメプラゾール",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ファモチジン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "レバミピド",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "モサプリド",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "イトプリド",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "酸化マグネシウム",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "センノシド",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ピコスルファートナトリウム",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ルビプロストン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "リナクロチド",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "エロビキシバット",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ナルデメジン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ポリエチレングリコール",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "モンテルカスト",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "プランルカスト",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "フェキソフェナジン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ビラスチン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "デスロラタジン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ロラタジン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "レボセチリジン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "セチリジン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "エピナスチン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "オロパタジン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "カルボシステイン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "アンブロキソール",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ブロムヘキシン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "デキストロメトルファン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "チペピジン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "クロペラスチン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "アセトアミノフェン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ロキソプロフェン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "セレコキシブ",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ジクロフェナク",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "イブプロフェン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "アモキシシリン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "アモキシシリンクラブラン酸",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "クラリスロマイシン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "アジスロマイシン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "レボフロキサシン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "シプロフロキサシン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "セフカペンピボキシル",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "セフジトレンピボキシル",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "セフジニル",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "セファクロル",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ファロペネム",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "スルタミシリン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "メトロニダゾール",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ST合剤",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "スルファメトキサゾールトリメトプリム",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "フェブキソスタット",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ドチヌラド",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "アロプリノール",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ベンズブロマロン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "レボチロキシン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "チアマゾール",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "プロピルチオウラシル",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "アレンドロン酸",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "リセドロン酸",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ミノドロン酸",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "エルデカルシトール",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "アルファカルシドール",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "デノスマブ",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "テリパラチド",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ロモソズマブ",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "プレドニゾロン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "メチルプレドニゾロン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "デキサメタゾン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ヒドロコルチゾン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "メトトレキサート",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "タクロリムス",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "シクロスポリン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "アザチオプリン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "コルヒチン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "アルプラゾラム",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ロラゼパム",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "エチゾラム",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ゾルピデム",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "エスゾピクロン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "スボレキサント",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "レンボレキサント",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ラメルテオン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ドネペジル",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "メマンチン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "レボドパ",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "レボドパカルビドパ",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "プレガバリン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ミロガバリン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "デュロキセチン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "アミトリプチリン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ガバペンチン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ベタヒスチン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ジフェニドール",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "メコバラミン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "鉄剤",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "クエン酸第一鉄",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "硫酸鉄",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "シアノコバラミン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "エリスロポエチン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ダルベポエチン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "炭酸水素ナトリウム",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "カリウム製剤",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ポリスチレンスルホン酸カルシウム",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ジルコニウムシクロケイ酸ナトリウム",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "クエン酸カリウム",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "トルバプタン",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "開始",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "新規開始",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "処方開始",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "継続",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "そのまま",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "同量継続",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "変更なし",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "中止",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "休薬",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "中断",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "終了",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "増量",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "減量",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "漸増",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "漸減",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "変更",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "切り替え",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "置換",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "再開",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "追加",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "頓用",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "定期化",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "経過観察",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "様子を見る",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "フォロー",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "再診",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "紹介",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "専門医紹介",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "精査目的",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "入院",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "外来フォロー",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "採血",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "採尿",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "検査追加",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "画像検査",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "処方継続",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "処方変更",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "投与開始",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "投与中止",
+      "category": "treatment_actions",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "なし",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "無い",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ありません",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "認めない",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "認めません",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "否定",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "陰性",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "問題なし",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "異常なし",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "所見なし",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "症状なし",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "変化なし",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "悪化なし",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "増悪なし",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "発熱なし",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "胸痛なし",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "呼吸苦なし",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "嘔吐なし",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "下痢なし",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "便秘なし",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "あり",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "有り",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "あります",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "認める",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "認めます",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "陽性",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "異常あり",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "所見あり",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "症状あり",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "改善",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "軽快",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "消失",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "悪化",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "増悪",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "持続",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "不変",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "変わらない",
+      "category": "negation_assertion",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "mg",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ミリグラム",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "g",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "グラム",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "μg",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "mcg",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "マイクログラム",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "mL",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ミリリットル",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "L",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "リットル",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "IU",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "単位",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "mEq",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "mmol",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "錠",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "錠剤",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "OD錠",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "口腔内崩壊錠",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "カプセル",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "散",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "散剤",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "顆粒",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "シロップ",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "液",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "内用液",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "貼付剤",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "テープ",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "パッチ",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "軟膏",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "クリーム",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "ローション",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "吸入",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "吸入薬",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "注射",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "静注",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "点滴",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "皮下注",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "筋注",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "経口",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "内服",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "舌下",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "座薬",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "1錠",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "半錠",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "0.5錠",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "2錠",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "3錠",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "1包",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "2包",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "1カプセル",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "1日1回",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "1日2回",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "1日3回",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "1日4回",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "隔日",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "毎日",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "毎週",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "週1回",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "月1回",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "朝",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "昼",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "夕",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "眠前",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "就寝前",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "起床時",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "食前",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "食後",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "朝食前",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "朝食後",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "昼食前",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "昼食後",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "夕食前",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "夕食後",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "毎食前",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "毎食後",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "頓服",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "必要時",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "発熱時",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "疼痛時",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "便秘時",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "不眠時",
+      "category": "dosage_units_routes",
+      "priority": "high",
+      "risk_level": "high"
+    },
+    {
+      "canonical_name": "SOAP",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "S",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "O",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "A",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "主訴",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "現病歴",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "既往歴",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "家族歴",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "生活歴",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "社会歴",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "アレルギー歴",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "内服歴",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "服薬歴",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "処方歴",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "検査結果",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "身体所見",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "バイタル",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "評価",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "アセスメント",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "計画",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "プラン",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "診療録",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "カルテ",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "紹介状",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "診療情報提供書",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "診断書",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "退院時サマリー",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "経過記録",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "処方箋",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "検査依頼",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "画像検査依頼",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "返書",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "フォローアップ",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "定期受診",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "初診",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    },
+    {
+      "canonical_name": "受診歴",
+      "category": "documents_workflow",
+      "priority": "normal",
+      "risk_level": "normal"
+    }
+  ],
+  "medication_brand_generic": [
+    {
+      "brand_name": "カロナール",
+      "generic_name": "アセトアミノフェン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ロキソニン",
+      "generic_name": "ロキソプロフェン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "セレコックス",
+      "generic_name": "セレコキシブ",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "タケキャブ",
+      "generic_name": "ボノプラザン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ネキシウム",
+      "generic_name": "エソメプラゾール",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "タケプロン",
+      "generic_name": "ランソプラゾール",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "パリエット",
+      "generic_name": "ラベプラゾール",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "オメプラール",
+      "generic_name": "オメプラゾール",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ガスター",
+      "generic_name": "ファモチジン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ムコスタ",
+      "generic_name": "レバミピド",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ガスモチン",
+      "generic_name": "モサプリド",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "マグミット",
+      "generic_name": "酸化マグネシウム",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "アミティーザ",
+      "generic_name": "ルビプロストン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "リンゼス",
+      "generic_name": "リナクロチド",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "グーフィス",
+      "generic_name": "エロビキシバット",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "スインプロイク",
+      "generic_name": "ナルデメジン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ムコダイン",
+      "generic_name": "カルボシステイン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ムコソルバン",
+      "generic_name": "アンブロキソール",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "メジコン",
+      "generic_name": "デキストロメトルファン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "アスベリン",
+      "generic_name": "チペピジン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "アレグラ",
+      "generic_name": "フェキソフェナジン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ビラノア",
+      "generic_name": "ビラスチン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "デザレックス",
+      "generic_name": "デスロラタジン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "クラリチン",
+      "generic_name": "ロラタジン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ザイザル",
+      "generic_name": "レボセチリジン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "アレロック",
+      "generic_name": "オロパタジン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ジャヌビア",
+      "generic_name": "シタグリプチン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "グラクティブ",
+      "generic_name": "シタグリプチン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "トラゼンタ",
+      "generic_name": "リナグリプチン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "エクア",
+      "generic_name": "ビルダグリプチン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ネシーナ",
+      "generic_name": "アログリプチン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "テネリア",
+      "generic_name": "テネリグリプチン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "フォシーガ",
+      "generic_name": "ダパグリフロジン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ジャディアンス",
+      "generic_name": "エンパグリフロジン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "スーグラ",
+      "generic_name": "イプラグリフロジン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ルセフィ",
+      "generic_name": "ルセオグリフロジン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "デベルザ",
+      "generic_name": "トホグリフロジン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "カナグル",
+      "generic_name": "カナグリフロジン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "リベルサス",
+      "generic_name": "セマグルチド",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "オゼンピック",
+      "generic_name": "セマグルチド",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "トルリシティ",
+      "generic_name": "デュラグルチド",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ビクトーザ",
+      "generic_name": "リラグルチド",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "マンジャロ",
+      "generic_name": "チルゼパチド",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "クレストール",
+      "generic_name": "ロスバスタチン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "リピトール",
+      "generic_name": "アトルバスタチン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "リバロ",
+      "generic_name": "ピタバスタチン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "メバロチン",
+      "generic_name": "プラバスタチン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ゼチーア",
+      "generic_name": "エゼチミブ",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "パルモディア",
+      "generic_name": "ペマフィブラート",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ワーファリン",
+      "generic_name": "ワルファリン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "エリキュース",
+      "generic_name": "アピキサバン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "リクシアナ",
+      "generic_name": "エドキサバン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "イグザレルト",
+      "generic_name": "リバーロキサバン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "プラザキサ",
+      "generic_name": "ダビガトラン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "バイアスピリン",
+      "generic_name": "アスピリン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "プラビックス",
+      "generic_name": "クロピドグレル",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "プレタール",
+      "generic_name": "シロスタゾール",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ディオバン",
+      "generic_name": "バルサルタン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ミカルディス",
+      "generic_name": "テルミサルタン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "オルメテック",
+      "generic_name": "オルメサルタン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ブロプレス",
+      "generic_name": "カンデサルタン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "アジルバ",
+      "generic_name": "アジルサルタン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ニューロタン",
+      "generic_name": "ロサルタン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "イルベタン",
+      "generic_name": "イルベサルタン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "アムロジン",
+      "generic_name": "アムロジピン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ノルバスク",
+      "generic_name": "アムロジピン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "アダラート",
+      "generic_name": "ニフェジピン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "メインテート",
+      "generic_name": "ビソプロロール",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "アーチスト",
+      "generic_name": "カルベジロール",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ラシックス",
+      "generic_name": "フロセミド",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ダイアート",
+      "generic_name": "アゾセミド",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "アルダクトン",
+      "generic_name": "スピロノラクトン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "セララ",
+      "generic_name": "エプレレノン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ミネブロ",
+      "generic_name": "エサキセレノン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "エンレスト",
+      "generic_name": "サクビトリルバルサルタン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "フェブリク",
+      "generic_name": "フェブキソスタット",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ユリス",
+      "generic_name": "ドチヌラド",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ザイロリック",
+      "generic_name": "アロプリノール",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "チラーヂン",
+      "generic_name": "レボチロキシン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "メルカゾール",
+      "generic_name": "チアマゾール",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "フォサマック",
+      "generic_name": "アレンドロン酸",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ボナロン",
+      "generic_name": "アレンドロン酸",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "アクトネル",
+      "generic_name": "リセドロン酸",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ベネット",
+      "generic_name": "リセドロン酸",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ボノテオ",
+      "generic_name": "ミノドロン酸",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "エディロール",
+      "generic_name": "エルデカルシトール",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "アルファロール",
+      "generic_name": "アルファカルシドール",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "プラリア",
+      "generic_name": "デノスマブ",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "フォルテオ",
+      "generic_name": "テリパラチド",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "イベニティ",
+      "generic_name": "ロモソズマブ",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "マイスリー",
+      "generic_name": "ゾルピデム",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ルネスタ",
+      "generic_name": "エスゾピクロン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ベルソムラ",
+      "generic_name": "スボレキサント",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "デエビゴ",
+      "generic_name": "レンボレキサント",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ロゼレム",
+      "generic_name": "ラメルテオン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "アリセプト",
+      "generic_name": "ドネペジル",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "メマリー",
+      "generic_name": "メマンチン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "リリカ",
+      "generic_name": "プレガバリン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "タリージェ",
+      "generic_name": "ミロガバリン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "サインバルタ",
+      "generic_name": "デュロキセチン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "メリスロン",
+      "generic_name": "ベタヒスチン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "セファドール",
+      "generic_name": "ジフェニドール",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "メチコバール",
+      "generic_name": "メコバラミン",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "フェロミア",
+      "generic_name": "クエン酸第一鉄",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "ロケルマ",
+      "generic_name": "ジルコニウムシクロケイ酸ナトリウム",
+      "risk_level": "high"
+    },
+    {
+      "brand_name": "サムスカ",
+      "generic_name": "トルバプタン",
+      "risk_level": "high"
+    }
+  ],
+  "abbreviations": [
+    {
+      "alias": "HT",
+      "canonical": "高血圧",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "HTN",
+      "canonical": "高血圧",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "DM",
+      "canonical": "糖尿病",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "T1DM",
+      "canonical": "1型糖尿病",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "T2DM",
+      "canonical": "2型糖尿病",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "DL",
+      "canonical": "脂質異常症",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "CKD",
+      "canonical": "慢性腎臓病",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "AKI",
+      "canonical": "急性腎障害",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "HF",
+      "canonical": "心不全",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "CHF",
+      "canonical": "うっ血性心不全",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "AF",
+      "canonical": "心房細動",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "Af",
+      "canonical": "心房細動",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "Afib",
+      "canonical": "心房細動",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "AMI",
+      "canonical": "急性心筋梗塞",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "CAD",
+      "canonical": "冠動脈疾患",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "COPD",
+      "canonical": "慢性閉塞性肺疾患",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "SAS",
+      "canonical": "睡眠時無呼吸症候群",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "OSAS",
+      "canonical": "閉塞性睡眠時無呼吸",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "GERD",
+      "canonical": "胃食道逆流症",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "IBS",
+      "canonical": "過敏性腸症候群",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "UTI",
+      "canonical": "尿路感染症",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "URI",
+      "canonical": "急性上気道炎",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "TIA",
+      "canonical": "一過性脳虚血発作",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "BP",
+      "canonical": "血圧",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "HR",
+      "canonical": "心拍数",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "BT",
+      "canonical": "体温",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "SpO2",
+      "canonical": "酸素飽和度",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "ECG",
+      "canonical": "心電図",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "EKG",
+      "canonical": "心電図",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "CXR",
+      "canonical": "胸部X線",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "XP",
+      "canonical": "X線",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "BS",
+      "canonical": "血糖",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "FBS",
+      "canonical": "空腹時血糖",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "A1c",
+      "canonical": "HbA1c",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "Cr",
+      "canonical": "クレアチニン",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "Cre",
+      "canonical": "クレアチニン",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "GOT",
+      "canonical": "AST",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "GPT",
+      "canonical": "ALT",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "γGTP",
+      "canonical": "γ-GTP",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "TG",
+      "canonical": "中性脂肪",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "UA",
+      "canonical": "尿酸",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "Alb",
+      "canonical": "アルブミン",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "TP",
+      "canonical": "総蛋白",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "T-Bil",
+      "canonical": "総ビリルビン",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "D-Bil",
+      "canonical": "直接ビリルビン",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "PCT",
+      "canonical": "プロカルシトニン",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "INR",
+      "canonical": "PT-INR",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "TSH",
+      "canonical": "TSH",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "FT3",
+      "canonical": "FT3",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "FT4",
+      "canonical": "FT4",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "PCR",
+      "canonical": "PCR",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "PSA",
+      "canonical": "PSA",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "CEA",
+      "canonical": "CEA",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "AFP",
+      "canonical": "AFP",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "KL-6",
+      "canonical": "KL-6",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "UACR",
+      "canonical": "尿中アルブミンクレアチニン比",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "UPCR",
+      "canonical": "尿蛋白クレアチニン比",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "ADL",
+      "canonical": "ADL",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "JCS",
+      "canonical": "JCS",
+      "alias_type": "abbreviation"
+    },
+    {
+      "alias": "GCS",
+      "canonical": "GCS",
+      "alias_type": "abbreviation"
+    }
+  ],
+  "spoken_forms": [
+    {
+      "alias": "エーワンシー",
+      "canonical": "HbA1c",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "エイワンシー",
+      "canonical": "HbA1c",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "ヘモグロビンエーワンシー",
+      "canonical": "HbA1c",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "イージーエフアール",
+      "canonical": "eGFR",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "ジーエフアール",
+      "canonical": "eGFR",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "クレ",
+      "canonical": "クレアチニン",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "クレアチ",
+      "canonical": "クレアチニン",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "ガンマジーティーピー",
+      "canonical": "γ-GTP",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "ガンマGTP",
+      "canonical": "γ-GTP",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "エルディーエル",
+      "canonical": "LDL",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "エイチディーエル",
+      "canonical": "HDL",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "ビーエヌピー",
+      "canonical": "BNP",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "エヌティープロビーエヌピー",
+      "canonical": "NT-proBNP",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "シーアールピー",
+      "canonical": "CRP",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "ピーシーアール",
+      "canonical": "PCR",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "ティーエスエイチ",
+      "canonical": "TSH",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "エフティースリー",
+      "canonical": "FT3",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "エフティーフォー",
+      "canonical": "FT4",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "サット",
+      "canonical": "SpO2",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "サチュレーション",
+      "canonical": "SpO2",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "ビーエス",
+      "canonical": "血糖",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "ユーエー",
+      "canonical": "尿酸",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "ビーウエヌ",
+      "canonical": "BUN",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "ディーダイマー",
+      "canonical": "Dダイマー",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "ピーエスエー",
+      "canonical": "PSA",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "ケーエルシックス",
+      "canonical": "KL-6",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "エーエフ",
+      "canonical": "心房細動",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "シーケーディー",
+      "canonical": "CKD",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "エーケーアイ",
+      "canonical": "AKI",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "シーオーピーディー",
+      "canonical": "COPD",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "ジーイーアールディー",
+      "canonical": "GERD",
+      "alias_type": "spoken"
+    },
+    {
+      "alias": "アイビーエス",
+      "canonical": "IBS",
+      "alias_type": "spoken"
+    }
+  ],
+  "common_stt_errors": [
+    {
+      "alias": "アムロジビン",
+      "canonical": "アムロジピン",
+      "alias_type": "stt_error"
+    },
+    {
+      "alias": "アムロ地品",
+      "canonical": "アムロジピン",
+      "alias_type": "stt_error"
+    },
+    {
+      "alias": "メトホル民",
+      "canonical": "メトホルミン",
+      "alias_type": "stt_error"
+    },
+    {
+      "alias": "リクシアナー",
+      "canonical": "リクシアナ",
+      "alias_type": "stt_error"
+    },
+    {
+      "alias": "エーワンシー",
+      "canonical": "HbA1c",
+      "alias_type": "stt_error"
+    },
+    {
+      "alias": "イージーエフアール",
+      "canonical": "eGFR",
+      "alias_type": "stt_error"
+    },
+    {
+      "alias": "ガンマジーティーピー",
+      "canonical": "γ-GTP",
+      "alias_type": "stt_error"
+    }
+  ],
+  "recommended_entity_types": [
+    "diagnosis",
+    "symptom",
+    "finding",
+    "medication",
+    "dosage",
+    "strength",
+    "unit",
+    "route",
+    "frequency",
+    "duration",
+    "laboratory_test",
+    "laboratory_value",
+    "vital_sign",
+    "imaging",
+    "procedure",
+    "allergy",
+    "body_part",
+    "body_side",
+    "negation",
+    "treatment_action",
+    "hospital_name",
+    "doctor_name",
+    "date",
+    "time"
+  ]
+}

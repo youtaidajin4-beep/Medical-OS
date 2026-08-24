@@ -30,17 +30,14 @@ export class MedicalKnowledgeService implements OnModuleInit {
     return this.index;
   }
 
-  correct(
-    rawText: string,
-    patientContext?: PatientContext,
-  ): KnowledgeCorrectionResult {
-    return correctTranscriptWithKnowledge(rawText, this.index, patientContext);
-  }
-
-  async refreshIndexFromDb() {
+  /**
+   * Build a scoped index: national/specialty seed + this clinic + this physician only.
+   * Patient context is applied later as ranking boosts only (not as rewrite authority).
+   */
+  async buildScopedIndex(clinicId: string, physicianId: string): Promise<KnowledgeIndex> {
     const idx = KnowledgeIndex.fromSeed();
     const clinicTerms = await this.prisma.clinicDictionaryTerm.findMany({
-      where: { isActive: true },
+      where: { clinicId, isActive: true },
       take: 5000,
     });
     for (const t of clinicTerms) {
@@ -49,11 +46,37 @@ export class MedicalKnowledgeService implements OnModuleInit {
         idx.addClinicAlias(String(a), t.canonicalName, t.category as never);
       }
     }
-    const doctorTerms = await this.prisma.doctorDictionaryTerm.findMany({ take: 5000 });
+    const doctorTerms = await this.prisma.doctorDictionaryTerm.findMany({
+      where: { clinicId, physicianId },
+      take: 5000,
+    });
     for (const t of doctorTerms) {
       idx.addPhysicianSpoken(t.spokenForm, t.preferredWrittenForm);
     }
-    this.index = idx;
+    return idx;
+  }
+
+  correct(
+    rawText: string,
+    patientContext?: PatientContext,
+    scopedIndex?: KnowledgeIndex,
+  ): KnowledgeCorrectionResult {
+    return correctTranscriptWithKnowledge(rawText, scopedIndex ?? this.index, patientContext);
+  }
+
+  async correctForConsultation(params: {
+    rawText: string;
+    clinicId: string;
+    physicianId: string;
+    patientContext?: PatientContext;
+  }): Promise<KnowledgeCorrectionResult> {
+    const index = await this.buildScopedIndex(params.clinicId, params.physicianId);
+    return correctTranscriptWithKnowledge(params.rawText, index, params.patientContext);
+  }
+
+  /** Global refresh (seed only). Prefer buildScopedIndex at correction time. */
+  async refreshIndexFromDb() {
+    this.index = KnowledgeIndex.fromSeed();
   }
 
   async ensureSeedTerms() {

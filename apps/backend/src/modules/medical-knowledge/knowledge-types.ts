@@ -92,10 +92,13 @@ export const HIGH_RISK_CATEGORIES: EntityType[] = [
   'strength',
   'allergy',
   'laboratory_value',
+  'laboratory_test',
+  'vital_sign',
+  'unit',
   'negation',
   'treatment_action',
   'body_side',
 ];
 
+/** Only low/medium risk terms may auto-apply. High/critical always need physician review. */
 export const AUTO_APPLY_CONFIDENCE = 0.92;
-export const HIGH_RISK_AUTO_APPLY_CONFIDENCE = 0.98;

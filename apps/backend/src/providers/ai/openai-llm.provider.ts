@@ -110,7 +110,9 @@ export class OpenAiLlmProvider implements LlmProvider {
   }
 
   async correctTranscript(transcript: string, glossary?: MedicalGlossary, _consultationId?: string) {
-    const hint = glossary ? `\n\nクリニック語彙:\n${glossaryToLlmHint(glossary)}` : '';
+    const hint = glossary
+      ? `\n\nクリニック語彙:\n${glossaryToLlmHint(glossary, glossary.sessionHits)}`
+      : '';
     const result = await this.chatWithModel(
       this.correctionModel,
       TRANSCRIPT_CORRECTION_SYSTEM,

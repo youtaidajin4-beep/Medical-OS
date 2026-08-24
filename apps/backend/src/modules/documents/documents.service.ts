@@ -1,5 +1,5 @@
-import { Inject, Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { DocumentType, GeneratedDocumentType, Prisma } from '@prisma/client';
+import { Inject, Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import { DocumentType, GeneratedDocumentType, MedicalRiskLevel, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { ConsultationAccessService } from '../../common/services/consultation-access.service';
 import { LLM_PROVIDER } from '../../providers/ai/llm.tokens';
@@ -22,6 +22,41 @@ export class DocumentsService {
     private readonly settingsService: SettingsService,
     @Inject(LLM_PROVIDER) private readonly llmProvider: LlmProvider,
   ) {}
+
+  /**
+   * Block final documents while high-risk knowledge entities still need physician approval.
+   */
+  async assertHighRiskKnowledgeApproved(consultationId: string) {
+    const entities = await this.prisma.clinicalEntity.findMany({
+      where: {
+        consultationId,
+        needsReview: true,
+        riskLevel: { in: [MedicalRiskLevel.high, MedicalRiskLevel.critical] },
+      },
+    });
+    if (!entities.length) return;
+
+    const approved = await this.prisma.transcriptCorrection.findMany({
+      where: { consultationId, approvedByDoctor: true },
+      select: { originalTerm: true, correctedTerm: true },
+    });
+    const approvedKeys = new Set(
+      approved.map((a) => `${a.originalTerm ?? ''}→${a.correctedTerm ?? ''}`),
+    );
+
+    const unresolved = entities.filter((e) => {
+      const to = e.normalizedValue ?? e.rawValue;
+      return (
+        !approvedKeys.has(`${e.rawValue}→${to}`) && !approvedKeys.has(`${e.rawValue}→${e.rawValue}`)
+      );
+    });
+
+    if (unresolved.length > 0) {
+      throw new ConflictException(
+        `要確認の医療用語が ${unresolved.length} 件残っています。レビュー画面で確定してから書類を作成してください。`,
+      );
+    }
+  }
 
   async list(consultationId: string, physicianId: string) {
     await this.consultationAccess.assertPhysicianOwns(consultationId, physicianId);
@@ -52,6 +87,7 @@ export class DocumentsService {
     options?: { referralPattern?: 'simple' | 'complex' },
   ) {
     await this.consultationAccess.assertPhysicianOwns(consultationId, physicianId);
+    await this.assertHighRiskKnowledgeApproved(consultationId);
     const ctx = await this.buildContext(consultationId, physicianId, options?.referralPattern);
     const start = Date.now();
     const results = await Promise.all(
@@ -74,6 +110,9 @@ export class DocumentsService {
     type: GeneratedDocumentType,
     ctx?: DocumentGenerationContext,
   ) {
+    if (!ctx) {
+      await this.assertHighRiskKnowledgeApproved(consultationId);
+    }
     const context = ctx ?? (await this.buildContext(consultationId, ''));
     const { system, user } = buildDocumentPrompt(type, context);
     const content = await this.llmProvider.generateDocument(type, system, user);

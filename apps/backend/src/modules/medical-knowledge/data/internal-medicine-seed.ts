@@ -134,7 +134,7 @@ function applyAutoSttPatches(terms: SeedTerm[]): SeedTerm[] {
 }
 
 /**
- * Specialty seed = Medical OS 内科ナレッジ v1 JSON pack
+ * Specialty seed = Medical OS 内科ナレッジ v2 JSON pack
  * + hand STT errors + auto patches from eval / Whisper spotcheck.
  */
 export const INTERNAL_MEDICINE_SEED_TERMS: SeedTerm[] = applyAutoSttPatches(

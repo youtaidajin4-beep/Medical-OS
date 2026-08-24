@@ -4,7 +4,6 @@ import {
   AUTO_APPLY_CONFIDENCE,
   AppliedCorrection,
   ExtractedEntity,
-  HIGH_RISK_AUTO_APPLY_CONFIDENCE,
   HIGH_RISK_CATEGORIES,
   KnowledgeCorrectionResult,
   RiskLevel,
@@ -81,7 +80,7 @@ export function correctTranscriptWithKnowledge(
         category: 'strength',
         confidence: 0.9,
         correctionSource: 'unit_normalizer',
-        autoApplied: true,
+        autoApplied: false,
         needsReview: true,
         riskLevel: 'critical',
         startPosition: start,
@@ -116,11 +115,12 @@ export function correctTranscriptWithKnowledge(
       best.hit.riskLevel === 'critical' ||
       best.hit.riskLevel === 'high';
 
-    const threshold = isHighRisk ? HIGH_RISK_AUTO_APPLY_CONFIDENCE : AUTO_APPLY_CONFIDENCE;
+    // Patient context only boosts ranking scores above — never forces auto-apply.
+    // High-risk categories never auto-apply; physician must approve.
     const shouldReplace =
+      !isHighRisk &&
       best.hit.matchAlias !== best.hit.canonicalName &&
-      best.score >= threshold &&
-      // Never auto-flip negation tokens alone
+      best.score >= AUTO_APPLY_CONFIDENCE &&
       best.hit.category !== 'negation';
 
     entities.push({
@@ -152,7 +152,7 @@ export function correctTranscriptWithKnowledge(
           confidence: best.score,
           correctionSource: `${best.hit.layer}:${best.hit.aliasType}`,
           autoApplied: true,
-          needsReview: isHighRisk,
+          needsReview: false,
           riskLevel: best.hit.riskLevel,
           startPosition: hit.start,
           endPosition: hit.end,
@@ -225,7 +225,7 @@ export function correctTranscriptWithKnowledge(
       confidence: 0.99,
       startPosition: start + symptom.length,
       endPosition: start + m[0].length,
-      needsReview: false,
+      needsReview: true,
       riskLevel: 'critical',
       candidates: [{ candidateValue: 'なし', score: 0.99, candidateSource: 'negation_rule' }],
     });
@@ -238,7 +238,7 @@ export function correctTranscriptWithKnowledge(
     }
   }
 
-  // 4) Lab value pattern: HbA1c / A1C は 7.2
+  // 4) Lab value pattern: HbA1c / A1C は 7.2 — candidates only, no auto-apply (high-risk)
   for (const m of rawText.matchAll(
     /(HbA1c|HBA1C|A1[cC]|エーワンシー|ヘモグロビンエーワンシー)\s*(は|が)?\s*(\d+(?:\.\d+)?)\s*(%|％)?/gi,
   )) {
@@ -250,7 +250,7 @@ export function correctTranscriptWithKnowledge(
       confidence: 0.96,
       startPosition: start,
       endPosition: start + m[1]!.length,
-      needsReview: false,
+      needsReview: true,
       riskLevel: 'critical',
       candidates: [{ candidateValue: 'HbA1c', score: 0.96, candidateSource: 'lab_pattern' }],
     });
@@ -266,22 +266,18 @@ export function correctTranscriptWithKnowledge(
       candidates: [],
     });
     if (/エーワンシー|ヘモグロビンエーワンシー|A1[cC]|HBA1C/i.test(m[1]!)) {
-      const from = m[1]!;
-      if (corrected.includes(from)) {
-        corrected = corrected.replace(from, 'HbA1c');
-        corrections.push({
-          originalTerm: from,
-          correctedTerm: 'HbA1c',
-          category: 'laboratory_test',
-          confidence: 0.96,
-          correctionSource: 'lab_pattern',
-          autoApplied: true,
-          needsReview: false,
-          riskLevel: 'critical',
-          startPosition: start,
-          endPosition: start + from.length,
-        });
-      }
+      corrections.push({
+        originalTerm: m[1]!,
+        correctedTerm: 'HbA1c',
+        category: 'laboratory_test',
+        confidence: 0.96,
+        correctionSource: 'lab_pattern',
+        autoApplied: false,
+        needsReview: true,
+        riskLevel: 'critical',
+        startPosition: start,
+        endPosition: start + m[1]!.length,
+      });
     }
   }
 

@@ -2,215 +2,210 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { AliasType, EntityType, RiskLevel, SeedTerm } from '../knowledge-types';
 
-type AliasInput = { alias: string; aliasType: AliasType };
+type V2Term = {
+  canonical_name: string;
+  category: string;
+  priority?: string;
+  risk_level?: string;
+};
 
-type KnowledgePack = {
-  meta?: { name?: string; safety_rules?: string[] };
+type V2Brand = { brand_name: string; generic_name: string; risk_level?: string };
+type V2AliasRow = { alias: string; canonical: string; alias_type?: string };
+
+type KnowledgePackV2 = {
+  name?: string;
+  version?: string;
+  purpose?: string;
   safety_rules?: string[];
-  diagnoses: Record<string, string[]>;
-  symptoms_findings: string[];
-  vital_signs: string[];
-  laboratory_tests: Record<string, string[]>;
-  examinations_procedures: string[];
-  medications_priority_generic: Record<string, string[]>;
-  brand_generic_aliases: Record<string, string>;
-  abbreviations: Record<string, string>;
-  spoken_aliases: Record<string, string>;
-  dosage_units_forms: string[];
-  treatment_actions: string[];
-  negation_status_time: string[];
-  documentation_terms: string[];
+  terms: V2Term[];
+  medication_brand_generic: V2Brand[];
+  abbreviations: V2AliasRow[];
+  spoken_forms: V2AliasRow[];
+  common_stt_errors: V2AliasRow[];
+  recommended_entity_types?: string[];
 };
 
 function resolvePackPath(): string {
   const candidates = [
-    join(__dirname, 'medical_os_internal_medicine_knowledge_v1.json'),
-    join(process.cwd(), 'src/modules/medical-knowledge/data/medical_os_internal_medicine_knowledge_v1.json'),
+    join(__dirname, 'medical_os_internal_medicine_knowledge_v2.json'),
+    join(process.cwd(), 'src/modules/medical-knowledge/data/medical_os_internal_medicine_knowledge_v2.json'),
     join(
       process.cwd(),
-      'apps/backend/src/modules/medical-knowledge/data/medical_os_internal_medicine_knowledge_v1.json',
+      'apps/backend/src/modules/medical-knowledge/data/medical_os_internal_medicine_knowledge_v2.json',
     ),
   ];
   for (const p of candidates) {
     if (existsSync(p)) return p;
   }
-  throw new Error('medical_os_internal_medicine_knowledge_v1.json not found');
+  throw new Error('medical_os_internal_medicine_knowledge_v2.json not found');
 }
 
-const data = JSON.parse(readFileSync(resolvePackPath(), 'utf8')) as KnowledgePack;
+const data = JSON.parse(readFileSync(resolvePackPath(), 'utf8')) as KnowledgePackV2;
 
-function defaultRisk(category: EntityType): RiskLevel {
-  if (['medication', 'dosage', 'strength', 'allergy', 'laboratory_value', 'negation'].includes(category)) {
+function mapPriority(raw?: string): number {
+  if (raw === 'high') return 150;
+  if (raw === 'low') return 90;
+  return 120;
+}
+
+function mapRisk(raw?: string, category?: EntityType): RiskLevel {
+  if (raw === 'critical') return 'critical';
+  if (raw === 'high') return 'high';
+  if (category === 'treatment_action' || category === 'negation') return 'critical';
+  if (category === 'medication' || category === 'dosage' || category === 'strength' || category === 'allergy') {
     return 'critical';
   }
-  if (['treatment_action', 'body_side', 'vital_sign', 'laboratory_test', 'unit', 'frequency'].includes(category)) {
+  if (
+    category === 'vital_sign' ||
+    category === 'laboratory_test' ||
+    category === 'laboratory_value' ||
+    category === 'unit' ||
+    category === 'body_side'
+  ) {
     return 'high';
   }
+  if (raw === 'normal' || raw === 'low') return raw === 'low' ? 'low' : 'medium';
   return 'medium';
 }
 
-function term(
-  canonicalName: string,
-  category: EntityType,
-  opts: {
-    subcategory?: string;
-    priority?: number;
-    riskLevel?: RiskLevel;
-    aliases?: AliasInput[];
-    abbreviation?: string;
-  } = {},
-): SeedTerm {
-  return {
-    canonicalName,
-    category,
-    subcategory: opts.subcategory,
-    abbreviation: opts.abbreviation,
-    priority: opts.priority ?? 120,
-    riskLevel: opts.riskLevel ?? defaultRisk(category),
-    aliases: opts.aliases ?? [],
-  };
-}
-
 function isImaging(name: string): boolean {
-  return /心電図|ホルター|X線|レントゲン|XP|CT|MRI|MRA|超音波|エコー/.test(name);
+  return /心電図|ホルター|X線|レントゲン|XP|CT|MRI|MRA|超音波|エコー|CXR|ECG/.test(name);
 }
 
-function classifyUnit(name: string): EntityType {
-  if (/日|朝|昼|夕|眠前|就寝前|食前|食後|頓服/.test(name)) return 'frequency';
-  if (/錠|カプセル|散|顆粒|シロップ|液|貼付|テープ|軟膏|クリーム|吸入|注射/.test(name)) return 'unit';
+function isFinding(name: string): boolean {
+  return /聴診|所見|ラ音|wheeze|雑音|浮腫|腫大|圧痛|反射/.test(name);
+}
+
+function classifyDosageUnitRoute(name: string): EntityType {
+  if (/日|朝|昼|夕|眠前|就寝前|食前|食後|頓服|回/.test(name)) return 'frequency';
+  if (/経口|内服|外用|吸入|静注|点滴|皮下|舌下|貼付/.test(name)) return 'route';
+  if (/mg|μg|g|ｍｇ|ミリ|用量|用量/.test(name)) return 'dosage';
+  if (/錠|カプセル|散|顆粒|シロップ|液|テープ|軟膏|クリーム|注射/.test(name)) return 'unit';
   return 'unit';
 }
 
-function classifyNegationOrTime(name: string): EntityType {
-  if (/今回|前回|前々回|以前|昨日|今日|今朝|昨夜|数日前|週間前|か月前|次回|定期受診|初診|再診/.test(name)) {
-    return 'date';
+function mapPackCategory(packCategory: string, canonicalName: string): EntityType {
+  switch (packCategory) {
+    case 'diagnoses':
+      return 'diagnosis';
+    case 'medications_generic':
+      return 'medication';
+    case 'symptoms_findings':
+      return isFinding(canonicalName) ? 'finding' : 'symptom';
+    case 'vitals':
+      return 'vital_sign';
+    case 'laboratory_tests':
+      return 'laboratory_test';
+    case 'imaging_procedures':
+      return isImaging(canonicalName) ? 'imaging' : 'procedure';
+    case 'dosage_units_routes':
+      return classifyDosageUnitRoute(canonicalName);
+    case 'negation_assertion':
+      return /今回|前回|昨日|今日|次回|初診|再診|日前|週間/.test(canonicalName) ? 'date' : 'negation';
+    case 'treatment_actions':
+      return 'treatment_action';
+    case 'documents_workflow':
+      return 'other';
+    default:
+      return 'other';
   }
-  return 'negation';
 }
 
-/** Convert the v1 JSON pack into SeedTerm entries for the in-memory knowledge index. */
-export function loadInternalMedicineKnowledgePack(): SeedTerm[] {
-  const byName = new Map<string, SeedTerm>();
+function mapAliasType(raw?: string): AliasType {
+  if (raw === 'brand_name' || raw === 'brand') return 'brand_name';
+  if (raw === 'abbreviation') return 'abbreviation';
+  if (raw === 'spoken') return 'spoken';
+  if (raw === 'stt_error') return 'stt_error';
+  if (raw === 'generic_name') return 'generic_name';
+  return 'spoken';
+}
 
-  const upsert = (next: SeedTerm) => {
-    const existing = byName.get(next.canonicalName);
-    if (!existing) {
-      byName.set(next.canonicalName, { ...next, aliases: [...(next.aliases ?? [])] });
-      return;
-    }
-    const aliases = [...(existing.aliases ?? [])];
-    for (const a of next.aliases ?? []) {
-      if (!aliases.some((x) => x.alias === a.alias)) aliases.push(a);
-    }
-    byName.set(next.canonicalName, {
-      ...existing,
-      ...next,
-      aliases,
-      priority: Math.max(existing.priority ?? 100, next.priority ?? 100),
-      riskLevel: existing.riskLevel === 'critical' || next.riskLevel === 'critical'
+function upsertTerm(byName: Map<string, SeedTerm>, next: SeedTerm) {
+  const existing = byName.get(next.canonicalName);
+  if (!existing) {
+    byName.set(next.canonicalName, { ...next, aliases: [...(next.aliases ?? [])] });
+    return;
+  }
+  const aliases = [...(existing.aliases ?? [])];
+  for (const a of next.aliases ?? []) {
+    if (!aliases.some((x) => x.alias === a.alias)) aliases.push(a);
+  }
+  byName.set(next.canonicalName, {
+    ...existing,
+    ...next,
+    aliases,
+    priority: Math.max(existing.priority ?? 100, next.priority ?? 100),
+    riskLevel:
+      existing.riskLevel === 'critical' || next.riskLevel === 'critical'
         ? 'critical'
         : existing.riskLevel === 'high' || next.riskLevel === 'high'
           ? 'high'
           : next.riskLevel ?? existing.riskLevel,
+    abbreviation: existing.abbreviation ?? next.abbreviation,
+  });
+}
+
+/** Convert the v2 JSON pack into SeedTerm entries for the in-memory knowledge index. */
+export function loadInternalMedicineKnowledgePack(): SeedTerm[] {
+  const byName = new Map<string, SeedTerm>();
+
+  for (const t of data.terms ?? []) {
+    const category = mapPackCategory(t.category, t.canonical_name);
+    upsertTerm(byName, {
+      canonicalName: t.canonical_name,
+      category,
+      subcategory: t.category,
+      priority: mapPriority(t.priority),
+      riskLevel: mapRisk(t.risk_level, category),
+      aliases: [],
     });
-  };
-
-  for (const [subcategory, names] of Object.entries(data.diagnoses)) {
-    for (const name of names) {
-      upsert(term(name, 'diagnosis', { subcategory, priority: 130 }));
-    }
   }
 
-  for (const name of data.symptoms_findings) {
-    upsert(term(name, 'symptom', { priority: 110 }));
+  for (const row of data.medication_brand_generic ?? []) {
+    upsertTerm(byName, {
+      canonicalName: row.generic_name,
+      category: 'medication',
+      priority: 150,
+      riskLevel: mapRisk(row.risk_level, 'medication'),
+      aliases: [{ alias: row.brand_name, aliasType: 'brand_name' }],
+    });
   }
 
-  for (const name of data.vital_signs) {
-    upsert(term(name, 'vital_sign', { riskLevel: 'high', priority: 140 }));
+  for (const row of data.abbreviations ?? []) {
+    const existing = byName.get(row.canonical);
+    const category = existing?.category ?? 'diagnosis';
+    upsertTerm(byName, {
+      canonicalName: row.canonical,
+      category,
+      priority: 140,
+      riskLevel: existing?.riskLevel ?? mapRisk(undefined, category),
+      abbreviation: row.alias,
+      aliases: [{ alias: row.alias, aliasType: mapAliasType(row.alias_type ?? 'abbreviation') }],
+    });
   }
 
-  for (const [subcategory, names] of Object.entries(data.laboratory_tests)) {
-    for (const name of names) {
-      upsert(
-        term(name, 'laboratory_test', {
-          subcategory,
-          riskLevel: /血糖|HbA1c|A1c|クレアチニン|eGFR|K|カリウム|INR/.test(name) ? 'critical' : 'high',
-          priority: 140,
-        }),
-      );
-    }
+  for (const row of data.spoken_forms ?? []) {
+    const existing = byName.get(row.canonical);
+    const category = existing?.category ?? 'laboratory_test';
+    upsertTerm(byName, {
+      canonicalName: row.canonical,
+      category,
+      priority: 150,
+      riskLevel: existing?.riskLevel ?? 'high',
+      aliases: [{ alias: row.alias, aliasType: mapAliasType(row.alias_type ?? 'spoken') }],
+    });
   }
 
-  for (const name of data.examinations_procedures) {
-    upsert(
-      term(name, isImaging(name) ? 'imaging' : 'procedure', {
-        priority: 110,
-      }),
-    );
-  }
-
-  for (const [subcategory, names] of Object.entries(data.medications_priority_generic)) {
-    for (const name of names) {
-      upsert(term(name, 'medication', { subcategory, riskLevel: 'critical', priority: 150 }));
-    }
-  }
-
-  for (const [brand, generic] of Object.entries(data.brand_generic_aliases)) {
-    upsert(
-      term(generic, 'medication', {
-        riskLevel: 'critical',
-        priority: 150,
-        aliases: [{ alias: brand, aliasType: 'brand_name' }],
-      }),
-    );
-  }
-
-  for (const [abbr, canonical] of Object.entries(data.abbreviations)) {
-    const category: EntityType = /血圧|心拍|体温|酸素飽和度|SpO2/.test(canonical)
-      ? 'vital_sign'
-      : 'diagnosis';
-    upsert(
-      term(canonical, category, {
-        priority: 140,
-        abbreviation: abbr,
-        aliases: [{ alias: abbr, aliasType: 'abbreviation' }],
-      }),
-    );
-  }
-
-  for (const [spoken, canonical] of Object.entries(data.spoken_aliases)) {
-    const category: EntityType = /血圧|心拍|体温|SpO2|酸素/.test(canonical)
-      ? 'vital_sign'
-      : 'laboratory_test';
-    upsert(
-      term(canonical, category, {
-        riskLevel: 'critical',
-        priority: 150,
-        aliases: [{ alias: spoken, aliasType: 'spoken' }],
-      }),
-    );
-  }
-
-  for (const name of data.dosage_units_forms) {
-    const category = classifyUnit(name);
-    upsert(term(name, category, { riskLevel: 'high', priority: 130 }));
-  }
-
-  for (const name of data.treatment_actions) {
-    upsert(term(name, 'treatment_action', { riskLevel: 'critical', priority: 140 }));
-  }
-
-  for (const name of data.negation_status_time) {
-    upsert(
-      term(name, classifyNegationOrTime(name), {
-        riskLevel: 'critical',
-        priority: 140,
-      }),
-    );
-  }
-
-  for (const name of data.documentation_terms) {
-    upsert(term(name, 'other', { subcategory: 'documentation', priority: 90, riskLevel: 'low' }));
+  for (const row of data.common_stt_errors ?? []) {
+    const existing = byName.get(row.canonical);
+    const category = existing?.category ?? 'other';
+    upsertTerm(byName, {
+      canonicalName: row.canonical,
+      category,
+      priority: 160,
+      riskLevel: existing?.riskLevel ?? 'critical',
+      aliases: [{ alias: row.alias, aliasType: 'stt_error' }],
+    });
   }
 
   return [...byName.values()];
@@ -220,22 +215,35 @@ export function knowledgePackSafetyRules(): string[] {
   return data.safety_rules ?? [];
 }
 
+export function knowledgePackMeta(): { name?: string; version?: string } {
+  return { name: data.name, version: data.version };
+}
+
+/** Compact glossary defaults for Whisper/LLM — not the full pack. */
 export function knowledgePackGlossaryDefaults(): {
   diagnoses: string[];
   drugNames: string[];
   spokenHints: string[];
 } {
-  const diagnoses = Object.values(data.diagnoses).flat();
-  const drugNames = Object.values(data.medications_priority_generic).flat();
-  const brands = Object.keys(data.brand_generic_aliases);
+  const diagnoses = (data.terms ?? [])
+    .filter((t) => t.category === 'diagnoses' && t.priority === 'high')
+    .map((t) => t.canonical_name)
+    .slice(0, 40);
+  const drugNames = [
+    ...(data.terms ?? [])
+      .filter((t) => t.category === 'medications_generic' && t.priority === 'high')
+      .map((t) => t.canonical_name)
+      .slice(0, 40),
+    ...(data.medication_brand_generic ?? []).slice(0, 20).map((b) => b.brand_name),
+  ];
   const spokenHints = [
-    ...Object.keys(data.spoken_aliases),
-    ...Object.keys(data.abbreviations),
-    ...Object.values(data.laboratory_tests).flat().slice(0, 40),
+    ...(data.spoken_forms ?? []).map((s) => s.alias),
+    ...(data.abbreviations ?? []).slice(0, 30).map((a) => a.alias),
+    ...(data.common_stt_errors ?? []).map((e) => e.alias),
   ];
   return {
     diagnoses: [...new Set(diagnoses)],
-    drugNames: [...new Set([...drugNames, ...brands])],
+    drugNames: [...new Set(drugNames)],
     spokenHints: [...new Set(spokenHints)],
   };
 }
@@ -243,12 +251,30 @@ export function knowledgePackGlossaryDefaults(): {
 export function knowledgePackDocumentHint(): string {
   const g = knowledgePackGlossaryDefaults();
   const rules = knowledgePackSafetyRules();
+  const meta = knowledgePackMeta();
   return [
-    '【内科ナレッジ v1】',
-    `優先診断例: ${g.diagnoses.slice(0, 40).join('、')}`,
-    `優先薬剤例: ${g.drugNames.slice(0, 40).join('、')}`,
+    `【内科ナレッジ ${meta.version ?? 'v2'}】`,
+    `優先診断例: ${g.diagnoses.slice(0, 25).join('、')}`,
+    `優先薬剤例: ${g.drugNames.slice(0, 25).join('、')}`,
     rules.length ? `安全ルール:\n${rules.map((r) => `- ${r}`).join('\n')}` : '',
   ]
     .filter(Boolean)
     .join('\n');
+}
+
+/** Stats for tests / health checks. */
+export function knowledgePackV2Counts(): {
+  terms: number;
+  brandGeneric: number;
+  abbreviations: number;
+  spokenForms: number;
+  sttErrors: number;
+} {
+  return {
+    terms: data.terms?.length ?? 0,
+    brandGeneric: data.medication_brand_generic?.length ?? 0,
+    abbreviations: data.abbreviations?.length ?? 0,
+    spokenForms: data.spoken_forms?.length ?? 0,
+    sttErrors: data.common_stt_errors?.length ?? 0,
+  };
 }

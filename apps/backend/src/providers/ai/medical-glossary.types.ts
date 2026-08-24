@@ -3,33 +3,38 @@ export type MedicalGlossaryReplacement = {
   correct: string;
 };
 
+export type MedicalGlossarySessionHit = {
+  rawValue: string;
+  normalizedValue: string | null;
+  entityType: string;
+  needsReview: boolean;
+};
+
 export type MedicalGlossary = {
   drugNames: string[];
   diagnoses: string[];
   customReplacements: MedicalGlossaryReplacement[];
+  /** This consultation's knowledge hits only — never the full pack. */
+  sessionHits?: MedicalGlossarySessionHit[];
 };
 
 import { knowledgePackGlossaryDefaults } from '../../modules/medical-knowledge/data/load-knowledge-pack';
 
 const pack = knowledgePackGlossaryDefaults();
 
-/** Whisper / LLM glossary defaults — driven by 内科ナレッジ v1 pack. */
+/** Whisper / LLM glossary defaults — compact hints from 内科ナレッジ v2 (not full pack dump). */
 export const DEFAULT_MEDICAL_GLOSSARY: MedicalGlossary = {
   drugNames: unique([
-    ...pack.drugNames.slice(0, 80),
+    ...pack.drugNames.slice(0, 40),
+    'ムコダイン',
     'ムコソルバン',
     'エンレスト',
-    'トラネキサム酸',
-    'ベタヒスチン',
-    'プレドニン',
-    'ツムラ大建中湯',
   ]),
   diagnoses: unique([
-    ...pack.diagnoses.slice(0, 80),
+    ...pack.diagnoses.slice(0, 40),
     '気管支炎',
-    'うつ病',
-    '不眠症',
-    '副鼻腔炎',
+    '高血圧',
+    '糖尿病',
   ]),
   customReplacements: [
     { wrong: '無効団員', correct: 'ムコダイン' },

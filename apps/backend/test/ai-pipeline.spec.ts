@@ -71,6 +71,14 @@ describe('AiPipelineService integration shape', () => {
       automaticCorrectionCount: 0,
       reviewRequiredCount: 0,
     })),
+    correctForConsultation: jest.fn().mockImplementation(async (params: { rawText: string }) => ({
+      rawText: params.rawText,
+      correctedText: params.rawText,
+      entities: [],
+      corrections: [],
+      automaticCorrectionCount: 0,
+      reviewRequiredCount: 0,
+    })),
     persistCorrectionResult: jest.fn().mockResolvedValue(undefined),
   } as unknown as MedicalKnowledgeService;
 

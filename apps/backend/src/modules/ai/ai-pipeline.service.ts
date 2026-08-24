@@ -159,9 +159,14 @@ export class AiPipelineService {
       const patientMeds = glossary.drugNames ?? [];
       const patientDx = glossary.diagnoses ?? [];
       const knowledgeJoined = segmentTexts.join('\n');
-      const knowledgeResult = this.medicalKnowledge.correct(knowledgeJoined, {
-        medications: patientMeds,
-        diagnoses: patientDx,
+      const knowledgeResult = await this.medicalKnowledge.correctForConsultation({
+        rawText: knowledgeJoined,
+        clinicId: consultation.clinicId,
+        physicianId: consultation.physicianId,
+        patientContext: {
+          medications: patientMeds,
+          diagnoses: patientDx,
+        },
       });
       segmentTexts = redistributeCorrectedLines(segmentTexts, knowledgeResult.correctedText);
       await this.medicalKnowledge.persistCorrectionResult({
@@ -173,10 +178,10 @@ export class AiPipelineService {
       await logAiExecution(this.prisma, {
         consultationId,
         step: 'medical_knowledge_complete',
-        provider: 'medical-knowledge-layer-v1',
+        provider: 'medical-knowledge-layer-v2',
         status: 'completed',
         durationMs: Date.now() - knowledgeStart,
-        promptVersion: 'medical-knowledge-v1',
+        promptVersion: 'medical-knowledge-v2',
         errorMessage: JSON.stringify({
           automaticCorrectionCount: knowledgeResult.automaticCorrectionCount,
           reviewRequiredCount: knowledgeResult.reviewRequiredCount,
@@ -184,12 +189,25 @@ export class AiPipelineService {
         }),
       });
 
+      const glossaryWithHits = {
+        ...glossary,
+        sessionHits: knowledgeResult.entities
+          .filter((e) => e.normalizedValue && e.rawValue !== e.normalizedValue)
+          .slice(0, 24)
+          .map((e) => ({
+            rawValue: e.rawValue,
+            normalizedValue: e.normalizedValue,
+            entityType: e.entityType,
+            needsReview: e.needsReview,
+          })),
+      };
+
       if (!isMock) {
         const llmCorrectStart = Date.now();
         const beforeLlm = segmentTexts;
         const llmCorrected = await this.llmProvider.correctTranscript(
           segmentTexts.join('\n'),
-          glossary,
+          glossaryWithHits,
           consultationId,
         );
         const redistributed = redistributeCorrectedLines(beforeLlm, llmCorrected);
@@ -200,7 +218,9 @@ export class AiPipelineService {
         } else if (llmCorrected.trim() && llmCorrected.trim() !== beforeLlm.join('\n')) {
           // Line count changed: correct each segment independently to keep speakers
           segmentTexts = await Promise.all(
-            beforeLlm.map((t) => this.llmProvider.correctTranscript(t, glossary, consultationId)),
+            beforeLlm.map((t) =>
+              this.llmProvider.correctTranscript(t, glossaryWithHits, consultationId),
+            ),
           );
         }
         await logAiExecution(this.prisma, {
