@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { SttProvider, SttTranscriptSegment } from './stt.provider';
+import { isAbortError } from './openai-retry.util';
 
 export interface OpenAiSttConfig {
   apiKey: string;
@@ -11,6 +12,8 @@ const MIN_AUDIO_BYTES = 1024;
 /** OpenAI Whisper hard limit is 25MB; reject earlier with a clear message. */
 const WHISPER_MAX_UPLOAD_BYTES = 24 * 1024 * 1024;
 const MAX_RETRIES = 3;
+/** Long visits (~20min) need headroom; fail instead of hanging forever. */
+const STT_FETCH_TIMEOUT_MS = 15 * 60 * 1000;
 const WHISPER_HALLUCINATION_PATTERNS = [
   /ご視聴ありがとうございました/,
   /ご視聴ありがとうございます/,
@@ -238,11 +241,20 @@ export class OpenAiSttProvider implements SttProvider {
     attempt = 0,
   ): Promise<DiarizedResponse> {
     const form = this.buildDiarizeForm(audio, filename, mimeType);
-    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${this.apiKey}` },
-      body: form,
-    });
+    let response: Response;
+    try {
+      response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${this.apiKey}` },
+        signal: AbortSignal.timeout(STT_FETCH_TIMEOUT_MS),
+        body: form,
+      });
+    } catch (error) {
+      if (isAbortError(error)) {
+        throw new Error('OpenAI STT timed out');
+      }
+      throw error;
+    }
 
     if (!response.ok) {
       const errorBody = await response.text();
@@ -277,11 +289,20 @@ export class OpenAiSttProvider implements SttProvider {
     attempt = 0,
   ): Promise<WhisperVerboseResponse> {
     const form = this.buildWhisperForm(audio, filename, mimeType, model, whisperPrompt);
-    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${this.apiKey}` },
-      body: form,
-    });
+    let response: Response;
+    try {
+      response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${this.apiKey}` },
+        signal: AbortSignal.timeout(STT_FETCH_TIMEOUT_MS),
+        body: form,
+      });
+    } catch (error) {
+      if (isAbortError(error)) {
+        throw new Error('OpenAI STT timed out');
+      }
+      throw error;
+    }
 
     if (!response.ok) {
       const errorBody = await response.text();

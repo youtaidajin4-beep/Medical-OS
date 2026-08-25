@@ -7,10 +7,15 @@ import { GeneratedDocumentType } from '@prisma/client';
 import { MedicalGlossary } from './medical-glossary.types';
 import { glossaryToLlmHint } from './medical-glossary';
 import {
+  isAbortError,
   isRetryableHttpStatus,
   localizeOpenAiError,
   sleep,
 } from './openai-retry.util';
+import { truncateForLlm } from './llm-text.util';
+
+/** Per chat-completion call. Long STT is handled separately. */
+const LLM_FETCH_TIMEOUT_MS = 3 * 60 * 1000;
 
 export interface OpenAiLlmConfig {
   apiKey: string;
@@ -113,19 +118,21 @@ export class OpenAiLlmProvider implements LlmProvider {
     const hint = glossary
       ? `\n\nクリニック語彙:\n${glossaryToLlmHint(glossary, glossary.sessionHits)}`
       : '';
+    const clipped = truncateForLlm(transcript);
     const result = await this.chatWithModel(
       this.correctionModel,
       TRANSCRIPT_CORRECTION_SYSTEM,
-      `文字起こし:\n${transcript}${hint}`,
+      `文字起こし:\n${clipped}${hint}`,
       false,
     );
     return result.content.trim() || transcript;
   }
 
   async extractStructured(transcript: string, _consultationId?: string) {
+    const clipped = truncateForLlm(transcript);
     const result = await this.chatJson(
       EXTRACTION_SYSTEM,
-      `文字起こし:\n${transcript}\n\n次のスキーマに従い構造化データをJSONで抽出:\n${EXTRACTION_SCHEMA}`,
+      `文字起こし:\n${clipped}\n\n次のスキーマに従い構造化データをJSONで抽出:\n${EXTRACTION_SCHEMA}`,
     );
     const parsed = JSON.parse(result.content) as StructuredClinicalDataPayload;
     return StructuredClinicalDataSchema.parse(parsed);
@@ -312,22 +319,31 @@ ${context.structured ? `構造化診療データ:\n${JSON.stringify(context.stru
     attempt = 0,
   ): Promise<ChatResult> {
     const maxAttempts = 3;
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: user },
-        ],
-        temperature: 0.1,
-        ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(LLM_FETCH_TIMEOUT_MS),
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: user },
+          ],
+          temperature: 0.1,
+          ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
+        }),
+      });
+    } catch (error) {
+      if (isAbortError(error)) {
+        throw new Error('OpenAI LLM timed out');
+      }
+      throw error;
+    }
 
     if (!response.ok) {
       const errorBody = await response.text();

@@ -7,6 +7,11 @@ import { ConsultationAccessService } from '../../common/services/consultation-ac
 import { RecordingService } from '../recording/recording.service';
 import { mockScenarioContext } from '../../providers/ai/mock-scenario-context';
 import { resolveMockScenario } from '../../providers/ai/mock-scenarios';
+import {
+  isPipelineStale,
+  PIPELINE_STALE_MESSAGE,
+} from '../ai/pipeline-progress';
+import { logAiExecution } from '../ai/ai-execution.helper';
 
 @Injectable()
 export class ConsultationsService {
@@ -155,24 +160,67 @@ export class ConsultationsService {
     });
     if (!consultation) throw new NotFoundException('Consultation not found');
 
-    const failedExecution = await this.prisma.aIExecution.findFirst({
-      where: { consultationId: id, step: 'pipeline_failed' },
-      orderBy: { createdAt: 'desc' },
-    });
+    const [failedExecution, latestExecution, pipelineStart] = await Promise.all([
+      this.prisma.aIExecution.findFirst({
+        where: { consultationId: id, step: 'pipeline_failed' },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.aIExecution.findFirst({
+        where: { consultationId: id },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.aIExecution.findFirst({
+        where: { consultationId: id, step: 'pipeline_start' },
+        orderBy: { createdAt: 'asc' },
+      }),
+    ]);
 
-    const pipelineError =
+    const pipelineStep = latestExecution?.step ?? null;
+    const pipelineStartedAt = pipelineStart?.createdAt ?? consultation.endedAt ?? null;
+    const pipelineUpdatedAt = latestExecution?.createdAt ?? null;
+
+    let pipelineError =
       failedExecution?.errorMessage &&
       consultation.soapDocuments.length === 0 &&
       consultation.status === ConsultationStatus.PROCESSING
         ? failedExecution.errorMessage
         : undefined;
 
+    if (
+      !pipelineError &&
+      consultation.status === ConsultationStatus.PROCESSING &&
+      consultation.soapDocuments.length === 0 &&
+      isPipelineStale({
+        nowMs: Date.now(),
+        pipelineStartedAt,
+        pipelineUpdatedAt,
+      })
+    ) {
+      pipelineError = PIPELINE_STALE_MESSAGE;
+      if (!failedExecution) {
+        await logAiExecution(this.prisma, {
+          consultationId: id,
+          step: 'pipeline_failed',
+          provider: 'pipeline-watchdog',
+          status: 'failed',
+          errorMessage: PIPELINE_STALE_MESSAGE,
+        });
+      }
+    }
+
     const hasAudio =
       Boolean(pipelineError) || consultation.status === ConsultationStatus.PROCESSING
         ? await this.recordingService.hasAudio(id)
         : false;
 
-    return { ...consultation, pipelineError, hasAudio };
+    return {
+      ...consultation,
+      pipelineError,
+      hasAudio,
+      pipelineStep,
+      pipelineStartedAt: pipelineStartedAt?.toISOString?.() ?? pipelineStartedAt,
+      pipelineUpdatedAt: pipelineUpdatedAt?.toISOString?.() ?? pipelineUpdatedAt,
+    };
   }
 
   async startRecording(id: string, physicianId: string) {

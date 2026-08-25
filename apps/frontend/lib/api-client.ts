@@ -229,6 +229,9 @@ export const api = {
       visitType?: 'ROUTINE' | 'CHECKUP';
       pipelineError?: string;
       hasAudio?: boolean;
+      pipelineStep?: string | null;
+      pipelineStartedAt?: string | null;
+      pipelineUpdatedAt?: string | null;
       patient?: {
         name: string;
         patientCode: string;

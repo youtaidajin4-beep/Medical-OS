@@ -31,9 +31,23 @@ export async function withRetry<T>(
   throw lastError;
 }
 
+export function isAbortError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const name = 'name' in error ? String((error as { name?: string }).name) : '';
+  return name === 'AbortError' || name === 'TimeoutError';
+}
+
 /** ユーザー向けに統一した日本語メッセージへ変換する。自動mock切替はしない。 */
 export function localizeOpenAiError(message: string): string {
   const lower = message.toLowerCase();
+  if (
+    lower.includes('timed out') ||
+    lower.includes('timeout') ||
+    lower.includes('aborted') ||
+    message.includes('タイムアウト')
+  ) {
+    return '処理がタイムアウトしました。もう一度処理するか、録り直してください。録音が長い場合は数分かかることがあります。';
+  }
   if (
     message.includes('長すぎ') ||
     lower.includes('25mb') ||

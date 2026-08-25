@@ -61,6 +61,8 @@ export function ConsultationWorkflow({
   const [errorMessage, setErrorMessage] = useState('');
   const [canReprocess, setCanReprocess] = useState(false);
   const [errorBusy, setErrorBusy] = useState(false);
+  const [pipelineStep, setPipelineStep] = useState<string | null>(null);
+  const [pipelineStartedAt, setPipelineStartedAt] = useState<string | null>(null);
   const [documentInput, setDocumentInput] = useState<{
     caseCode: string;
     patientName: string;
@@ -120,6 +122,8 @@ export function ConsultationWorkflow({
       }
 
       if (data.status === 'PROCESSING') {
+        setPipelineStep(data.pipelineStep ?? null);
+        setPipelineStartedAt(data.pipelineStartedAt ?? null);
         setPhase('processing');
         return;
       }
@@ -319,7 +323,13 @@ export function ConsultationWorkflow({
   }
 
   if (phase === 'processing') {
-    return <ProcessingPhase density={density} />;
+    return (
+      <ProcessingPhase
+        density={density}
+        pipelineStep={pipelineStep}
+        pipelineStartedAt={pipelineStartedAt}
+      />
+    );
   }
 
   if (phase === 'error') {

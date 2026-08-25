@@ -44,6 +44,16 @@ describe('OpenAiLlmProvider', () => {
     expect(soap.plan).toBe('経過観察');
     expect(global.fetch).toHaveBeenCalledTimes(2);
   });
+
+  it('fails clearly when the request times out', async () => {
+    global.fetch = jest.fn().mockImplementation(() => {
+      const err = new Error('The operation was aborted');
+      err.name = 'TimeoutError';
+      return Promise.reject(err);
+    });
+    const provider = new OpenAiLlmProvider({ apiKey: 'test-key' });
+    await expect(provider.extractStructured('頭が痛い')).rejects.toThrow(/timed out/i);
+  });
 });
 
 describe('OpenAiSttProvider', () => {

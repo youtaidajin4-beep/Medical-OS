@@ -1,10 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AudioLines, Brain, Check, FileAudio, Loader2, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { api } from '@/lib/api-client';
-import { isOpenAiMode } from '@/lib/ai-status';
 
 const STEPS = [
   { label: '音声を結合中', icon: FileAudio },
@@ -13,27 +11,72 @@ const STEPS = [
   { label: 'SOAP を作成中', icon: Sparkles },
 ] as const;
 
-export function ProcessingPhase({ density = 'full' }: { density?: 'compact' | 'full' }) {
-  const [stepIndex, setStepIndex] = useState(0);
-  const [openAi, setOpenAi] = useState(false);
+function pipelineStepToIndex(step: string | null | undefined): number {
+  if (!step) return 0;
+  switch (step) {
+    case 'pipeline_start':
+    case 'assemble_started':
+      return 0;
+    case 'stt_started':
+    case 'stt_complete':
+      return 1;
+    case 'dict_correction_complete':
+    case 'medical_knowledge_complete':
+    case 'llm_correction_started':
+    case 'llm_correction_complete':
+    case 'extract_started':
+    case 'extract_complete':
+      return 2;
+    case 'soap_started':
+    case 'soap_complete':
+    case 'note_complete':
+    case 'pipeline_complete':
+      return 3;
+    default:
+      return 0;
+  }
+}
+
+function formatElapsed(startedAt: string | null | undefined): string | null {
+  if (!startedAt) return null;
+  const ms = Date.now() - new Date(startedAt).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return null;
+  const sec = Math.floor(ms / 1000);
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return m > 0 ? `${m}分${s}秒` : `${s}秒`;
+}
+
+export function ProcessingPhase({
+  density = 'full',
+  pipelineStep = null,
+  pipelineStartedAt = null,
+}: {
+  density?: 'compact' | 'full';
+  pipelineStep?: string | null;
+  pipelineStartedAt?: string | null;
+}) {
   const compact = density === 'compact';
+  const [tick, setTick] = useState(0);
+  const [fallbackIndex, setFallbackIndex] = useState(0);
 
   useEffect(() => {
-    void api
-      .healthAi()
-      .then((h) => setOpenAi(isOpenAiMode(h)))
-      .catch(() => {});
+    const timer = setInterval(() => setTick((n) => n + 1), 1000);
+    return () => clearInterval(timer);
   }, []);
 
+  // Until the first real step arrives, nudge slowly so the screen does not look frozen.
   useEffect(() => {
-    setStepIndex(0);
+    if (pipelineStep) return;
     const timer = setInterval(() => {
-      setStepIndex((i) => Math.min(i + 1, STEPS.length - 1));
-    }, openAi ? 4000 : 900);
+      setFallbackIndex((i) => Math.min(i + 1, 1));
+    }, 8000);
     return () => clearInterval(timer);
-  }, [openAi]);
+  }, [pipelineStep]);
 
-  const progress = ((stepIndex + 0.5) / STEPS.length) * 100;
+  const stepIndex = pipelineStep ? pipelineStepToIndex(pipelineStep) : fallbackIndex;
+  const progress = ((stepIndex + 0.55) / STEPS.length) * 100;
+  const elapsed = useMemo(() => formatElapsed(pipelineStartedAt), [pipelineStartedAt, tick]);
 
   return (
     <section className="flex min-h-[62dvh] flex-col items-center justify-center gap-5 text-center">
@@ -43,7 +86,12 @@ export function ProcessingPhase({ density = 'full' }: { density?: 'compact' | 'f
       </p>
       <p className="max-w-sm text-sm leading-relaxed text-slate-500">
         音声を文字にし、内科の言葉に寄せています。
+        <br />
+        録音が長い場合は数分かかることがあります。
       </p>
+      {elapsed && (
+        <p className="text-xs font-medium tracking-wide text-[#6f8f88]">経過 {elapsed}</p>
+      )}
       <div className="h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-[#d7e2dd]">
         <div
           className="h-full rounded-full bg-[#0c2f2c] transition-all duration-700 ease-out"
@@ -64,9 +112,17 @@ export function ProcessingPhase({ density = 'full' }: { density?: 'compact' | 'f
                   !done && !current && 'bg-[#e8eee9] text-slate-400',
                 )}
               >
-                {done ? <Check className="h-4 w-4" /> : current ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
+                {done ? (
+                  <Check className="h-4 w-4" />
+                ) : current ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Icon className="h-4 w-4" />
+                )}
               </span>
-              <span className={cn('text-sm', current ? 'font-medium text-[#0c2f2c]' : 'text-slate-500')}>{label}</span>
+              <span className={cn('text-sm', current ? 'font-medium text-[#0c2f2c]' : 'text-slate-500')}>
+                {label}
+              </span>
             </li>
           );
         })}

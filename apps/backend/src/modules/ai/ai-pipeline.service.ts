@@ -79,6 +79,13 @@ export class AiPipelineService {
         await sleep(MOCK_PIPELINE_DELAY_MS);
       }
 
+      await logAiExecution(this.prisma, {
+        consultationId,
+        step: 'assemble_started',
+        provider: providerLabel,
+        status: 'started',
+      });
+
       const chunks = await this.recordingService.listChunks(consultationId);
       let audio: Buffer;
       if (chunks.length > 0) {
@@ -110,6 +117,12 @@ export class AiPipelineService {
         );
       }
 
+      await logAiExecution(this.prisma, {
+        consultationId,
+        step: 'stt_started',
+        provider: this.sttProvider.name,
+        status: 'started',
+      });
       const sttStart = Date.now();
       await this.transcriptService.finalizeFromAudio(consultationId, audio, {
         whisperPrompt,
@@ -203,6 +216,12 @@ export class AiPipelineService {
       };
 
       if (!isMock) {
+        await logAiExecution(this.prisma, {
+          consultationId,
+          step: 'llm_correction_started',
+          provider: this.llmProvider.name,
+          status: 'started',
+        });
         const llmCorrectStart = Date.now();
         const beforeLlm = segmentTexts;
         const llmCorrected = await this.llmProvider.correctTranscript(
@@ -215,14 +234,8 @@ export class AiPipelineService {
           segmentTexts = redistributed;
         } else if (beforeLlm.length === 1 && llmCorrected.trim()) {
           segmentTexts = [llmCorrected.trim()];
-        } else if (llmCorrected.trim() && llmCorrected.trim() !== beforeLlm.join('\n')) {
-          // Line count changed: correct each segment independently to keep speakers
-          segmentTexts = await Promise.all(
-            beforeLlm.map((t) =>
-              this.llmProvider.correctTranscript(t, glossaryWithHits, consultationId),
-            ),
-          );
         }
+        // Line-count mismatch: keep original segments (speaker integrity) — never fan out N gpt-4o calls.
         await logAiExecution(this.prisma, {
           consultationId,
           step: 'llm_correction_complete',
@@ -251,6 +264,12 @@ export class AiPipelineService {
         soapSource = `${soapSource}\n\n${reviewFlags.join('\n')}`;
       }
 
+      await logAiExecution(this.prisma, {
+        consultationId,
+        step: 'extract_started',
+        provider: this.llmProvider.name,
+        status: 'started',
+      });
       const extractStart = Date.now();
       const structured = await this.llmProvider.extractStructured(soapSource, consultationId);
       StructuredClinicalDataSchema.parse(structured);
@@ -284,6 +303,12 @@ export class AiPipelineService {
       }
 
       const soapStart = Date.now();
+      await logAiExecution(this.prisma, {
+        consultationId,
+        step: 'soap_started',
+        provider: this.llmProvider.name,
+        status: 'started',
+      });
       const soapRevisions = await this.prisma.revisionHistory.findMany({
         where: {
           changedById: consultation.physicianId,
