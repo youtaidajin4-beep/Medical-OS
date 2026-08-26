@@ -38,6 +38,7 @@
 | 2026-07-18 | PostgreSQL 本番DB、GeneratedDocument 永続化、先生ルール設定 |
 | 2026-08-24 | **くしま本番接続（推奨範囲1）**: Supabase `medical-os-kushima` + Nest/Prisma/JWT 維持。テナント `clinics.code=kushima_internal`。Auth/RLS は後続。Bright Dental 非接続 |
 | 2026-08-25 | **今堀ケース長尺ハング**: consultation `d68d4173…` は `pipeline_start` のみで STT 前停止（UIの「SOAP作成中」は偽プログレス）。STT/LLM timeout・セグメント校正爆発撤廃・停滞検知・実進捗UI を導入 |
+| 2026-08-26 | **SOAP作成ハング再発防止**: `pipelineError`/stale の SOAP有無ゲート撤廃、SOAP+note+REVIEW を transaction、timeout 再試行禁止、heartbeat、UI 40分タイムアウト・ポーリング失敗表示・SOAP/診療記録ステップ分割、失敗時 AI下書き削除して再処理可 |
 | 2026-07-28 | **谷口優先 Phase 1–5 ロードマップ採用** — ①SOAPコピー→②書類ワンボタン→③学習・紹介パターン→④パネル内チャット→⑤紙OCR・患者蓄積。新機能は `/panel` 内に追加（画面遷移を増やさない） |
 
 ---

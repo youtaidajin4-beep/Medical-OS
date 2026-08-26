@@ -15,6 +15,15 @@ type Soap = { subjective: string; objective: string; assessment: string; plan: s
 type Warning = { id: string; message: string; severity: string };
 type Phase = 'recording' | 'processing' | 'error' | 'review';
 
+/** Match backend pipeline-progress.ts */
+const CLIENT_STALE_NO_PROGRESS_MS = 15 * 60 * 1000;
+const CLIENT_ABSOLUTE_MAX_MS = 40 * 60 * 1000;
+const CLIENT_POLL_FAIL_LIMIT = 5;
+const CLIENT_STALE_MESSAGE =
+  '処理がタイムアウトしました。もう一度処理するか、録り直してください。録音が長い場合は数分かかることがあります。';
+const CLIENT_POLL_FAIL_MESSAGE =
+  '処理状況の取得に失敗しました。通信を確認し、「もう一度処理」を試してください。';
+
 export type ConsultationDensity = 'compact' | 'full';
 
 export function ConsultationWorkflow({
@@ -63,6 +72,8 @@ export function ConsultationWorkflow({
   const [errorBusy, setErrorBusy] = useState(false);
   const [pipelineStep, setPipelineStep] = useState<string | null>(null);
   const [pipelineStartedAt, setPipelineStartedAt] = useState<string | null>(null);
+  const [pipelineUpdatedAt, setPipelineUpdatedAt] = useState<string | null>(null);
+  const [pollFailCount, setPollFailCount] = useState(0);
   const [documentInput, setDocumentInput] = useState<{
     caseCode: string;
     patientName: string;
@@ -86,9 +97,16 @@ export function ConsultationWorkflow({
     );
   }
 
+  function enterClientTimeout(hasAudioHint = true) {
+    setErrorMessage(CLIENT_STALE_MESSAGE);
+    setCanReprocess(hasAudioHint);
+    setPhase('error');
+  }
+
   const loadConsultation = useCallback(async () => {
     try {
       const data = await api.getConsultation(id);
+      setPollFailCount(0);
       const patientName = data.patient?.name ?? data.anonymousCase?.displayName ?? '症例';
       setCaseName(patientName);
       setVisitType(data.visitType === 'CHECKUP' ? 'CHECKUP' : 'ROUTINE');
@@ -122,8 +140,23 @@ export function ConsultationWorkflow({
       }
 
       if (data.status === 'PROCESSING') {
+        const startedAt = data.pipelineStartedAt ?? null;
+        const updatedAt = data.pipelineUpdatedAt ?? null;
         setPipelineStep(data.pipelineStep ?? null);
-        setPipelineStartedAt(data.pipelineStartedAt ?? null);
+        setPipelineStartedAt(startedAt);
+        setPipelineUpdatedAt(updatedAt);
+
+        const now = Date.now();
+        const startedMs = startedAt ? new Date(startedAt).getTime() : NaN;
+        const updatedMs = updatedAt ? new Date(updatedAt).getTime() : NaN;
+        if (
+          (Number.isFinite(startedMs) && now - startedMs > CLIENT_ABSOLUTE_MAX_MS) ||
+          (Number.isFinite(updatedMs) && now - updatedMs > CLIENT_STALE_NO_PROGRESS_MS)
+        ) {
+          enterClientTimeout(Boolean(data.hasAudio));
+          return;
+        }
+
         setPhase('processing');
         return;
       }
@@ -156,7 +189,17 @@ export function ConsultationWorkflow({
     } catch (error) {
       if (isUnauthorizedError(error)) {
         router.replace('/login');
+        return;
       }
+      setPollFailCount((n) => {
+        const next = n + 1;
+        if (next >= CLIENT_POLL_FAIL_LIMIT) {
+          setErrorMessage(CLIENT_POLL_FAIL_MESSAGE);
+          setCanReprocess(true);
+          setPhase('error');
+        }
+        return next;
+      });
     }
   }, [id, router]);
 
@@ -266,6 +309,10 @@ export function ConsultationWorkflow({
     try {
       await api.reprocessConsultation(id);
       setErrorMessage('');
+      setPollFailCount(0);
+      setPipelineStep(null);
+      setPipelineStartedAt(new Date().toISOString());
+      setPipelineUpdatedAt(new Date().toISOString());
       setPhase('processing');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : '再処理に失敗しました');

@@ -16,6 +16,10 @@ import { truncateForLlm } from './llm-text.util';
 
 /** Per chat-completion call. Long STT is handled separately. */
 const LLM_FETCH_TIMEOUT_MS = 3 * 60 * 1000;
+const EXTRACT_MAX_TOKENS = 1200;
+const SOAP_MAX_TOKENS = 1500;
+const NOTE_MAX_TOKENS = 2000;
+const DOCUMENT_MAX_TOKENS = 2500;
 
 export interface OpenAiLlmConfig {
   apiKey: string;
@@ -133,6 +137,7 @@ export class OpenAiLlmProvider implements LlmProvider {
     const result = await this.chatJson(
       EXTRACTION_SYSTEM,
       `文字起こし:\n${clipped}\n\n次のスキーマに従い構造化データをJSONで抽出:\n${EXTRACTION_SCHEMA}`,
+      EXTRACT_MAX_TOKENS,
     );
     const parsed = JSON.parse(result.content) as StructuredClinicalDataPayload;
     return StructuredClinicalDataSchema.parse(parsed);
@@ -159,6 +164,7 @@ export class OpenAiLlmProvider implements LlmProvider {
     const result = await this.chatJson(
       SOAP_SYSTEM,
       `構造化データ:\n${JSON.stringify(data, null, 2)}\n${styleBlock ? `\n${styleBlock}\n` : ''}\nkeys: subjective, objective, assessment, plan のSOAPをJSONで生成。各値は事実の短句のみ（文字列）。散文禁止。`,
+      SOAP_MAX_TOKENS,
     );
     const parsed = JSON.parse(result.content) as Record<string, unknown>;
     return {
@@ -209,6 +215,7 @@ export class OpenAiLlmProvider implements LlmProvider {
 ${context.structured ? `構造化診療データ:\n${JSON.stringify(context.structured, null, 2)}\n` : ''}既存書類:\n${JSON.stringify(context.documents, null, 2)}
 
 医師の入力:\n${lastUser}`,
+      DOCUMENT_MAX_TOKENS,
     );
     try {
       return JSON.parse(result.content) as {
@@ -233,10 +240,12 @@ ${context.structured ? `構造化診療データ:\n${JSON.stringify(context.stru
   }
 
   async generateClinicalNote(data: StructuredClinicalDataPayload, _consultationId?: string) {
-    const result = await this.chat(
+    const result = await this.chatWithModel(
+      this.model,
       NOTE_SYSTEM,
       `構造化データ:\n${JSON.stringify(data, null, 2)}`,
       false,
+      NOTE_MAX_TOKENS,
     );
     return result.content;
   }
@@ -246,7 +255,12 @@ ${context.structured ? `構造化診療データ:\n${JSON.stringify(context.stru
     system: string,
     user: string,
   ): Promise<Record<string, unknown>> {
-    const result = await this.chatJsonWithModel(this.documentModel, system, user);
+    const result = await this.chatJsonWithModel(
+      this.documentModel,
+      system,
+      user,
+      DOCUMENT_MAX_TOKENS,
+    );
     return JSON.parse(result.content) as Record<string, unknown>;
   }
 
@@ -256,26 +270,38 @@ ${context.structured ? `構造化診療データ:\n${JSON.stringify(context.stru
 
   private lastUsage?: { inputTokens?: number; outputTokens?: number };
 
-  private async chatJson(system: string, user: string): Promise<ChatResult> {
-    return this.chatJsonWithModel(this.model, system, user);
+  private async chatJson(
+    system: string,
+    user: string,
+    maxTokens?: number,
+  ): Promise<ChatResult> {
+    return this.chatJsonWithModel(this.model, system, user, maxTokens);
   }
 
   private async chatJsonWithModel(
     model: string,
     system: string,
     user: string,
+    maxTokens?: number,
   ): Promise<ChatResult> {
     try {
-      const result = await this.chatWithModel(model, system, user, true);
-      return result;
+      return await this.chatWithModel(model, system, user, true, maxTokens);
     } catch (error) {
-      const fix = await this.chatWithModel(
+      // Retry only malformed JSON — never retry timeouts / aborts / HTTP failures.
+      if (isAbortError(error)) throw error;
+      const message = error instanceof Error ? error.message : String(error);
+      if (/timed out/i.test(message)) throw error;
+      const isJsonParse =
+        error instanceof SyntaxError ||
+        /invalid JSON|Unexpected token|is not valid JSON/i.test(message);
+      if (!isJsonParse) throw error;
+      return await this.chatWithModel(
         model,
         '有効なJSONのみを返してください。構文エラーを修正してください。',
         `次の内容を有効なJSONとして再生成:\n${user}`,
         true,
+        maxTokens,
       );
-      return fix;
     }
   }
 
@@ -294,9 +320,10 @@ ${context.structured ? `構造化診療データ:\n${JSON.stringify(context.stru
     system: string,
     user: string,
     jsonMode: boolean,
+    maxTokens?: number,
   ): Promise<ChatResult> {
     this.assertApiKey();
-    const response = await this.requestChat(model, system, user, jsonMode);
+    const response = await this.requestChat(model, system, user, jsonMode, 0, maxTokens);
     const content = response.content.trim();
     if (!content) {
       throw new Error('OpenAI LLM returned empty response');
@@ -306,7 +333,12 @@ ${context.structured ? `構造化診療データ:\n${JSON.stringify(context.stru
       outputTokens: response.outputTokens,
     };
     if (jsonMode) {
-      JSON.parse(content);
+      try {
+        JSON.parse(content);
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error);
+        throw new SyntaxError(`OpenAI LLM returned invalid JSON: ${detail}`);
+      }
     }
     return response;
   }
@@ -317,6 +349,7 @@ ${context.structured ? `構造化診療データ:\n${JSON.stringify(context.stru
     user: string,
     jsonMode: boolean,
     attempt = 0,
+    maxTokens?: number,
   ): Promise<ChatResult> {
     const maxAttempts = 3;
     let response: Response;
@@ -335,6 +368,7 @@ ${context.structured ? `構造化診療データ:\n${JSON.stringify(context.stru
             { role: 'user', content: user },
           ],
           temperature: 0.1,
+          ...(typeof maxTokens === 'number' ? { max_tokens: maxTokens } : {}),
           ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
         }),
       });
@@ -349,7 +383,7 @@ ${context.structured ? `構造化診療データ:\n${JSON.stringify(context.stru
       const errorBody = await response.text();
       if (isRetryableHttpStatus(response.status) && attempt < maxAttempts - 1) {
         await sleep(1000 * Math.pow(2, attempt));
-        return this.requestChat(model, system, user, jsonMode, attempt + 1);
+        return this.requestChat(model, system, user, jsonMode, attempt + 1, maxTokens);
       }
       throw new Error(
         localizeOpenAiError(`OpenAI LLM failed (${response.status}): ${errorBody}`),

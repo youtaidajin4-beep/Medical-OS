@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AudioLines, Brain, Check, FileAudio, Loader2, Sparkles } from 'lucide-react';
+import { AudioLines, Brain, Check, ClipboardList, FileAudio, Loader2, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const STEPS = [
@@ -9,6 +9,7 @@ const STEPS = [
   { label: '文字起こし中', icon: AudioLines },
   { label: '診療データを整理中', icon: Brain },
   { label: 'SOAP を作成中', icon: Sparkles },
+  { label: '診療記録を作成中', icon: ClipboardList },
 ] as const;
 
 function pipelineStepToIndex(step: string | null | undefined): number {
@@ -28,10 +29,13 @@ function pipelineStepToIndex(step: string | null | undefined): number {
     case 'extract_complete':
       return 2;
     case 'soap_started':
+    case 'soap_progress':
+      return 3;
     case 'soap_complete':
+    case 'note_progress':
     case 'note_complete':
     case 'pipeline_complete':
-      return 3;
+      return 4;
     default:
       return 0;
   }

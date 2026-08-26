@@ -28,6 +28,10 @@ describe('pipeline progress', () => {
     expect(pipelineStepToUiIndex('stt_started')).toBe(1);
     expect(pipelineStepToUiIndex('extract_complete')).toBe(2);
     expect(pipelineStepToUiIndex('soap_started')).toBe(3);
+    expect(pipelineStepToUiIndex('soap_progress')).toBe(3);
+    expect(pipelineStepToUiIndex('soap_complete')).toBe(4);
+    expect(pipelineStepToUiIndex('note_progress')).toBe(4);
+    expect(pipelineStepToUiIndex('note_complete')).toBe(4);
   });
 
   it('detects absolute and no-progress stale', () => {
@@ -50,6 +54,18 @@ describe('pipeline progress', () => {
       isPipelineStale({
         nowMs: now,
         pipelineStartedAt: new Date(now - 60_000),
+        pipelineUpdatedAt: new Date(now - 60_000),
+      }),
+    ).toBe(false);
+  });
+
+  it('uses a 40-minute absolute ceiling for long visits', () => {
+    expect(PIPELINE_ABSOLUTE_MAX_MS).toBe(40 * 60 * 1000);
+    const now = Date.now();
+    expect(
+      isPipelineStale({
+        nowMs: now,
+        pipelineStartedAt: new Date(now - 30 * 60 * 1000),
         pipelineUpdatedAt: new Date(now - 60_000),
       }),
     ).toBe(false);

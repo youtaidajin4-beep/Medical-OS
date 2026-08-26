@@ -1,4 +1,4 @@
-/** Maps AIExecution.step → processing UI index (0..3). */
+/** Maps AIExecution.step → processing UI index (0..4). */
 export function pipelineStepToUiIndex(step: string | null | undefined): number {
   if (!step) return 0;
   switch (step) {
@@ -16,17 +16,22 @@ export function pipelineStepToUiIndex(step: string | null | undefined): number {
     case 'extract_complete':
       return 2;
     case 'soap_started':
+    case 'soap_progress':
+      return 3;
     case 'soap_complete':
+    case 'note_progress':
     case 'note_complete':
     case 'pipeline_complete':
-      return 3;
+      return 4;
     default:
       return 0;
   }
 }
 
+/** No AIExecution progress for this long → treat as hung. */
 export const PIPELINE_STALE_NO_PROGRESS_MS = 15 * 60 * 1000;
-export const PIPELINE_ABSOLUTE_MAX_MS = 25 * 60 * 1000;
+/** Wall-clock from pipeline_start (20min recording + diarize + correction). */
+export const PIPELINE_ABSOLUTE_MAX_MS = 40 * 60 * 1000;
 
 export const PIPELINE_STALE_MESSAGE =
   '処理がタイムアウトしました。もう一度処理するか、録り直してください。録音が長い場合は数分かかることがあります。';

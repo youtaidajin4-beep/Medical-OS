@@ -322,13 +322,19 @@ export class AiPipelineService {
         .join('\n');
       const visitType = resolveSoapVisitType(consultation.visitType);
       const templateFloor = SOAP_TEMPLATE_FLOORS[visitType];
-      const generatedSoap = await this.llmProvider.generateSoap(structured, consultationId, {
-        revisionExamples: soapRevisionExamples || undefined,
-        greeting: physicianRules.fixedPhrases?.greeting,
-        closing: physicianRules.fixedPhrases?.closing,
-        visitType,
-        templateFloor,
-      });
+      const generatedSoap = await this.withProgressHeartbeat(
+        consultationId,
+        'soap_progress',
+        this.llmProvider.name,
+        () =>
+          this.llmProvider.generateSoap(structured, consultationId, {
+            revisionExamples: soapRevisionExamples || undefined,
+            greeting: physicianRules.fixedPhrases?.greeting,
+            closing: physicianRules.fixedPhrases?.closing,
+            visitType,
+            templateFloor,
+          }),
+      );
       const soap = { ...generatedSoap };
       const questionnaire = await this.prisma.consultationAttachment.findFirst({
         where: { consultationId, documentKind: 'questionnaire', ocrText: { not: null } },
@@ -348,7 +354,12 @@ export class AiPipelineService {
       });
 
       const noteStart = Date.now();
-      const clinicalNote = await this.llmProvider.generateClinicalNote(structured, consultationId);
+      const clinicalNote = await this.withProgressHeartbeat(
+        consultationId,
+        'note_progress',
+        this.llmProvider.name,
+        () => this.llmProvider.generateClinicalNote(structured, consultationId),
+      );
       await logAiExecution(this.prisma, {
         consultationId,
         step: 'note_complete',
@@ -359,17 +370,18 @@ export class AiPipelineService {
         ...this.getLlmUsage(),
       });
 
-      await this.prisma.soapDocument.create({
-        data: { consultationId, ...soap, version: 1, isAiGenerated: true },
-      });
-      await this.prisma.clinicalNote.create({
-        data: { consultationId, content: clinicalNote, version: 1, isAiGenerated: true },
-      });
-
-      await this.prisma.consultation.update({
-        where: { id: consultationId },
-        data: { status: ConsultationStatus.REVIEW },
-      });
+      await this.prisma.$transaction([
+        this.prisma.soapDocument.create({
+          data: { consultationId, ...soap, version: 1, isAiGenerated: true },
+        }),
+        this.prisma.clinicalNote.create({
+          data: { consultationId, content: clinicalNote, version: 1, isAiGenerated: true },
+        }),
+        this.prisma.consultation.update({
+          where: { id: consultationId },
+          data: { status: ConsultationStatus.REVIEW },
+        }),
+      ]);
 
       await this.recordingService.deleteAudioForConsultation(consultationId);
 
@@ -424,6 +436,31 @@ export class AiPipelineService {
         `Speaker role LLM tie-break failed: ${error instanceof Error ? error.message : String(error)}`,
       );
       return null;
+    }
+  }
+
+  private async withProgressHeartbeat<T>(
+    consultationId: string,
+    step: string,
+    provider: string,
+    work: () => Promise<T>,
+  ): Promise<T> {
+    const interval = setInterval(() => {
+      void logAiExecution(this.prisma, {
+        consultationId,
+        step,
+        provider,
+        status: 'started',
+      }).catch((error) => {
+        this.logger.warn(
+          `Heartbeat log failed (${step}): ${error instanceof Error ? error.message : String(error)}`,
+        );
+      });
+    }, 60_000);
+    try {
+      return await work();
+    } finally {
+      clearInterval(interval);
     }
   }
 

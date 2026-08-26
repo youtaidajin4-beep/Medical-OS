@@ -141,7 +141,7 @@ export class ConsultationsService {
   }
 
   async getById(id: string, physicianId: string) {
-    const consultation = await this.prisma.consultation.findFirst({
+    let consultation = await this.prisma.consultation.findFirst({
       where: { id, physicianId },
       include: {
         patient: true,
@@ -179,17 +179,28 @@ export class ConsultationsService {
     const pipelineStartedAt = pipelineStart?.createdAt ?? consultation.endedAt ?? null;
     const pipelineUpdatedAt = latestExecution?.createdAt ?? null;
 
+    // Orphan success: SOAP+note written but status never flipped to REVIEW.
+    if (
+      consultation.status === ConsultationStatus.PROCESSING &&
+      consultation.soapDocuments.length > 0 &&
+      consultation.clinicalNotes.length > 0 &&
+      !failedExecution
+    ) {
+      await this.prisma.consultation.update({
+        where: { id },
+        data: { status: ConsultationStatus.REVIEW },
+      });
+      consultation = { ...consultation, status: ConsultationStatus.REVIEW };
+    }
+
     let pipelineError =
-      failedExecution?.errorMessage &&
-      consultation.soapDocuments.length === 0 &&
-      consultation.status === ConsultationStatus.PROCESSING
+      failedExecution?.errorMessage && consultation.status === ConsultationStatus.PROCESSING
         ? failedExecution.errorMessage
         : undefined;
 
     if (
       !pipelineError &&
       consultation.status === ConsultationStatus.PROCESSING &&
-      consultation.soapDocuments.length === 0 &&
       isPipelineStale({
         nowMs: Date.now(),
         pipelineStartedAt,
@@ -253,18 +264,41 @@ export class ConsultationsService {
     await this.consultationAccess.assertPhysicianOwns(id, physicianId);
     const consultation = await this.prisma.consultation.findFirst({
       where: { id, physicianId },
-      include: { soapDocuments: { take: 1 } },
+      include: {
+        soapDocuments: { take: 1 },
+        clinicalNotes: { take: 1 },
+      },
     });
     if (!consultation) throw new NotFoundException('Consultation not found');
-    if (consultation.soapDocuments.length > 0) {
-      throw new BadRequestException('すでにSOAPがあります。録り直す場合は新規診療を開始してください。');
+
+    const hasDraftArtifacts =
+      consultation.soapDocuments.length > 0 || consultation.clinicalNotes.length > 0;
+    const canClearFailedDraft =
+      consultation.status === ConsultationStatus.PROCESSING && hasDraftArtifacts;
+
+    if (hasDraftArtifacts && !canClearFailedDraft) {
+      throw new BadRequestException(
+        'すでにSOAPがあります。録り直す場合は新規診療を開始してください。',
+      );
     }
+
     const hasAudio = await this.recordingService.hasAudio(id);
     if (!hasAudio) {
       throw new BadRequestException(
         '再処理できる録音がありません。「録り直す」から再度録音してください。',
       );
     }
+
+    if (canClearFailedDraft) {
+      await this.prisma.$transaction([
+        this.prisma.soapDocument.deleteMany({ where: { consultationId: id } }),
+        this.prisma.clinicalNote.deleteMany({ where: { consultationId: id } }),
+        this.prisma.aIExecution.deleteMany({
+          where: { consultationId: id, step: 'pipeline_failed' },
+        }),
+      ]);
+    }
+
     const updated = await this.prisma.consultation.update({
       where: { id },
       data: {

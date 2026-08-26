@@ -53,6 +53,52 @@ describe('OpenAiLlmProvider', () => {
     });
     const provider = new OpenAiLlmProvider({ apiKey: 'test-key' });
     await expect(provider.extractStructured('頭が痛い')).rejects.toThrow(/timed out/i);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not retry chatJson on timeout', async () => {
+    global.fetch = jest.fn().mockImplementation(() => {
+      const err = new Error('The operation was aborted');
+      err.name = 'TimeoutError';
+      return Promise.reject(err);
+    });
+    const provider = new OpenAiLlmProvider({ apiKey: 'test-key' });
+    await expect(provider.generateSoap({ plan: '経過観察' })).rejects.toThrow(/timed out/i);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries chatJson only when JSON is invalid', async () => {
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: '{not-json' } }],
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: JSON.stringify({ plan: '経過観察' }) } }],
+        }),
+      });
+    const provider = new OpenAiLlmProvider({ apiKey: 'test-key' });
+    const soap = await provider.generateSoap({ plan: '経過観察' });
+    expect(soap.plan).toBe('経過観察');
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('sends max_tokens for SOAP generation', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: JSON.stringify({ plan: '経過観察' }) } }],
+      }),
+    });
+    const provider = new OpenAiLlmProvider({ apiKey: 'test-key' });
+    await provider.generateSoap({ plan: '経過観察' });
+    const body = JSON.parse(String((global.fetch as jest.Mock).mock.calls[0][1].body));
+    expect(body.max_tokens).toBe(1500);
   });
 });
 
