@@ -20,7 +20,6 @@ describe('Medical knowledge eval farm (regression gate)', () => {
     const report = runEval(cases, index);
     if (report.criticalFailed > 0) {
       // Helpful failure output (first 20)
-      // eslint-disable-next-line no-console
       console.error(
         JSON.stringify(
           {

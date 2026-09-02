@@ -411,7 +411,7 @@ export class ConsultationsService {
     return consultation;
   }
 
-  async markCopied(id: string, physicianId: string) {
+  async markCopied(id: string, _physicianId: string) {
     if (!(await this.isApproved(id))) {
       throw new BadRequestException('Consultation must be approved before copy');
     }
