@@ -238,7 +238,9 @@ export function correctTranscriptWithKnowledge(
     }
   }
 
-  // 4) Lab value pattern: HbA1c / A1C は 7.2 — candidates only, no auto-apply (high-risk)
+  // 4) Lab value pattern: HbA1c / A1C は 7.2 — the test NAME is an unambiguous synonym so it is
+  // auto-normalized in the text for readability; the VALUE stays candidates-only (needsReview) since
+  // a mistyped/mis-heard number is a real patient-safety risk.
   for (const m of rawText.matchAll(
     /(HbA1c|HBA1C|A1[cC]|エーワンシー|ヘモグロビンエーワンシー)\s*(は|が)?\s*(\d+(?:\.\d+)?)\s*(%|％)?/gi,
   )) {
@@ -250,7 +252,7 @@ export function correctTranscriptWithKnowledge(
       confidence: 0.96,
       startPosition: start,
       endPosition: start + m[1]!.length,
-      needsReview: true,
+      needsReview: false,
       riskLevel: 'critical',
       candidates: [{ candidateValue: 'HbA1c', score: 0.96, candidateSource: 'lab_pattern' }],
     });
@@ -272,12 +274,17 @@ export function correctTranscriptWithKnowledge(
         category: 'laboratory_test',
         confidence: 0.96,
         correctionSource: 'lab_pattern',
-        autoApplied: false,
-        needsReview: true,
+        autoApplied: true,
+        needsReview: false,
         riskLevel: 'critical',
         startPosition: start,
         endPosition: start + m[1]!.length,
       });
+    }
+  }
+  for (const c of corrections) {
+    if (c.autoApplied && c.correctionSource === 'lab_pattern' && c.originalTerm !== c.correctedTerm) {
+      corrected = corrected.split(c.originalTerm).join(c.correctedTerm);
     }
   }
 

@@ -309,5 +309,150 @@ export const AUTO_STT_ERROR_PATCHES: SttErrorPatch[] = [
     "canonicalName": "ボノプラザン",
     "alias": "タケキャブ",
     "category": "medication"
+  },
+  {
+    "canonicalName": "HbA1c",
+    "alias": "A1C",
+    "category": "laboratory_test"
+  },
+  {
+    "canonicalName": "メトプロロール",
+    "alias": "メトプロロル",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "プロプラノロール",
+    "alias": "プロプラノロル",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "イバブラジン",
+    "alias": "イバブラヂン",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "サキサグリプチン",
+    "alias": "サキサグリプティン",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "インスリングルリジン",
+    "alias": "インスリングルリヂン",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "ベザフィブラート",
+    "alias": "ベサフィブラート",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "ベザフィブラート",
+    "alias": "ベザフィブラト",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "シロスタゾール",
+    "alias": "シロスタゾル",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "ピコスルファートナトリウム",
+    "alias": "ピコスルファトナトリウム",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "ナルデメジン",
+    "alias": "ナルデメヂン",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "ポリエチレングリコール",
+    "alias": "ポリエチレングリコル",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "セチリジン",
+    "alias": "セチリヂン",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "オロパタジン",
+    "alias": "オロパタヂン",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "クロペラスチン",
+    "alias": "クロペラスティン",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "メトロニダゾール",
+    "alias": "メトロニダゾル",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "スルファメトキサゾールトリメトプリム",
+    "alias": "スルファメトキサゾルトリメトプリム",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "アルファカルシドール",
+    "alias": "アルファカルシドル",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "メトトレキサート",
+    "alias": "メトトレキサト",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "アザチオプリン",
+    "alias": "アサチオプリン",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "コルヒチン",
+    "alias": "コルヒティン",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "メマンチン",
+    "alias": "メマンティン",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "デュロキセチン",
+    "alias": "デュロキセティン",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "ガバペンチン",
+    "alias": "ガバペンティン",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "ベタヒスチン",
+    "alias": "ベタヒスティン",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "ジフェニドール",
+    "alias": "ジフェニドル",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "エリスロポエチン",
+    "alias": "エリスロポエティン",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "ダルベポエチン",
+    "alias": "ダルベポエティン",
+    "category": "medication"
+  },
+  {
+    "canonicalName": "HbA1c",
+    "alias": "エーワンシー",
+    "category": "laboratory_test"
   }
 ];

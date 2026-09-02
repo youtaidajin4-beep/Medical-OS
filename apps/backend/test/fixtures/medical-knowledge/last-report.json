@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-08-10T03:37:22.419Z",
-  "total": 3000,
-  "passed": 3000,
+  "generatedAt": "2026-09-02T04:25:17.987Z",
+  "total": 3076,
+  "passed": 3076,
   "failed": 0,
   "criticalFailed": 0,
   "criticalErrorRate": 0,
   "byCategory": {
     "medication": {
-      "total": 1521,
+      "total": 936,
       "failed": 0,
       "criticalFailed": 0
     },
@@ -22,27 +22,27 @@
       "criticalFailed": 0
     },
     "stt_error": {
-      "total": 79,
+      "total": 106,
       "failed": 0,
       "criticalFailed": 0
     },
     "negation": {
-      "total": 360,
+      "total": 537,
       "failed": 0,
       "criticalFailed": 0
     },
     "lab": {
-      "total": 282,
+      "total": 597,
       "failed": 0,
       "criticalFailed": 0
     },
     "action": {
-      "total": 9,
+      "total": 39,
       "failed": 0,
       "criticalFailed": 0
     },
     "vital": {
-      "total": 33,
+      "total": 60,
       "failed": 0,
       "criticalFailed": 0
     },
@@ -52,12 +52,12 @@
       "criticalFailed": 0
     },
     "spoken": {
-      "total": 182,
+      "total": 262,
       "failed": 0,
       "criticalFailed": 0
     },
     "multi": {
-      "total": 75,
+      "total": 80,
       "failed": 0,
       "criticalFailed": 0
     }
