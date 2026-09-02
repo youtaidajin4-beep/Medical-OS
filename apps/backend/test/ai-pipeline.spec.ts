@@ -29,6 +29,7 @@ describe('AiPipelineService integration shape', () => {
       }),
       update: jest.fn(),
     },
+    $transaction: jest.fn().mockImplementation((ops: Array<Promise<unknown>>) => Promise.all(ops)),
   } as unknown as PrismaService;
 
   const transcriptService = {
