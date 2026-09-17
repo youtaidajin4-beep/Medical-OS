@@ -11,6 +11,7 @@ import { Select } from '@/components/ui/select';
 import { Alert } from '@/components/ui/alert';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
+import { PatientHistoryPanel } from '@/components/patients/patient-history-panel';
 
 type PatientRow = {
   id: string;
@@ -357,6 +358,14 @@ export default function PatientsPage() {
               )}
             </div>
           </form>
+
+          {/* この患者のSOAPが溜まっていくところ。紹介状を書くときはここを見る */}
+          {selectedId && (
+            <div className="mt-6 border-t border-slate-200 pt-4">
+              <h2 className="mb-3 text-sm font-semibold text-slate-800">これまでの診療</h2>
+              <PatientHistoryPanel patientId={selectedId} />
+            </div>
+          )}
         </section>
       </div>
     </div>

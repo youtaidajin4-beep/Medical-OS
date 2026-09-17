@@ -25,6 +25,12 @@ export class PatientsController {
     return this.patientsService.listPatients(user.clinicId);
   }
 
+  /** その患者の過去の診療とSOAPを新しい順に返す（匿名ケースのIDでも引ける） */
+  @Get(':id/consultations')
+  consultations(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.patientsService.listPatientConsultations(user.clinicId, id);
+  }
+
   @Post()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreatePatientDto) {
     return this.patientsService.createPatient(user.clinicId, dto);

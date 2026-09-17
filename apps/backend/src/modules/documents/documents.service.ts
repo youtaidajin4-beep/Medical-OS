@@ -296,6 +296,51 @@ export class DocumentsService {
     });
     const physicianSubkarte = chatMessages.map((m) => `- ${m.content}`).join('\n');
 
+    // 同じ患者の過去の診療。紹介状・主治医意見書は「経過」を書く書類なので、
+    // 今回の1回分だけでは書けない。直近5回を材料に加える。
+    const PAST_VISIT_LIMIT = 5;
+    const patientScope = consultation.patientId
+      ? { patientId: consultation.patientId }
+      : consultation.anonymousCaseId
+        ? { anonymousCaseId: consultation.anonymousCaseId }
+        : null;
+    const pastVisitRows = patientScope
+      ? await this.prisma.consultation.findMany({
+          where: {
+            ...patientScope,
+            clinicId: consultation.clinicId,
+            id: { not: consultationId },
+            soapDocuments: { some: {} },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: PAST_VISIT_LIMIT,
+          include: { soapDocuments: { orderBy: { version: 'desc' }, take: 1 } },
+        })
+      : [];
+    const pastVisits = pastVisitRows
+      .map((row) => {
+        const past = row.soapDocuments[0];
+        if (!past) return null;
+        // 4欄とも空の回（音声から作れなかった回）は経過の材料にならない
+        const empty =
+          !past.subjective.trim() &&
+          !past.objective.trim() &&
+          !past.assessment.trim() &&
+          !past.plan.trim();
+        if (empty) return null;
+        return {
+          dateJa: formatJapaneseDate(row.createdAt),
+          visitType: row.visitType === 'CHECKUP' ? ('CHECKUP' as const) : ('ROUTINE' as const),
+          soap: {
+            subjective: past.subjective,
+            objective: past.objective,
+            assessment: past.assessment,
+            plan: past.plan,
+          },
+        };
+      })
+      .filter((v): v is NonNullable<typeof v> => v !== null);
+
     const TRANSCRIPT_EXCERPT_LIMIT = 8000;
     const transcriptFull = consultation.transcriptSegments
       .map((seg) => seg.text.trim())
@@ -341,6 +386,7 @@ export class DocumentsService {
       todayJa: formatJapaneseDate(new Date()),
       transcriptExcerpt,
       questionnaireText,
+      pastVisits,
     };
   }
 

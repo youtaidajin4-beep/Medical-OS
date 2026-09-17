@@ -52,6 +52,20 @@ function contextBlock(ctx: DocumentGenerationContext): string {
   const transcript = ctx.transcriptExcerpt
     ? `\n診察時の会話記録（補正済み・SOAPにない詳細の補完用）:\n${ctx.transcriptExcerpt}`
     : '';
+  // 紹介状も主治医意見書も「経過」を書く書類。今回の1回分だけでは経過が書けない。
+  // 過去の回は事実の出どころとしてのみ使わせる（勝手に足させない）。
+  const pastVisits = ctx.pastVisits?.length
+    ? `\nこの患者のこれまでの診療（新しい順・経過を書くための材料）:\n${ctx.pastVisits
+        .map(
+          (v) =>
+            `- ${v.dateJa}（${v.visitType === 'CHECKUP' ? '健診' : '通常診察'}）` +
+            ` S:${v.soap.subjective.replace(/\n/g, ' ')}` +
+            ` O:${v.soap.objective.replace(/\n/g, ' ')}` +
+            ` A:${v.soap.assessment.replace(/\n/g, ' ')}` +
+            ` P:${v.soap.plan.replace(/\n/g, ' ')}`,
+        )
+        .join('\n')}\n（経過の記述はこの範囲から。ここに無い出来事を書かない）`
+    : `\nこの患者のこれまでの診療: （記録なし。経過は今回の内容だけで書き、前回からの変化には触れない）`;
   const knowledgeHint = knowledgePackDocumentHint();
   const safety = knowledgePackSafetyRules();
   return `本日の日付: ${ctx.todayJa}
@@ -62,7 +76,7 @@ S: ${ctx.soap.subjective}
 O: ${ctx.soap.objective}
 A: ${ctx.soap.assessment}
 P: ${ctx.soap.plan}${subkarte}${questionnaire}
-構造化データ: ${JSON.stringify(ctx.structured, null, 2)}${transcript}
+構造化データ: ${JSON.stringify(ctx.structured, null, 2)}${transcript}${pastVisits}
 ${knowledgeHint}
 ${safety.length ? `安全ルール再掲:\n${safety.map((r) => `- ${r}`).join('\n')}` : ''}
 ${rulesToPromptSection(ctx.physicianRules)}

@@ -202,4 +202,66 @@ export class PatientsService {
 
     return { ...patient, visitCount };
   }
+
+  /**
+   * その患者の過去の診療を、新しい順に返す。
+   *
+   * 診療履歴は全診療のフラットな時系列一覧しか無く、「桑原さんの前回のSOAP」を
+   * 見る手段が無かった。紹介状のような経過を書く書類は、1回の診察だけでは書けない。
+   * ここが患者ごとの蓄積の入口になる。
+   */
+  async listPatientConsultations(clinicId: string, patientId: string) {
+    // 他院のデータを引かないよう、必ず clinicId で絞ってから辿る
+    const patient = await this.prisma.patient.findFirst({
+      where: { id: patientId, clinicId },
+      select: { id: true, name: true, patientCode: true },
+    });
+    const anonymous = patient
+      ? null
+      : await this.prisma.anonymousCase.findFirst({
+          where: { id: patientId, clinicId },
+          select: { id: true, displayName: true, caseCode: true },
+        });
+    if (!patient && !anonymous) throw new NotFoundException('Patient not found');
+
+    const consultations = await this.prisma.consultation.findMany({
+      where: patient ? { patientId, clinicId } : { anonymousCaseId: patientId, clinicId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        soapDocuments: { orderBy: { version: 'desc' }, take: 1 },
+        generatedDocuments: { select: { id: true, type: true } },
+        physician: { select: { name: true } },
+      },
+    });
+
+    return {
+      patient: {
+        id: patient?.id ?? anonymous!.id,
+        name: patient?.name ?? anonymous!.displayName,
+        code: patient?.patientCode ?? anonymous!.caseCode,
+      },
+      consultations: consultations.map((c, i) => {
+        const soap = c.soapDocuments[0];
+        return {
+          id: c.id,
+          date: c.createdAt.toISOString(),
+          // 新しい順に並べているので、通し番号は後ろから数える
+          visitNumber: consultations.length - i,
+          visitType: c.visitType,
+          status: c.status,
+          physicianName: c.physician?.name ?? null,
+          documentCount: c.generatedDocuments.length,
+          soap: soap
+            ? {
+                subjective: soap.subjective,
+                objective: soap.objective,
+                assessment: soap.assessment,
+                plan: soap.plan,
+              }
+            : null,
+        };
+      }),
+    };
+  }
+
 }

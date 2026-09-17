@@ -265,6 +265,26 @@ export const api = {
         documentType: string;
       }>;
     }>(`/consultations/${id}`),
+  /** その患者の過去の診療とSOAP（新しい順）。匿名ケースのIDでも引ける */
+  patientConsultations: (patientId: string) =>
+    request<{
+      patient: { id: string; name: string; code: string };
+      consultations: Array<{
+        id: string;
+        date: string;
+        visitNumber: number;
+        visitType: 'ROUTINE' | 'CHECKUP';
+        status: string;
+        physicianName: string | null;
+        documentCount: number;
+        soap: {
+          subjective: string;
+          objective: string;
+          assessment: string;
+          plan: string;
+        } | null;
+      }>;
+    }>(`/patients/${patientId}/consultations`),
   startRecording: (id: string) =>
     request(`/consultations/${id}/recording/start`, { method: 'POST' }),
   stopRecording: (id: string) =>

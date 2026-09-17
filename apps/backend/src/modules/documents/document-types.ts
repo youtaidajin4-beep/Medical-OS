@@ -32,6 +32,23 @@ export type DocumentGenerationContext = {
   transcriptExcerpt?: string;
   /** 問診票OCRテキスト。既往・服薬・アレルギー等の転記元。 */
   questionnaireText?: string;
+  /**
+   * 同じ患者の過去の診療（新しい順、今回を除く）。
+   *
+   * 紹介状も主治医意見書も「経過」を書く書類で、1回の診察だけでは経過が書けない。
+   * ここが空のままだと、何回目の受診でも初診のような書類しか作れない。
+   */
+  pastVisits?: Array<{
+    /** 和暦の日付（書類にそのまま書ける形） */
+    dateJa: string;
+    visitType: 'ROUTINE' | 'CHECKUP';
+    soap: {
+      subjective: string;
+      objective: string;
+      assessment: string;
+      plan: string;
+    };
+  }>;
 };
 
 export const GENERATED_DOCUMENT_TYPES: GeneratedDocumentType[] = [
