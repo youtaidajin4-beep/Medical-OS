@@ -14,6 +14,13 @@ import {
   type MicVerdict,
 } from '@/lib/audio-input';
 import { createLevelMeter, type LevelMeter } from '@/lib/level-meter';
+import {
+  boostedLevel,
+  loadPreferredGain,
+  resolveGain,
+  savePreferredGain,
+  type GainSetting,
+} from '@/lib/audio-gain';
 
 /**
  * 録音を始める前に「どのマイクで録るか」を選び、「患者さんの声が拾えているか」を
@@ -29,12 +36,25 @@ export function useMicCheck(enabled: boolean) {
   const [activeLabel, setActiveLabel] = useState<string | null>(null);
   const [processingDisabled, setProcessingDisabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // 自動ゲインを切ったぶん、こちらで持ち上げる。表示も判定も増幅後の値で見る
+  const [gainSetting, setGainSetting] = useState<GainSetting>('auto');
+  const [appliedGain, setAppliedGain] = useState(1);
+  const gainSettingRef = useRef<GainSetting>('auto');
   const streamRef = useRef<MediaStream | null>(null);
   const meterRef = useRef<LevelMeter | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     setDeviceId(loadPreferredDeviceId());
+    const saved = loadPreferredGain();
+    setGainSetting(saved);
+    gainSettingRef.current = saved;
+  }, []);
+
+  const selectGain = useCallback((next: GainSetting) => {
+    savePreferredGain(next);
+    gainSettingRef.current = next;
+    setGainSetting(next);
   }, []);
 
   const teardown = useCallback(() => {
@@ -87,8 +107,12 @@ export function useMicCheck(enabled: boolean) {
         const meter = createLevelMeter(stream);
         meterRef.current = meter;
         pollRef.current = setInterval(() => {
-          setLevel(meter.level());
-          setVerdict(judgeMicLevel(meter.peak()));
+          // 増幅率は素のピークから決める。増幅後の値から決めると、上げた結果を見て
+          // また上げる、という追いかけっこになる
+          const gain = resolveGain(gainSettingRef.current, meter.peak());
+          setAppliedGain(gain);
+          setLevel(boostedLevel(meter.level(), gain));
+          setVerdict(judgeMicLevel(boostedLevel(meter.peak(), gain)));
         }, 100);
       } catch (e) {
         if (cancelled) return;
@@ -116,5 +140,8 @@ export function useMicCheck(enabled: boolean) {
     activeLabel,
     processingDisabled,
     error,
+    gainSetting,
+    appliedGain,
+    selectGain,
   };
 }

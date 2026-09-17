@@ -17,6 +17,9 @@ const baseMic: MicCheck = {
   activeLabel: '会議用マイク',
   processingDisabled: true,
   error: null,
+  gainSetting: 'auto',
+  appliedGain: 2.5,
+  selectGain: jest.fn(),
 };
 
 const baseProps = {

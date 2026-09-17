@@ -6,6 +6,7 @@ import { Mic, Pause, Play, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
+import type { GainSetting } from '@/lib/audio-gain';
 import { api } from '@/lib/api-client';
 import { isOpenAiMode } from '@/lib/ai-status';
 import {
@@ -24,6 +25,11 @@ export type MicCheck = {
   activeLabel: string | null;
   processingDisabled: boolean;
   error: string | null;
+  /** 入力の増幅。自動ゲインを切ったぶんを、こちらで持ち上げる */
+  gainSetting: GainSetting;
+  /** いま実際に掛かっている増幅率 */
+  appliedGain: number;
+  selectGain: (setting: GainSetting) => void;
 };
 
 type RecordingPhaseProps = {
@@ -203,8 +209,36 @@ export function RecordingPhase({
                 )}
 
                 <LevelBar level={mic.level} verdict={mic.verdict} />
+
+                {/* 自動ゲインを切ったぶん、小さい声はこちらで持ち上げる。
+                    バーも判定も、ここで選んだ増幅を掛けた後の音で出している */}
+                <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                  <span className="text-[11px] text-[#9fc0b9]">入力の増幅</span>
+                  {(['auto', 1, 2, 4, 8] as const).map((choice) => {
+                    const selected = mic.gainSetting === choice;
+                    return (
+                      <button
+                        key={String(choice)}
+                        type="button"
+                        className={
+                          selected
+                            ? 'rounded-full bg-[#e8c98a] px-2.5 py-1 text-[11px] font-semibold text-[#0c2f2c]'
+                            : 'rounded-full border border-white/20 px-2.5 py-1 text-[11px] text-[#c9ddd8] hover:bg-white/10'
+                        }
+                        onClick={() => mic.selectGain(choice)}
+                      >
+                        {choice === 'auto' ? '自動' : `×${choice}`}
+                      </button>
+                    );
+                  })}
+                  <span className="text-[11px] text-[#9fc0b9]">
+                    （いま ×{mic.appliedGain.toFixed(1)}）
+                  </span>
+                </div>
+
                 <p className="mt-2.5 text-xs leading-relaxed text-[#c9ddd8]">
                   患者さんが座る位置から声を出してもらい、バーが白い線を越えて緑になることを確かめてください。
+                  小さいままなら増幅を上げてください（録音そのものが大きくなります）。
                 </p>
 
                 {mic.error ? (

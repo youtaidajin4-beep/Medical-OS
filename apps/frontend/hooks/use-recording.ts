@@ -19,6 +19,13 @@ import {
   type MicVerdict,
 } from '@/lib/audio-input';
 import { createLevelMeter, type LevelMeter } from '@/lib/level-meter';
+import {
+  boostedLevel,
+  createBoostedStream,
+  loadPreferredGain,
+  resolveGain,
+  type BoostedStream,
+} from '@/lib/audio-gain';
 
 type RecordingState = 'idle' | 'recording' | 'paused' | 'stopped';
 const MAX_RECORDING_SECONDS = 60 * 60;
@@ -30,6 +37,10 @@ function pickRecorderMimeType(): string | undefined {
 }
 
 export function useRecording(consultationId: string, deviceId?: string | null) {
+  /** 増幅後のストリーム。MediaRecorder はこちらを録る */
+  const boosted = useRef<BoostedStream | null>(null);
+  /** マイクの素のストリーム。止めるときに track を閉じるために持っておく */
+  const rawStream = useRef<MediaStream | null>(null);
   const [state, setState] = useState<RecordingState>('idle');
   const [seconds, setSeconds] = useState(0);
   const [pendingChunks, setPendingChunks] = useState(0);
@@ -140,6 +151,11 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
         if (timer.current) clearInterval(timer.current);
         stopMeter();
         recorder.stream.getTracks().forEach((t) => t.stop());
+        boosted.current?.stop();
+        boosted.current = null;
+        // 増幅後のストリームを止めても、マイク自体は掴んだままなので明示的に閉じる
+        rawStream.current?.getTracks().forEach((t) => t.stop());
+        rawStream.current = null;
         setState('stopped');
         await Promise.allSettled(inFlightUploads.current);
         await flushPendingChunks(true);
@@ -173,20 +189,34 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
       stream = await navigator.mediaDevices.getUserMedia(buildFallbackAudioConstraints());
     }
     setMicLabel(readAppliedAudioSettings(stream.getAudioTracks()[0]).label ?? null);
+    rawStream.current = stream;
 
-    // 録音中もレベルを出し続ける。20分喋ったあとで「入っていなかった」が一番痛い
+    // 録音中もレベルを出し続ける。20分喋ったあとで「入っていなかった」が一番痛い。
+    // 計測は素の音に対して行い、表示と判定には増幅ぶんを掛ける
     stopMeter();
     const levelMeter = createLevelMeter(stream);
     meter.current = levelMeter;
     setMicVerdict('ok');
+
+    // 自動ゲインを切ったぶん、こちらで持ち上げてから録る。
+    // 表示だけ上げても文字起こしへ渡る音は小さいままなので、録音そのものに掛ける。
+    const gainSetting = loadPreferredGain();
+    const startGain = resolveGain(gainSetting, levelMeter.peak());
+    const boostedStream = createBoostedStream(stream, startGain);
+    boosted.current = boostedStream;
+
     meterPoll.current = setInterval(() => {
-      setLevel(levelMeter.level());
-      setMicVerdict(judgeMicLevel(levelMeter.peak()));
+      // 診察の途中で声量が変わっても追従する（自動のときだけ）
+      const gain = resolveGain(gainSetting, levelMeter.peak());
+      boostedStream.setGain(gain);
+      setLevel(boostedLevel(levelMeter.level(), gain));
+      setMicVerdict(judgeMicLevel(boostedLevel(levelMeter.peak(), gain)));
     }, 200);
 
     const mimeType = pickRecorderMimeType();
     recorderMimeType.current = mimeType ?? 'audio/webm';
-    const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+    const target = boostedStream.stream;
+    const recorder = mimeType ? new MediaRecorder(target, { mimeType }) : new MediaRecorder(target);
     mediaRecorder.current = recorder;
     localBlobs.current = [];
     sequence.current = 0;
