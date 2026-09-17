@@ -166,3 +166,26 @@ Railway の `FRONTEND_URL` を Vercel の本番 URL に更新 → 再デプロ�
 - 本番 `JWT_SECRET` はローカルと別にする
 - OpenAI キーは Railway のみに設定（Vercel には載せない）
 - 本番は `SINGLE_CLINIC_MODE=false`（ログイン必須）
+
+## デプロイの経路（2026-09-17 確定）
+
+`main` へ push すれば、**API（Railway）も画面（Vercel）も自動でデプロイされる**。
+
+2026-09-17 までは Vercel だけ GitHub 連携が無く、手で `vercel --prod` を叩いた
+ときしか画面が更新されなかった。そのため本番の画面が8/22版のまま1か月近く
+放置され、直した内容が現場に届いていなかった。同日 `vercel git connect` で接続済み。
+
+### 出したあとの確認は、画面の見た目ではなく配信物で取る
+
+```bash
+# APIが使っているモデル
+curl https://medical-os-api-production.up.railway.app/api/v1/health/ai
+
+# 画面：配信中のJSに、今回書いた文字列が入っているか
+curl -s https://medical-os-ruddy.vercel.app/consultation/x \
+  | grep -oE '/_next/static/chunks/app/\(main\)/consultation/[^"]+\.js'
+# ↑で出たファイルを落として grep する。ファイル名が変わらなければ未デプロイ
+```
+
+**手で `vercel --prod` を叩いた場合、正常終了を返しても実際にはデプロイされて
+いないことがある**（2026-09-17に遭遇）。必ず上の方法で現物を確認する。
