@@ -436,6 +436,8 @@ export function ConsultationWorkflow({
       onCopySoap={handleCopySoap}
       onCopyNote={handleCopyNote}
       onGenerateAll={handleGenerateAll}
+      onReprocess={handleReprocess}
+      reprocessing={errorBusy}
       generatingDocs={generatingDocs}
       documentInput={{ ...documentInput, soap }}
       density={density}

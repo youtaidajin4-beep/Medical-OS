@@ -57,6 +57,8 @@ describe('AiPipelineService integration shape', () => {
     getAssembledAudioBuffer: jest.fn().mockResolvedValue(Buffer.from('audio')),
     getExistingAssembledBuffer: jest.fn().mockResolvedValue(null),
     deleteAudioForConsultation: jest.fn().mockResolvedValue({ deleted: 1, chunks: 2 }),
+    // 保持期間を使うようになったので、パイプラインは直後に消さず掃除を回す
+    purgeExpiredAudio: jest.fn().mockResolvedValue({ files: 0, chunks: 0 }),
   } as unknown as RecordingService;
 
   const settingsService = {

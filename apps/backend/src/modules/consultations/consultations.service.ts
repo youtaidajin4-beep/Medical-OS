@@ -273,23 +273,29 @@ export class ConsultationsService {
 
     const hasDraftArtifacts =
       consultation.soapDocuments.length > 0 || consultation.clinicalNotes.length > 0;
-    const canClearFailedDraft =
-      consultation.status === ConsultationStatus.PROCESSING && hasDraftArtifacts;
-
-    if (hasDraftArtifacts && !canClearFailedDraft) {
+    // 「処理は通ったが中身が使えない」を作り直せるようにする。
+    // 2026-09-05の桑原さん・立川さんがこれで、当時は作り直す手段が無かった。
+    // ただし医師が確認済みにしたものは、下書きではなく記録なので上書きしない。
+    const approved =
+      consultation.status === ConsultationStatus.APPROVED ||
+      consultation.status === ConsultationStatus.COMPLETED;
+    if (approved) {
       throw new BadRequestException(
-        'すでにSOAPがあります。録り直す場合は新規診療を開始してください。',
+        '確認済みの診療は作り直せません。録り直す場合は新規診療を開始してください。',
       );
     }
 
     const hasAudio = await this.recordingService.hasAudio(id);
     if (!hasAudio) {
       throw new BadRequestException(
-        '再処理できる録音がありません。「録り直す」から再度録音してください。',
+        hasDraftArtifacts
+          ? '録音の保持期間が過ぎているため作り直せません。録り直す場合は新規診療を開始してください。'
+          : '再処理できる録音がありません。「録り直す」から再度録音してください。',
       );
     }
 
-    if (canClearFailedDraft) {
+    // 前回の下書きを消してから作り直す（確認済みはここへ来ない）
+    if (hasDraftArtifacts) {
       await this.prisma.$transaction([
         this.prisma.soapDocument.deleteMany({ where: { consultationId: id } }),
         this.prisma.clinicalNote.deleteMany({ where: { consultationId: id } }),

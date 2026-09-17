@@ -24,6 +24,10 @@ import {
   resolveSoapVisitType,
   SOAP_TEMPLATE_FLOORS,
 } from '../../providers/ai/soap-templates';
+import {
+  deletesImmediately,
+  resolveRetentionMinutes,
+} from '../recording/audio-retention';
 import { MedicalKnowledgeService } from '../medical-knowledge/medical-knowledge.service';
 import { logAiExecution } from './ai-execution.helper';
 
@@ -423,7 +427,15 @@ export class AiPipelineService {
         }),
       ]);
 
-      await this.recordingService.deleteAudioForConsultation(consultationId);
+      // 以前はここで必ず音声を消していた。そのため「処理は通ったが中身が使えない」
+      // ときに作り直す手段が無く、「もう一度処理する」も録音が無いと言われて弾かれていた
+      // （2026-09-05 桑原さん・立川さん）。保持期間のあいだは残し、期限切れは掃除に任せる。
+      if (deletesImmediately(resolveRetentionMinutes())) {
+        await this.recordingService.deleteAudioForConsultation(consultationId);
+      } else {
+        // 掃除の失敗で診療の完了を潰さない（次の実行で片付く）
+        await this.recordingService.purgeExpiredAudio().catch(() => undefined);
+      }
 
       await logAiExecution(this.prisma, {
         consultationId,

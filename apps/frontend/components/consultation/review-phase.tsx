@@ -93,6 +93,8 @@ export function ReviewPhase({
   onCopySoap,
   onCopyNote,
   onGenerateAll,
+  onReprocess,
+  reprocessing,
   generatingDocs,
   documentInput,
   density = 'full',
@@ -124,6 +126,9 @@ export function ReviewPhase({
   onCopySoap: () => void;
   onCopyNote: () => void;
   onGenerateAll?: () => void;
+  /** 残っている録音からSOAPを作り直す。保持期間を過ぎるとサーバー側で断られる */
+  onReprocess?: () => void;
+  reprocessing?: boolean;
   generatingDocs?: boolean;
   documentInput: {
     caseCode: string;
@@ -688,6 +693,16 @@ export function ReviewPhase({
                   定型文でよければ、下の「定型文を入れる」から差してください。
                   <strong>先生が押して入れたもの</strong>として記録されます。
                 </p>
+                {onReprocess && !approved && (
+                  <button
+                    type="button"
+                    className="mt-3 rounded-full bg-rose-700 px-4 py-1.5 text-xs font-semibold text-white hover:bg-rose-800 disabled:opacity-50"
+                    disabled={reprocessing}
+                    onClick={onReprocess}
+                  >
+                    {reprocessing ? '作り直しています…' : '同じ録音でもう一度SOAPを作る'}
+                  </button>
+                )}
               </div>
             )}
 
@@ -706,6 +721,17 @@ export function ReviewPhase({
                   {target.label}
                 </button>
               ))}
+              {/* 「処理は通ったが中身が使えない」ときの逃げ道。録音が残っている間だけ通る */}
+              {onReprocess && !approved && !soapIsEmpty && (
+                <button
+                  type="button"
+                  className="ml-auto text-xs font-medium text-[#0f766e] hover:underline disabled:opacity-40"
+                  disabled={reprocessing}
+                  onClick={onReprocess}
+                >
+                  {reprocessing ? '作り直しています…' : '同じ録音でSOAPを作り直す'}
+                </button>
+              )}
             </div>
             {SOAP_FIELDS.map(({ key, label, name }) => (
               <div key={key} className="overflow-hidden rounded-[1.5rem] border border-[#d7e2dd] bg-white p-4 shadow-sm">
