@@ -14,6 +14,7 @@ import { localizeOpenAiError } from '../../providers/ai/openai-retry.util';
 import { buildWhisperPrompt, resolveMedicalGlossary } from '../../providers/ai/medical-glossary';
 import { correctMedicalTerms } from '../../providers/ai/medical-term-corrector';
 import { validateStructuredData } from '../../providers/ai/clinical-data-validator';
+import { buildTranscriptQualityWarnings } from '../../providers/ai/transcript-quality-warnings';
 import { redistributeCorrectedLines } from '../../providers/ai/speaker-role-mapper';
 import {
   resolveSoapVisitType,
@@ -124,13 +125,17 @@ export class AiPipelineService {
         status: 'started',
       });
       const sttStart = Date.now();
-      await this.transcriptService.finalizeFromAudio(consultationId, audio, {
-        whisperPrompt,
-        resolvePhysicianLabel: isMock
-          ? undefined
-          : async (_labelA, _labelB, sampleA, sampleB) =>
-              this.resolvePhysicianSpeaker(sampleA, sampleB),
-      });
+      const { quality: transcriptQuality } = await this.transcriptService.finalizeFromAudio(
+        consultationId,
+        audio,
+        {
+          whisperPrompt,
+          resolvePhysicianLabel: isMock
+            ? undefined
+            : async (_labelA, _labelB, sampleA, sampleB) =>
+                this.resolvePhysicianSpeaker(sampleA, sampleB),
+        },
+      );
       await logAiExecution(this.prisma, {
         consultationId,
         step: 'stt_complete',
@@ -295,10 +300,13 @@ export class AiPipelineService {
             consultation.anonymousCase?.caseCode,
           ).warnings
         : validateStructuredData(structured, glossary);
+      // 録音そのものの問題は、SOAPの中身の警告より先に医師へ見せる。
+      // 「話者が全部不明」「同じ言葉の繰り返しを除外した」は、どちらもマイクが原因のことが多い
+      const allWarnings = [...buildTranscriptQualityWarnings(transcriptQuality), ...warnings];
       await this.prisma.clinicalWarning.deleteMany({ where: { consultationId } });
-      if (warnings.length) {
+      if (allWarnings.length) {
         await this.prisma.clinicalWarning.createMany({
-          data: warnings.map((w) => ({ consultationId, ...w })),
+          data: allWarnings.map((w) => ({ consultationId, ...w })),
         });
       }
 

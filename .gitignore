@@ -17,3 +17,4 @@ apps/backend/storage/
 .pnpm-store/
 *.tsbuildinfo
 apps/backend/test/fixtures/medical-knowledge/.whisper-tmp/
+supabase/.temp/

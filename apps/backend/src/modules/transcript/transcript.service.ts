@@ -5,6 +5,7 @@ import { SttProvider, SttOptions } from '../../providers/ai/stt.provider';
 import { STT_PROVIDER } from '../../providers/ai/stt.tokens';
 import { TranscriptNormalizer } from '../ai/transcript-normalizer';
 import { extractReplacementCandidates } from '../../providers/ai/transcript-diff.util';
+import { stripLoopedSegments } from '../../providers/ai/transcript-hallucination';
 import { MedicalGlossaryReplacement } from '../../providers/ai/medical-glossary.types';
 import {
   formatSpeakerPrefixedTranscript,
@@ -72,30 +73,45 @@ export class TranscriptService {
     });
     const normalizedSegments = this.normalizer.normalize(withRoles);
 
-    await this.prisma.transcriptSegment.deleteMany({
-      where: { consultationId },
-    });
+    // 「読み 読み 読み…」のようなループ・ハルシネーションを落とす。
+    // 残したままだと SOAP と書類の材料に混ざる（2026-09-05 谷口先生の画面）。
+    const { kept, dropped } = stripLoopedSegments(normalizedSegments);
 
-    const segments = await Promise.all(
-      normalizedSegments.map((seg, i) =>
-        this.prisma.transcriptSegment.create({
-          data: {
-            consultationId,
-            sequenceNumber: i,
-            rawText: seg.text,
-            text: seg.text,
-            normalizedText: seg.text,
-            speaker: SPEAKER_MAP[seg.speaker ?? 'unknown'],
-            confidence: seg.confidence,
-            isFinal: true,
-            startMs: seg.startMs ?? i * 5000,
-            endMs: seg.endMs ?? (i + 1) * 5000,
-          },
-        }),
-      ),
-    );
+    // 話者分離が効いたか。ラベルが1つ以下なら speaker-role-mapper が全員 unknown にするため、
+    // 画面が「不明」で埋まる。黙って埋めずに、医師へ伝えられるよう件数を返す。
+    const diarizationSpeakers = new Set(
+      rawSegments.map((seg) => seg.diarizationLabel?.trim()).filter(Boolean),
+    ).size;
 
-    return segments;
+    // 以前はセグメントを1件ずつ Promise.all で並列 INSERT していた。20分の診療なら
+    // 数十〜数百件が一斉に接続を取りに行き、Supabase のプール（session mode・15本）を
+    // 使い切って EMAXCONNSESSION で診療そのものが落ちていた（2026-09-05 谷口先生の報告）。
+    // 削除と一括作成を1トランザクション＝1接続にまとめる。
+    const rows = kept.map((seg, i) => ({
+      consultationId,
+      sequenceNumber: i,
+      rawText: seg.text,
+      text: seg.text,
+      normalizedText: seg.text,
+      speaker: SPEAKER_MAP[seg.speaker ?? 'unknown'],
+      confidence: seg.confidence,
+      isFinal: true,
+      startMs: seg.startMs ?? i * 5000,
+      endMs: seg.endMs ?? (i + 1) * 5000,
+    }));
+
+    await this.prisma.$transaction([
+      this.prisma.transcriptSegment.deleteMany({ where: { consultationId } }),
+      this.prisma.transcriptSegment.createMany({ data: rows }),
+    ]);
+
+    return {
+      segments: await this.getSegments(consultationId, { final: true }),
+      quality: {
+        droppedLoopSegments: dropped.length,
+        diarizationSpeakers,
+      },
+    };
   }
 
   /**
@@ -158,7 +174,8 @@ export class TranscriptService {
     consultationId: string,
     updates: Array<{ id: string; text: string }>,
   ) {
-    await Promise.all(
+    // 1接続で順に流す。並列 update は接続プールを食い潰す（finalizeFromAudio と同じ理由）
+    await this.prisma.$transaction(
       updates.map((u) =>
         this.prisma.transcriptSegment.update({
           where: { id: u.id },
@@ -193,7 +210,8 @@ export class TranscriptService {
     const existing = await this.getSegments(consultationId, { final: true });
     const beforeText = this.toFullText(existing);
 
-    await Promise.all(
+    // 1接続で順に流す（並列 update は接続プールを食い潰す）
+    await this.prisma.$transaction(
       segments.map((seg) =>
         this.prisma.transcriptSegment.update({
           where: { id: seg.id },
