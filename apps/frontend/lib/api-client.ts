@@ -343,14 +343,16 @@ export const api = {
     consultationId: string,
     options?: { referralPattern?: 'simple' | 'complex' },
   ) =>
-    request<
-      Array<{
+    request<{
+      documents: Array<{
         id: string;
         type: string;
         content: Record<string, unknown>;
         version: number;
-      }>
-    >(`/consultations/${consultationId}/documents/generate-all`, {
+      }>;
+      /** 出来なかった書類だけ、理由つきで返る。出来たぶんは documents に入っている */
+      failed: Array<{ type: string; reason: string }>;
+    }>(`/consultations/${consultationId}/documents/generate-all`, {
       method: 'POST',
       body: JSON.stringify(options ?? {}),
     }),

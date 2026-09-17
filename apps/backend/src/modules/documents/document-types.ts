@@ -52,6 +52,20 @@ export const FRONTEND_DOC_TYPE_MAP: Record<GeneratedDocumentType, string> = {
   INFO_PROVIDE_COMBINED: 'info-combined',
 };
 
+/**
+ * 医師の画面にそのまま出す書類名。
+ * チャットの返信はフロントの対応表を通らないため、ここで日本語にしないと
+ * 「referral・prescription は作成できませんでした」と出てしまう。
+ */
+export const DOC_TYPE_LABEL_JA: Record<GeneratedDocumentType, string> = {
+  REFERRAL: '診療情報提供書',
+  PRESCRIPTION_LIST: '現在の処方',
+  MEDICAL_CERTIFICATE: '健康診断結果表',
+  CARE_OPINION_1: '主治医意見書①',
+  CARE_OPINION_2: '主治医意見書②',
+  INFO_PROVIDE_COMBINED: '情報提供書＋処方',
+};
+
 export const BACKEND_DOC_TYPE_MAP: Record<string, GeneratedDocumentType> = {
   referral: GeneratedDocumentType.REFERRAL,
   prescription: GeneratedDocumentType.PRESCRIPTION_LIST,

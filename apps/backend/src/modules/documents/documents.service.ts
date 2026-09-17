@@ -9,6 +9,7 @@ import { buildDocumentPrompt } from './document-prompts';
 import { logAiExecution } from '../ai/ai-execution.helper';
 import {
   BACKEND_DOC_TYPE_MAP,
+  DOC_TYPE_LABEL_JA,
   DocumentGenerationContext,
   FRONTEND_DOC_TYPE_MAP,
   GENERATED_DOCUMENT_TYPES,
@@ -90,19 +91,58 @@ export class DocumentsService {
     await this.assertHighRiskKnowledgeApproved(consultationId);
     const ctx = await this.buildContext(consultationId, physicianId, options?.referralPattern);
     const start = Date.now();
-    const results = await Promise.all(
+
+    // 全か無かにしない。
+    //
+    // 6種類を Promise.all で回していたため、OpenAI が1本だけ 429 を返したり
+    // JSON を崩したりすると、**出来ていた5枚も一緒に捨てられていた**。
+    // 診療の合間に押すボタンなので、ここで全部失うのは実運用で一番痛い。
+    // 出来たものは残し、出来なかったものだけ理由をつけて医師へ返す。
+    const settled = await Promise.allSettled(
       GENERATED_DOCUMENT_TYPES.map((type) => this.generateOne(consultationId, type, ctx)),
     );
+
+    const documents: Awaited<ReturnType<typeof this.generateOne>>[] = [];
+    const failed: Array<{ type: string; label: string; reason: string }> = [];
+    settled.forEach((result, i) => {
+      if (result.status === 'fulfilled') {
+        documents.push(result.value);
+        return;
+      }
+      const type = GENERATED_DOCUMENT_TYPES[i]!;
+      failed.push({
+        type: FRONTEND_DOC_TYPE_MAP[type],
+        // 医師の目に触れる経路（チャットの返信）で英語のIDを出さないため、書類名も返す
+        label: DOC_TYPE_LABEL_JA[type],
+        reason:
+          result.reason instanceof Error
+            ? result.reason.message
+            : String(result.reason),
+      });
+    });
+
     await logAiExecution(this.prisma, {
       consultationId,
       step: 'documents_complete',
       provider: this.llmProvider.name,
-      status: 'completed',
+      // 失敗を黙って飲み込むと、あとで「なぜ出なかったのか」を辿れない
+      status: failed.length === 0 ? 'completed' : 'failed',
+      errorMessage: failed.length
+        ? failed.map((f) => `${f.label}: ${f.reason}`).join(' / ')
+        : undefined,
       durationMs: Date.now() - start,
       promptVersion: this.llmProvider.name === 'openai' ? 'openai-docs-v1' : 'mock-v1',
       ...this.getLlmUsage(),
     });
-    return results;
+
+    // 1枚も出なかったときだけ、従来どおり例外にする（画面に赤いエラーを出す）
+    if (documents.length === 0) {
+      throw new BadRequestException(
+        `書類を作成できませんでした。${failed.map((f) => f.reason).join(' / ')}`,
+      );
+    }
+
+    return { documents, failed };
   }
 
   async generateOne(

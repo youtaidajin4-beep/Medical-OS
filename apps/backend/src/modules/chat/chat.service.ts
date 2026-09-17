@@ -233,8 +233,17 @@ export class ChatService {
     if (!generate) return { documents: [] };
     try {
       if (generate === 'all') {
+        const { documents, failed } = await this.documentsService.generateAll(
+          consultationId,
+          physicianId,
+        );
+        // 一部だけ出なかったときも、出たぶんは返す。
+        // どれが欠けているかは医師へ伝える（揃ったつもりで印刷されるのを防ぐ）
         return {
-          documents: await this.documentsService.generateAll(consultationId, physicianId),
+          documents,
+          error: failed.length
+            ? `${failed.map((f) => f.label).join('・')}は作成できませんでした`
+            : undefined,
         };
       }
       const out: DocReturn[] = [];

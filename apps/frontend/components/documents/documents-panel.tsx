@@ -40,6 +40,11 @@ const DOCUMENT_OPTIONS: Array<{
   { id: 'care-opinion-2', label: '主治医意見書②', icon: FileHeart },
 ];
 
+/** 出来なかった書類を医師へ名前で伝えるための対応表 */
+const DOC_LABEL: Record<string, string> = Object.fromEntries(
+  DOCUMENT_OPTIONS.map((o) => [o.id, o.label]),
+);
+
 const DEFAULT_SELECTED: DocumentTypeId[] = ['info-combined', 'certificate', 'care-opinion-1', 'care-opinion-2'];
 
 const API_TYPE_TO_KEY: Record<string, keyof GeneratedDocuments> = {
@@ -257,14 +262,21 @@ export function DocumentsPanel({
     setGenerating(true);
     setError('');
     try {
-      const apiDocs = await api.generateAllDocuments(consultationId, {
+      const { documents, failed } = await api.generateAllDocuments(consultationId, {
         referralPattern: referralPattern ?? 'simple',
       });
-      setDocs(apiDocsToGenerated(apiDocs));
+      setDocs(apiDocsToGenerated(documents));
       setHasApiDocs(true);
       setSelected((prev) =>
         prev.length ? prev : [...DEFAULT_SELECTED],
       );
+      // 一部だけ出なかったときは、出たものを残したまま、どれが出ていないかを言う。
+      // 黙って欠けていると、医師は揃ったつもりで印刷してしまう。
+      if (failed?.length) {
+        setError(
+          `${failed.map((f) => DOC_LABEL[f.type] ?? f.type).join('・')}が作成できませんでした。もう一度「書類を作成」を押すと、この書類だけ作り直せます。`,
+        );
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : '書類の生成に失敗しました');
     } finally {
