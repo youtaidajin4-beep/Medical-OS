@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, getToken, isUnauthorizedError } from '@/lib/api-client';
 import { useRecording } from '@/hooks/use-recording';
+import { useMicCheck } from '@/hooks/use-mic-check';
 import { useTranscriptPreview } from '@/hooks/use-transcript-preview';
 import { RecordingPhase } from '@/components/consultation/recording-phase';
 import { ProcessingPhase } from '@/components/consultation/processing-phase';
@@ -36,12 +37,16 @@ export function ConsultationWorkflow({
   backHref?: string;
 }) {
   const router = useRouter();
-  const recording = useRecording(id);
+  const [phase, setPhase] = useState<Phase>('recording');
+  // 録音前のマイク確認。録音が始まったら閉じて、マイクを二重に掴まないようにする。
+  // ここで選んだマイクを、そのまま録音でも使う（診察室に置いた外付けマイクで録るため）
+  const [micCheckOpen, setMicCheckOpen] = useState(true);
+  const mic = useMicCheck(phase === 'recording' && micCheckOpen);
+  const recording = useRecording(id, mic.deviceId);
   const transcriptPreview = useTranscriptPreview(
     id,
     recording.state === 'recording' || recording.state === 'paused',
   );
-  const [phase, setPhase] = useState<Phase>('recording');
   const [soap, setSoap] = useState<Soap>({ subjective: '', objective: '', assessment: '', plan: '' });
   const [note, setNote] = useState('');
   const [warnings, setWarnings] = useState<Warning[]>([]);
@@ -329,6 +334,8 @@ export function ConsultationWorkflow({
       setErrorMessage('');
       setCanReprocess(false);
       setConsentGiven(false);
+      // 録り直しは「前回うまく録れなかった」が理由のことが多い。マイク確認から始め直す
+      setMicCheckOpen(true);
       setPhase('recording');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : '録り直しの準備に失敗しました');
@@ -360,10 +367,17 @@ export function ConsultationWorkflow({
         limitReached={recording.limitReached}
         consentGiven={consentGiven}
         onConsentChange={setConsentGiven}
-        onStart={() => recording.start()}
+        onStart={() => {
+          setMicCheckOpen(false);
+          return recording.start();
+        }}
         onPause={recording.pause}
         onResume={recording.resume}
         onStop={handleStop}
+        mic={mic}
+        liveLevel={recording.level}
+        liveVerdict={recording.micVerdict}
+        liveMicLabel={recording.micLabel}
         density={density}
       />
     );

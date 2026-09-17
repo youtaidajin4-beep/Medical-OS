@@ -10,6 +10,15 @@ import {
   sha256Hex,
   updateChunkAttempts,
 } from '@/lib/chunk-queue';
+import {
+  buildAudioConstraints,
+  buildFallbackAudioConstraints,
+  isDeviceUnavailableError,
+  judgeMicLevel,
+  readAppliedAudioSettings,
+  type MicVerdict,
+} from '@/lib/audio-input';
+import { createLevelMeter, type LevelMeter } from '@/lib/level-meter';
 
 type RecordingState = 'idle' | 'recording' | 'paused' | 'stopped';
 const MAX_RECORDING_SECONDS = 60 * 60;
@@ -20,12 +29,19 @@ function pickRecorderMimeType(): string | undefined {
   return candidates.find((type) => MediaRecorder.isTypeSupported(type));
 }
 
-export function useRecording(consultationId: string) {
+export function useRecording(consultationId: string, deviceId?: string | null) {
   const [state, setState] = useState<RecordingState>('idle');
   const [seconds, setSeconds] = useState(0);
   const [pendingChunks, setPendingChunks] = useState(0);
   const [limitReached, setLimitReached] = useState(false);
+  /** 録音中の入力レベル（0〜1）。診療の最中に「入っていない」に気づけるようにする */
+  const [level, setLevel] = useState(0);
+  /** 直近2秒の判定。silent のまま録り続けると、あとで白紙のSOAPが出てくる */
+  const [micVerdict, setMicVerdict] = useState<MicVerdict>('ok');
+  const [micLabel, setMicLabel] = useState<string | null>(null);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
+  const meter = useRef<LevelMeter | null>(null);
+  const meterPoll = useRef<ReturnType<typeof setInterval> | null>(null);
   const localBlobs = useRef<Blob[]>([]);
   const recorderMimeType = useRef('audio/webm');
   const sequence = useRef(0);
@@ -104,15 +120,25 @@ export function useRecording(consultationId: string) {
     await api.uploadFinalRecording(consultationId, finalBlob, checksum);
   }, [consultationId, seconds]);
 
+  const stopMeter = useCallback(() => {
+    if (meterPoll.current) clearInterval(meterPoll.current);
+    meterPoll.current = null;
+    meter.current?.stop();
+    meter.current = null;
+    setLevel(0);
+  }, []);
+
   const stop = useCallback(async () => {
     return new Promise<void>((resolve) => {
       const recorder = mediaRecorder.current;
       if (!recorder) {
+        stopMeter();
         resolve();
         return;
       }
       recorder.onstop = async () => {
         if (timer.current) clearInterval(timer.current);
+        stopMeter();
         recorder.stream.getTracks().forEach((t) => t.stop());
         setState('stopped');
         await Promise.allSettled(inFlightUploads.current);
@@ -130,12 +156,34 @@ export function useRecording(consultationId: string) {
         recorder.stop();
       }
     });
-  }, [consultationId, flushPendingChunks, uploadFinalBlob]);
+  }, [consultationId, flushPendingChunks, stopMeter, uploadFinalBlob]);
 
   stopRef.current = stop;
 
   const start = useCallback(async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // ブラウザ任せの getUserMedia({ audio: true }) は、エコーキャンセル・ノイズ抑制・
+    // 自動ゲインが全部オンになり、診察室で離れて座る患者の声をノイズとして削る。
+    // 診察室向けの制約（3つともオフ＋マイクの明示指定）で開き直す。
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia(buildAudioConstraints(deviceId));
+    } catch (e) {
+      // 選んでいたマイクが使えない時だけ、デバイス指定を外して開き直す（処理オフは維持）
+      if (!isDeviceUnavailableError(e)) throw e;
+      stream = await navigator.mediaDevices.getUserMedia(buildFallbackAudioConstraints());
+    }
+    setMicLabel(readAppliedAudioSettings(stream.getAudioTracks()[0]).label ?? null);
+
+    // 録音中もレベルを出し続ける。20分喋ったあとで「入っていなかった」が一番痛い
+    stopMeter();
+    const levelMeter = createLevelMeter(stream);
+    meter.current = levelMeter;
+    setMicVerdict('ok');
+    meterPoll.current = setInterval(() => {
+      setLevel(levelMeter.level());
+      setMicVerdict(judgeMicLevel(levelMeter.peak()));
+    }, 200);
+
     const mimeType = pickRecorderMimeType();
     recorderMimeType.current = mimeType ?? 'audio/webm';
     const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
@@ -166,7 +214,7 @@ export function useRecording(consultationId: string) {
       });
     }, 1000);
     await flushPendingChunks(true);
-  }, [consultationId, uploadChunk, flushPendingChunks]);
+  }, [consultationId, deviceId, stopMeter, uploadChunk, flushPendingChunks]);
 
   const pause = useCallback(() => {
     mediaRecorder.current?.pause();
@@ -197,15 +245,19 @@ export function useRecording(consultationId: string) {
     return () => {
       if (timer.current) clearInterval(timer.current);
       if (retryTimer.current) clearInterval(retryTimer.current);
+      stopMeter();
       mediaRecorder.current?.stream.getTracks().forEach((t) => t.stop());
     };
-  }, [flushPendingChunks, refreshPendingCount]);
+  }, [flushPendingChunks, refreshPendingCount, stopMeter]);
 
   return {
     state,
     seconds,
     pendingChunks,
     limitReached,
+    level,
+    micVerdict,
+    micLabel,
     start,
     pause,
     resume,
