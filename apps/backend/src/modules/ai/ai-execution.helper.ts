@@ -4,7 +4,8 @@ export type AiExecutionLogInput = {
   consultationId: string;
   step: string;
   provider: string;
-  status: 'started' | 'completed' | 'failed';
+  /** skipped = 失敗ではなく、材料が無いので意図的に作らなかった（SOAPの空欄など） */
+  status: 'started' | 'completed' | 'failed' | 'skipped';
   promptVersion?: string;
   inputTokens?: number;
   outputTokens?: number;

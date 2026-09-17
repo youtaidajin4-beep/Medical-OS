@@ -15,6 +15,10 @@ import { buildWhisperPrompt, resolveMedicalGlossary } from '../../providers/ai/m
 import { correctMedicalTerms } from '../../providers/ai/medical-term-corrector';
 import { validateStructuredData } from '../../providers/ai/clinical-data-validator';
 import { buildTranscriptQualityWarnings } from '../../providers/ai/transcript-quality-warnings';
+import {
+  assessSoapEvidence,
+  buildMissingEvidenceWarning,
+} from '../../providers/ai/soap-evidence';
 import { redistributeCorrectedLines } from '../../providers/ai/speaker-role-mapper';
 import {
   resolveSoapVisitType,
@@ -300,9 +304,23 @@ export class AiPipelineService {
             consultation.anonymousCase?.caseCode,
           ).warnings
         : validateStructuredData(structured, glossary);
+      // 音声から診療の中身が取れているか。取れていなければ定型床は使わない
+      // （使うと、診察で確認していない所見がそれらしく書かれてしまう）
+      const evidence = isMock
+        ? { usable: true, measuredChars: 0, requiredChars: 0 }
+        : assessSoapEvidence({
+            transcriptText: soapSource,
+            structured,
+            recordingDurationSec,
+          });
+
       // 録音そのものの問題は、SOAPの中身の警告より先に医師へ見せる。
       // 「話者が全部不明」「同じ言葉の繰り返しを除外した」は、どちらもマイクが原因のことが多い
-      const allWarnings = [...buildTranscriptQualityWarnings(transcriptQuality), ...warnings];
+      const allWarnings = [
+        ...buildMissingEvidenceWarning(evidence),
+        ...buildTranscriptQualityWarnings(transcriptQuality),
+        ...warnings,
+      ];
       await this.prisma.clinicalWarning.deleteMany({ where: { consultationId } });
       if (allWarnings.length) {
         await this.prisma.clinicalWarning.createMany({
@@ -330,19 +348,24 @@ export class AiPipelineService {
         .join('\n');
       const visitType = resolveSoapVisitType(consultation.visitType);
       const templateFloor = SOAP_TEMPLATE_FLOORS[visitType];
-      const generatedSoap = await this.withProgressHeartbeat(
-        consultationId,
-        'soap_progress',
-        this.llmProvider.name,
-        () =>
-          this.llmProvider.generateSoap(structured, consultationId, {
-            revisionExamples: soapRevisionExamples || undefined,
-            greeting: physicianRules.fixedPhrases?.greeting,
-            closing: physicianRules.fixedPhrases?.closing,
-            visitType,
-            templateFloor,
-          }),
-      );
+
+      // 材料が無いときはモデルを呼ばない。呼べば必ず床が埋められて返ってくるため、
+      // ここで止めないと「診察していない所見」がカルテに残る
+      const generatedSoap = evidence.usable
+        ? await this.withProgressHeartbeat(
+            consultationId,
+            'soap_progress',
+            this.llmProvider.name,
+            () =>
+              this.llmProvider.generateSoap(structured, consultationId, {
+                revisionExamples: soapRevisionExamples || undefined,
+                greeting: physicianRules.fixedPhrases?.greeting,
+                closing: physicianRules.fixedPhrases?.closing,
+                visitType,
+                templateFloor,
+              }),
+          )
+        : { subjective: '', objective: '', assessment: '', plan: '' };
       const soap = { ...generatedSoap };
       const questionnaire = await this.prisma.consultationAttachment.findFirst({
         where: { consultationId, documentKind: 'questionnaire', ocrText: { not: null } },
@@ -355,24 +378,33 @@ export class AiPipelineService {
         consultationId,
         step: 'soap_complete',
         provider: this.llmProvider.name,
-        status: 'completed',
+        // 空欄で返したことを実行ログに残す。あとから「なぜ空だったのか」を辿れるようにする。
+        // 成功時も実測値を残す（しきい値を実診療のデータで詰めるため）
+        status: evidence.usable ? 'completed' : 'skipped',
+        errorMessage: evidence.usable
+          ? `transcript=${evidence.measuredChars}字 / 必要=${evidence.requiredChars}字`
+          : evidence.reason,
         durationMs: Date.now() - soapStart,
         promptVersion: isMock ? 'mock-v1' : 'openai-soap-v1',
         ...this.getLlmUsage(),
       });
 
       const noteStart = Date.now();
-      const clinicalNote = await this.withProgressHeartbeat(
-        consultationId,
-        'note_progress',
-        this.llmProvider.name,
-        () => this.llmProvider.generateClinicalNote(structured, consultationId),
-      );
+      // 診療録もSOAPと同じ材料から書く。材料が無いなら同じく空にする
+      const clinicalNote = evidence.usable
+        ? await this.withProgressHeartbeat(
+            consultationId,
+            'note_progress',
+            this.llmProvider.name,
+            () => this.llmProvider.generateClinicalNote(structured, consultationId),
+          )
+        : '';
       await logAiExecution(this.prisma, {
         consultationId,
         step: 'note_complete',
         provider: this.llmProvider.name,
-        status: 'completed',
+        status: evidence.usable ? 'completed' : 'skipped',
+        errorMessage: evidence.usable ? undefined : evidence.reason,
         durationMs: Date.now() - noteStart,
         promptVersion: isMock ? 'mock-v1' : 'openai-note-v1',
         ...this.getLlmUsage(),

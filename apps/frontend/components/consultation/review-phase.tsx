@@ -27,7 +27,13 @@ import { PaperCapturePanel } from '@/components/consultation/paper-capture-panel
 import { KnowledgeTranscriptPanel } from '@/components/consultation/knowledge-transcript-panel';
 import { cn } from '@/lib/utils';
 import type { SoapData } from '@/lib/mock-documents/types';
-import { formatRoutineApCombined, type VisitType } from '@/lib/soap-visit';
+import {
+  formatRoutineApCombined,
+  SOAP_TEMPLATE_TEXT,
+  templateTargets,
+  type SoapFieldKey,
+  type VisitType,
+} from '@/lib/soap-visit';
 
 type Soap = SoapData;
 type Warning = { id: string; message: string; severity: string };
@@ -145,6 +151,9 @@ export function ReviewPhase({
   >();
   const [selectedSuggestions, setSelectedSuggestions] = useState<Record<string, boolean>>({});
   const [copiedField, setCopiedField] = useState('');
+  // ボタンで定型文を入れた欄。医師が自分で書き直したら外す。
+  // 「AIが音声から書いた欄」と「定型文を差した欄」を、見た目で区別し続けるため
+  const [templatedFields, setTemplatedFields] = useState<Partial<Record<SoapFieldKey, true>>>({});
   const { toast, show } = useToast();
   const compact = density === 'compact';
 
@@ -208,6 +217,35 @@ export function ReviewPhase({
   const visitLabel = visitType === 'CHECKUP' ? '健診' : '通常診察';
   const apCombined =
     visitType === 'ROUTINE' ? formatRoutineApCombined(soap.assessment, soap.plan) : '';
+
+  // 音声から中身が取れなかったとき、サーバーは定型文を入れずに4欄とも空で返す。
+  // 空の箱が並ぶだけだと不具合に見えるので、なぜ空なのかをここで言う。
+  const soapIsEmpty = SOAP_FIELDS.every(({ key }) => !soap[key].trim());
+
+  /** 定型文を指定の欄へ差す。医師が押したときだけ動く */
+  function applyTemplate(fields: SoapFieldKey[]) {
+    const template = SOAP_TEMPLATE_TEXT[visitType];
+    const next = { ...soap };
+    const marked: Partial<Record<SoapFieldKey, true>> = { ...templatedFields };
+    for (const field of fields) {
+      next[field] = template[field];
+      marked[field] = true;
+    }
+    onSoapChange(next);
+    setTemplatedFields(marked);
+  }
+
+  /** 医師が手で書き直したら、その欄の「定型文」表示は外す */
+  function changeSoapField(key: SoapFieldKey, value: string) {
+    onSoapChange({ ...soap, [key]: value });
+    if (templatedFields[key] && value !== SOAP_TEMPLATE_TEXT[visitType][key]) {
+      setTemplatedFields((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    }
+  }
 
   const primaryAction = !approved ? (
     <Button className="w-full" icon={<CheckCircle2 />} onClick={onApprove}>
@@ -301,6 +339,20 @@ export function ReviewPhase({
         {panelTab === 'soap' && (
           <>
             <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-3">
+              <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-2">
+                <span className="text-[10px] font-semibold text-slate-400">定型文</span>
+                {templateTargets(visitType).map((target) => (
+                  <button
+                    key={target.label}
+                    type="button"
+                    className="rounded-full border border-slate-200 px-2 py-0.5 text-[11px] text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+                    disabled={approved}
+                    onClick={() => applyTemplate(target.fields)}
+                  >
+                    {target.label}
+                  </button>
+                ))}
+              </div>
               {SOAP_FIELDS.map(({ key, label, name }) => (
                 <div key={key}>
                   <label className="mb-1 flex items-center gap-2 text-xs">
@@ -308,11 +360,17 @@ export function ReviewPhase({
                       {label}
                     </span>
                     <span className="text-slate-500">{name}</span>
+                    {templatedFields[key] && (
+                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">
+                        定型文
+                      </span>
+                    )}
                   </label>
                   <Textarea
                     value={soap[key]}
-                    onChange={(e) => onSoapChange({ ...soap, [key]: e.target.value })}
+                    onChange={(e) => changeSoapField(key, e.target.value)}
                     rows={2}
+                    className={cn(templatedFields[key] && 'text-slate-400')}
                   />
                 </div>
               ))}
@@ -618,6 +676,37 @@ export function ReviewPhase({
                 {copiedField === 'SOAP' ? 'コピー済み' : 'SOAP をコピー'}
               </Button>
             </div>
+            {soapIsEmpty && (
+              <div className="rounded-[1.5rem] border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
+                <p className="font-semibold">音声からSOAPを作成できませんでした</p>
+                <p className="mt-1 leading-relaxed">
+                  診療の内容を取り出せなかったため、<strong>あえて空欄にしています</strong>。
+                  ここに定型文を自動で入れると、診察で確認していない所見がカルテに残ってしまうためです。
+                  上の「要確認」に理由が出ています。
+                </p>
+                <p className="mt-2 leading-relaxed">
+                  定型文でよければ、下の「定型文を入れる」から差してください。
+                  <strong>先生が押して入れたもの</strong>として記録されます。
+                </p>
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center gap-2 rounded-[1.5rem] border border-dashed border-[#d7e2dd] bg-white px-4 py-3">
+              <span className="text-[11px] font-semibold tracking-wide text-[#6f8f88]">
+                定型文を入れる（{visitLabel}）
+              </span>
+              {templateTargets(visitType).map((target) => (
+                <button
+                  key={target.label}
+                  type="button"
+                  className="rounded-full border border-[#d7e2dd] px-3 py-1 text-xs font-medium text-slate-700 hover:bg-[#f2f7f5] disabled:opacity-40"
+                  disabled={approved}
+                  onClick={() => applyTemplate(target.fields)}
+                >
+                  {target.label}
+                </button>
+              ))}
+            </div>
             {SOAP_FIELDS.map(({ key, label, name }) => (
               <div key={key} className="overflow-hidden rounded-[1.5rem] border border-[#d7e2dd] bg-white p-4 shadow-sm">
                 <div className="mb-2 flex items-center gap-2">
@@ -625,6 +714,11 @@ export function ReviewPhase({
                     {label}
                   </span>
                   <span className="text-xs font-semibold tracking-wide text-[#6f8f88]">{name}</span>
+                  {templatedFields[key] && (
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                      定型文
+                    </span>
+                  )}
                   <button
                     type="button"
                     className="ml-auto inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium text-slate-500 hover:bg-slate-100"
@@ -638,8 +732,12 @@ export function ReviewPhase({
                 <Textarea
                   rows={3}
                   value={soap[key]}
-                  onChange={(e) => onSoapChange({ ...soap, [key]: e.target.value })}
-                  className="border-0 bg-[#f7faf8] text-sm leading-relaxed shadow-none"
+                  onChange={(e) => changeSoapField(key, e.target.value)}
+                  className={cn(
+                    'border-0 bg-[#f7faf8] text-sm leading-relaxed shadow-none',
+                    // 定型文のままの欄はグレーで出す。音声から書かれた欄と見分けがつくように
+                    templatedFields[key] && 'text-slate-400',
+                  )}
                 />
               </div>
             ))}

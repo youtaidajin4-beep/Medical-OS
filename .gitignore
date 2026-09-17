@@ -18,3 +18,5 @@ apps/backend/storage/
 *.tsbuildinfo
 apps/backend/test/fixtures/medical-knowledge/.whisper-tmp/
 supabase/.temp/
+.vercel
+.env*
