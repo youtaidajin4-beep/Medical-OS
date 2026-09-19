@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, FileText, Mic, Sparkles, Stethoscope } from 'lucide-react';
-import { api, clearToken, getToken, SINGLE_CLINIC_MODE } from '@/lib/api-client';
+import { api, clearToken, getToken } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -18,10 +18,6 @@ export default function HomePage() {
   const [health, setHealth] = useState<'checking' | 'ok' | 'down'>('checking');
 
   useEffect(() => {
-    if (SINGLE_CLINIC_MODE) {
-      router.replace('/home');
-      return;
-    }
     api.health()
       .then(() => setHealth('ok'))
       .catch(() => setHealth('down'));
@@ -66,9 +62,9 @@ export default function HomePage() {
             size="lg"
             className="relative mt-8 rounded-xl bg-[#e8c98a] px-10 text-[#0c2f2c] shadow-[0_14px_28px_-16px_rgba(232,201,138,0.85)] hover:bg-[#f0d6a4] hover:shadow-[0_16px_32px_-14px_rgba(232,201,138,0.9)]"
             icon={<ArrowRight />}
-            onClick={() => router.push(SINGLE_CLINIC_MODE ? '/home' : '/login')}
+            onClick={() => router.push('/login')}
           >
-            {SINGLE_CLINIC_MODE ? '診療を始める' : 'ログインして始める'}
+            ログインして始める
           </Button>
         </section>
 

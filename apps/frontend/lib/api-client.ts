@@ -1,6 +1,8 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
-export const SINGLE_CLINIC_MODE =
-  process.env.NEXT_PUBLIC_SINGLE_CLINIC_MODE === 'true';
+/**
+ * 以前あった「単一医院モード」は外した。
+ * トークン無しで決まった医師として通す近道で、院が増えると他院のデータへ入れてしまう。
+ */
 
 export class ApiError extends Error {
   readonly status: number;
@@ -17,7 +19,6 @@ export function isUnauthorizedError(error: unknown): boolean {
 }
 
 export function getToken(): string | null {
-  if (SINGLE_CLINIC_MODE) return 'single-clinic';
   if (typeof window === 'undefined') return null;
   return localStorage.getItem('accessToken');
 }

@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { KeyRound, LogIn, Mail, Stethoscope } from 'lucide-react';
-import { api, setToken, SINGLE_CLINIC_MODE } from '@/lib/api-client';
+import { api, setToken } from '@/lib/api-client';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,7 +20,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (SINGLE_CLINIC_MODE) router.replace('/home');
   }, [router]);
 
   async function handleSubmit(e: FormEvent) {

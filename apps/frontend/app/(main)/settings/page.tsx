@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ClipboardCopy, LogOut, Settings2, UserCircle2 } from 'lucide-react';
-import { api, clearToken, getToken, SINGLE_CLINIC_MODE } from '@/lib/api-client';
+import { api, clearToken, getToken } from '@/lib/api-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
@@ -189,7 +189,7 @@ function SettingsPageContent() {
         <p className="mt-1 text-sm text-slate-500">先生独自の診療ルールと運用手順</p>
       </div>
 
-      {mustChangePassword && !SINGLE_CLINIC_MODE && (
+      {mustChangePassword && (
         <Alert variant="warning">
           初回ログインのため、安全なパスワードに変更してください。変更後、ダッシュボードへ進めます。
         </Alert>
@@ -474,11 +474,11 @@ function SettingsPageContent() {
             <div>
               <p className="text-sm font-medium text-slate-900">くしま内科</p>
               <p className="text-xs text-slate-500">
-                {SINGLE_CLINIC_MODE ? '単一医院モード' : userEmail || 'doctor@demo.clinic'}
+                {userEmail || 'doctor@demo.clinic'}
               </p>
             </div>
           </div>
-          {!SINGLE_CLINIC_MODE && (
+          {(
             <div className="space-y-3 border-t border-slate-200 pt-4">
             <p className="text-sm font-medium text-slate-700">パスワード変更</p>
             {passwordMsg && <Alert variant="success">{passwordMsg}</Alert>}
@@ -520,7 +520,7 @@ function SettingsPageContent() {
             </Button>
             </div>
           )}
-          {!SINGLE_CLINIC_MODE && (
+          {(
             <Button variant="secondary" icon={<LogOut />} onClick={logout}>
               ログアウト
             </Button>

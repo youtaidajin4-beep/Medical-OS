@@ -5,9 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
-import { PrismaService } from '../../database/prisma.service';
 
 export interface AuthUser {
   sub: string;
@@ -16,36 +14,19 @@ export interface AuthUser {
   clinicId: string;
 }
 
+/**
+ * ログインした人のトークンから、その人と所属クリニックを決める。
+ *
+ * 以前は SINGLE_CLINIC_MODE という抜け道があり、**トークンが何であっても
+ * 決まった医師として通していた**（1医院しか無い前提の近道）。
+ * 院が増えると他院のデータへ入れてしまうので外した。本番は以前からJWTで動いている。
+ */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(
-    private readonly jwtService: JwtService,
-    private readonly config: ConfigService,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly jwtService: JwtService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request & { user?: AuthUser }>();
-    if (this.config.get<string>('SINGLE_CLINIC_MODE', 'false') === 'true') {
-      const email = this.config.get<string>('SINGLE_CLINIC_PHYSICIAN_EMAIL', 'doctor@demo.clinic');
-      const physician = await this.prisma.user.findUnique({
-        where: { email },
-        select: { id: true, email: true, role: true, clinicId: true },
-      });
-      if (!physician) {
-        throw new UnauthorizedException(
-          'Single-clinic physician is not seeded. Run the database seed first.',
-        );
-      }
-      request.user = {
-        sub: physician.id,
-        email: physician.email,
-        role: physician.role,
-        clinicId: physician.clinicId,
-      };
-      return true;
-    }
-
     const authHeader = request.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
       throw new UnauthorizedException('Missing authorization token');

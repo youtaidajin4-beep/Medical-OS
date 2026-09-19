@@ -14,7 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { api, clearToken, SINGLE_CLINIC_MODE } from '@/lib/api-client';
+import { api, clearToken } from '@/lib/api-client';
 import { DemoBanner } from './demo-banner';
 import { AiStatusBanner } from './ai-status-banner';
 
@@ -82,7 +82,7 @@ function NavLinks({
           <p className="text-xs text-slate-400">ログイン中</p>
           <p className="truncate text-sm font-medium text-slate-700">{userName}</p>
         </div>
-        {!SINGLE_CLINIC_MODE && (
+        {(
           <button
             type="button"
             onClick={onLogout}
