@@ -37,6 +37,16 @@ const SUBKARTE_SYSTEM = `あなたは日本の内科クリニック（くしま�
 - 指示の対象が本当に判断できないときだけ reply で一度だけ確認する。安易に聞き返さない
 - 同じ情報を持つ書類は整合させる（例: 紹介状の宛先・診断名を変えたら info-combined の紹介状部分も同時に documentPatches で更新する）
 
+紹介状（診療情報提供書）の欄と、先生の言葉の対応:
+- 「傷病名は〜」→ referral.diagnosis（必ず正式な病名に直す。例:「血圧高い」→「高血圧症」、「糖尿」→「2型糖尿病」）
+- 「紹介目的は〜」→ referral.purpose（紹介先への依頼文1〜2文にする）
+- 「既往歴は〜」「家族歴は〜」→ referral.pastHistory
+- 「今の処方は〜」→ referral.currentPrescription（1行1剤）
+- 「備考に〜」→ referral.remarks
+- 「〇〇病院の〇〇先生宛て」「〇〇科へ」→ referral.recipientHospital / recipientDepartment / recipientDoctor（医師氏名に敬称は付けない）
+- 発行日・患者氏名・住所・電話番号・生年月日・年齢・職業・【検査結果】・【治療経過】は紙の雛形で固定されている。
+  これらは診療データから自動で埋まるので、documentPatches で変えようとしない（変えても雛形の値に戻る）
+
 ルール:
 - 医師の記載を最優先する（SOAP よりチャットの意図を尊重）
 - 診断の創作はしない。医師が書いた疑い・処方意図はそのまま扱う
@@ -180,10 +190,15 @@ export class ChatService {
     const result = validated.success ? validated.data : { reply: parsed.reply || '記録しました。' };
 
     // SOAP/記録を先に反映 → 書類生成（チャット本文を参照）→ 宛先などの書類パッチ
-    const applied = await this.applyPatches(consultationId, physicianId, {
-      ...result,
-      documentPatches: undefined,
-    }, context);
+    const applied = await this.applyPatches(
+      consultationId,
+      physicianId,
+      {
+        ...result,
+        documentPatches: undefined,
+      },
+      context,
+    );
     const generatedResult = await this.runGenerateDocuments(
       consultationId,
       physicianId,
@@ -255,8 +270,7 @@ export class ChatService {
       }
       return { documents: out };
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : '書類の生成に失敗しました';
+      const message = error instanceof Error ? error.message : '書類の生成に失敗しました';
       return { documents: [], error: message };
     }
   }
@@ -308,9 +322,7 @@ export class ChatService {
               (365.25 * 24 * 60 * 60 * 1000),
           )
         : null);
-    const patientSummary = patientName
-      ? `${patientName}（${sex || '—'}、${age ?? '—'}歳）`
-      : '';
+    const patientSummary = patientName ? `${patientName}（${sex || '—'}、${age ?? '—'}歳）` : '';
 
     return {
       soap,
@@ -324,7 +336,12 @@ export class ChatService {
   private mockSubkarte(
     content: string,
     context: {
-      soap: { subjective: string; objective: string; assessment: string; plan: string };
+      soap: {
+        subjective: string;
+        objective: string;
+        assessment: string;
+        plan: string;
+      };
       note: string;
       documents: Record<string, Record<string, unknown>>;
     },
@@ -356,10 +373,7 @@ export class ChatService {
             ]
           : undefined;
 
-      const label =
-        generateDocuments === 'all'
-          ? '必要な書類一式'
-          : types.map((t) => t).join('・');
+      const label = generateDocuments === 'all' ? '必要な書類一式' : types.map((t) => t).join('・');
       return {
         reply: recipientHospital
           ? `${recipientHospital}向けに${label}を作成します。`
@@ -372,9 +386,8 @@ export class ChatService {
       };
     }
 
-    const editLike = /修正|変更|追記|直して|にして|Assessment|assessment|Plan|plan|紹介状|宛先|処方/.test(
-      content,
-    );
+    const editLike =
+      /修正|変更|追記|直して|にして|Assessment|assessment|Plan|plan|紹介状|宛先|処方/.test(content);
     if (!editLike) {
       if (/[？?]|何|どう|足り|不足|確認/.test(content)) {
         return {
@@ -458,7 +471,12 @@ export class ChatService {
     physicianId: string,
     result: SubkarteLlmResult,
     context: {
-      soap: { subjective: string; objective: string; assessment: string; plan: string };
+      soap: {
+        subjective: string;
+        objective: string;
+        assessment: string;
+        plan: string;
+      };
       note: string;
     },
   ) {
@@ -536,12 +554,19 @@ export class ChatService {
     if (result.documentPatches?.length) {
       for (const patch of result.documentPatches) {
         if (!BACKEND_DOC_TYPE_MAP[patch.type]) continue;
+        // 紹介状は紙の雛形が決まっている。チャット経由の書き換えでも、
+        // 固定文・患者欄・発行日は雛形の値へ戻す（先生が話した5項目と宛先だけ通す）
+        const content = await this.documentsService.applyReferralTemplateFor(
+          consultationId,
+          patch.type,
+          patch.content as Record<string, unknown>,
+        );
         try {
           const updated = await this.documentsService.updateDocument(
             consultationId,
             physicianId,
             patch.type,
-            patch.content as Record<string, unknown>,
+            content,
           );
           documents.push(updated);
         } catch {
@@ -551,7 +576,7 @@ export class ChatService {
             data: {
               consultationId,
               type,
-              content: patch.content as Prisma.InputJsonValue,
+              content: content as Prisma.InputJsonValue,
               version: 1,
               isAiGenerated: false,
             },

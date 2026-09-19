@@ -10,6 +10,8 @@ export type DocumentGenerationContext = {
   sex: string;
   age: number | null;
   dateOfBirth?: string;
+  /** 郵便番号。問診票から取り込み、患者情報に保存したもの */
+  postalCode?: string;
   address?: string;
   phone?: string;
   occupation?: string;

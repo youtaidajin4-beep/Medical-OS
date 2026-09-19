@@ -15,21 +15,26 @@ const PATIENT_DEFAULTS: Record<string, { kana: string; address: string; phone: s
   'ANON-001': { kana: 'トクメイ', address: '長崎県大村市', phone: '', occupation: '' },
 };
 
+// 「先生 御机下」は雛形に印字されている。ここに入れるのは医師の氏名だけ（敬称なし）
 const REFERRAL_TARGETS: Record<string, { hospital: string; department: string; doctor: string }> = {
-  'P-001': { hospital: '国立病院機構長崎医療センター', department: '呼吸器内科', doctor: '御机下' },
-  'P-002': { hospital: '長崎大学病院', department: '循環器内科', doctor: '御机下' },
-  'P-003': { hospital: '長崎みなとメディカルセンター', department: '脳神経外科', doctor: '御机下' },
-  'ANON-001': { hospital: '長崎みなとメディカルセンター', department: '脳神経内科', doctor: '御机下' },
+  'P-001': { hospital: '国立病院機構長崎医療センター', department: '呼吸器内科', doctor: '' },
+  'P-002': { hospital: '長崎大学病院', department: '循環器内科', doctor: '' },
+  'P-003': { hospital: '長崎みなとメディカルセンター', department: '脳神経外科', doctor: '' },
+  'ANON-001': { hospital: '長崎みなとメディカルセンター', department: '脳神経内科', doctor: '' },
 };
 
+/** 雛形の日付欄は西暦（例: 2026年7月10日） */
 function formatJapaneseDate(d: Date): string {
-  return d.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
 }
 
+/** 雛形の生年月日欄はゼロ詰め（例: 2007年01月01日） */
 function formatBirthDate(d?: string): string {
   if (!d) return '';
   const date = new Date(d);
-  return date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+  const mm = `${date.getMonth() + 1}`.padStart(2, '0');
+  const dd = `${date.getDate()}`.padStart(2, '0');
+  return `${date.getFullYear()}年${mm}月${dd}日`;
 }
 
 function formatReiwaDate(d: Date): string {
@@ -90,6 +95,7 @@ export function generateDocuments(ctx: ConsultationContext): GeneratedDocuments 
     patientName: ctx.patientName,
     patientNameKana: ctx.patientNameKana ?? '',
     sex: ctx.sex,
+    postalCode: '',
     address: ctx.address ?? '',
     phone: ctx.phone ?? '',
     dateOfBirth: formatBirthDate(ctx.dateOfBirth),
@@ -98,14 +104,11 @@ export function generateDocuments(ctx: ConsultationContext): GeneratedDocuments 
     diagnosis,
     purpose,
     pastHistory: ctx.structured.pastHistory ?? '特記すべき既往歴なし',
+    // 雛形の固定文（バックエンドの referral-template.ts と同じ文面）
     examResults: '別紙を同封しております。',
-    clinicalCourse: [
-      'いつも大変お世話になっております。御多忙中誠に恐縮ですが、ご高診・ご加療を宜しくお願いいたします。',
-      '',
-      ctx.soap.subjective,
-      ctx.soap.objective,
-    ].join('\n'),
-    greeting: '',
+    clinicalCourse:
+      'いつも大変お世話になっております。\n御多忙中誠に恐縮ですが、ご高診・ご加療を宜しくお願いいたします。',
+    currentPrescription: (ctx.structured.medications ?? []).join('\n'),
     remarks: ctx.soap.plan,
   };
 

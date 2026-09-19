@@ -1,4 +1,10 @@
-import { Inject, Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { DocumentType, GeneratedDocumentType, MedicalRiskLevel, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { ConsultationAccessService } from '../../common/services/consultation-access.service';
@@ -14,6 +20,7 @@ import {
   FRONTEND_DOC_TYPE_MAP,
   GENERATED_DOCUMENT_TYPES,
 } from './document-types';
+import { finalizeReferralContent, ReferralPatientContext } from './referral-template';
 
 @Injectable()
 export class DocumentsService {
@@ -114,10 +121,7 @@ export class DocumentsService {
         type: FRONTEND_DOC_TYPE_MAP[type],
         // 医師の目に触れる経路（チャットの返信）で英語のIDを出さないため、書類名も返す
         label: DOC_TYPE_LABEL_JA[type],
-        reason:
-          result.reason instanceof Error
-            ? result.reason.message
-            : String(result.reason),
+        reason: result.reason instanceof Error ? result.reason.message : String(result.reason),
       });
     });
 
@@ -155,7 +159,13 @@ export class DocumentsService {
     }
     const context = ctx ?? (await this.buildContext(consultationId, ''));
     const { system, user } = buildDocumentPrompt(type, context);
-    const content = await this.llmProvider.generateDocument(type, system, user);
+    const raw = await this.llmProvider.generateDocument(type, system, user);
+    // 紹介状は紙の雛形が決まっている。固定文・患者欄・発行日はAIの出力を採用せず、ここで上書きする
+    const content = await this.applyReferralTemplate(
+      FRONTEND_DOC_TYPE_MAP[type],
+      raw,
+      referralPatientContextFrom(context),
+    );
 
     const latest = await this.prisma.generatedDocument.findFirst({
       where: { consultationId, type },
@@ -182,6 +192,73 @@ export class DocumentsService {
       approved: doc.approved,
       updatedAt: doc.updatedAt,
     };
+  }
+
+  /**
+   * 紹介状（と情報提供書＋処方の紹介状部分）に、紙の雛形を当てる。
+   *
+   * AIやチャットが返した内容のうち、雛形で決まっているところ（固定文・患者欄・発行日）を
+   * 捨てて、こちらの値で埋め直す。紹介状以外の書類はそのまま通す。
+   */
+  applyReferralTemplate(
+    frontendType: string,
+    content: Record<string, unknown>,
+    patient: ReferralPatientContext,
+    issuedAt: Date = new Date(),
+  ): Record<string, unknown> {
+    if (frontendType === 'referral') {
+      return finalizeReferralContent(content, patient, issuedAt) as unknown as Record<
+        string,
+        unknown
+      >;
+    }
+    if (frontendType === 'info-combined') {
+      const referral = (content.referral ?? {}) as Record<string, unknown>;
+      return {
+        ...content,
+        referral: finalizeReferralContent(referral, patient, issuedAt),
+      };
+    }
+    return content;
+  }
+
+  /**
+   * チャット経由の書類パッチ用。診療IDから患者欄の材料を読んで雛形を当てる。
+   *
+   * 画面での手直し（updateDocument）には当てない。先生が紙の文面を直したいときに
+   * 書き戻してしまうため、雛形を強制するのは「AIが書いたものを保存する経路」だけにする。
+   */
+  async applyReferralTemplateFor(
+    consultationId: string,
+    frontendType: string,
+    content: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
+    if (frontendType !== 'referral' && frontendType !== 'info-combined') return content;
+    const patient = await this.loadReferralPatientContext(consultationId);
+    return this.applyReferralTemplate(frontendType, content, patient);
+  }
+
+  private async loadReferralPatientContext(
+    consultationId: string,
+  ): Promise<ReferralPatientContext> {
+    const consultation = await this.prisma.consultation.findUnique({
+      where: { id: consultationId },
+      include: {
+        patient: true,
+        anonymousCase: true,
+        attachments: {
+          where: { documentKind: 'questionnaire' },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+    if (!consultation) throw new NotFoundException('Consultation not found');
+    return mergeReferralPatient(
+      consultation.patient,
+      consultation.anonymousCase,
+      consultation.attachments[0]?.structuredData,
+    );
   }
 
   private getLlmUsage(): { inputTokens?: number; outputTokens?: number } {
@@ -268,8 +345,7 @@ export class DocumentsService {
       throw new BadRequestException('SOAP must be generated before documents');
     }
 
-    const structured = (consultation.structuredData?.data ??
-      {}) as StructuredClinicalDataPayload;
+    const structured = (consultation.structuredData?.data ?? {}) as StructuredClinicalDataPayload;
     const caseCode =
       consultation.patient?.patientCode ?? consultation.anonymousCase?.caseCode ?? 'UNKNOWN';
     const patientName =
@@ -354,6 +430,13 @@ export class DocumentsService {
 
     const questionnaireText = consultation.attachments[0]?.ocrText?.trim() || undefined;
 
+    // 紹介状の患者欄。患者情報が正で、空いているところだけ問診票の読み取り結果で補う
+    const referralPatient = mergeReferralPatient(
+      consultation.patient,
+      consultation.anonymousCase,
+      consultation.attachments[0]?.structuredData,
+    );
+
     return {
       consultationId,
       caseCode,
@@ -369,8 +452,13 @@ export class DocumentsService {
                 ? '男'
                 : '—',
       age,
-      dateOfBirth: consultation.patient?.dateOfBirth?.toISOString(),
-      phone: consultation.patient?.phone ?? undefined,
+      // 患者属性は、患者情報 →（空いていれば）問診票の読み取り結果の順で埋める
+      dateOfBirth: referralPatient.dateOfBirth,
+      patientNameKana: referralPatient.patientNameKana,
+      postalCode: referralPatient.postalCode,
+      address: referralPatient.address,
+      occupation: referralPatient.occupation,
+      phone: referralPatient.phone,
       memo: consultation.patient?.memo ?? undefined,
       soap: {
         subjective: soapDoc.subjective,
@@ -412,10 +500,7 @@ export class DocumentsService {
     if (!revisions.length) return '';
 
     return revisions
-      .map(
-        (r) =>
-          `[${r.documentType}/${r.fieldName}] 「${r.beforeValue}」→「${r.afterValue}」`,
-      )
+      .map((r) => `[${r.documentType}/${r.fieldName}] 「${r.beforeValue}」→「${r.afterValue}」`)
       .join('\n');
   }
 
@@ -446,6 +531,81 @@ export class DocumentsService {
       }
     }
   }
+}
+
+/**
+ * 紹介状の患者欄を、患者情報と問診票の読み取り結果から組み立てる。
+ *
+ * 患者情報（受付が直すこともある）が正。そこが空のときだけ問診票の値を使う。
+ * 匿名症例には患者情報が無いので、そのときは問診票だけが頼りになる。
+ */
+function mergeReferralPatient(
+  patient: {
+    name: string;
+    nameKana: string | null;
+    sex: string | null;
+    dateOfBirth: Date | null;
+    postalCode: string | null;
+    address: string | null;
+    phone: string | null;
+    occupation: string | null;
+  } | null,
+  anonymousCase: {
+    displayName: string;
+    sex: string | null;
+    age: number | null;
+  } | null,
+  questionnaire: unknown,
+): ReferralPatientContext {
+  const q = (questionnaire && typeof questionnaire === 'object' ? questionnaire : {}) as Record<
+    string,
+    unknown
+  >;
+  const fromQuestionnaire = (key: string): string | undefined => {
+    const value = q[key];
+    return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+  };
+  const pick = (own: string | null | undefined, key: string): string =>
+    (own && own.trim()) || fromQuestionnaire(key) || '';
+
+  const dateOfBirth =
+    patient?.dateOfBirth?.toISOString() ??
+    (fromQuestionnaire('dateOfBirth')
+      ? `${fromQuestionnaire('dateOfBirth')}T00:00:00.000Z`
+      : undefined);
+
+  return {
+    patientName: patient?.name ?? anonymousCase?.displayName ?? fromQuestionnaire('name') ?? '',
+    patientNameKana: pick(patient?.nameKana, 'nameKana'),
+    sex: toSexLabel(patient?.sex ?? anonymousCase?.sex ?? fromQuestionnaire('sex')),
+    dateOfBirth,
+    age: anonymousCase?.age ?? null,
+    postalCode: pick(patient?.postalCode, 'postalCode'),
+    address: pick(patient?.address, 'address'),
+    phone: pick(patient?.phone, 'phone'),
+    occupation: pick(patient?.occupation, 'occupation'),
+  };
+}
+
+/** 紹介状の患者欄に入れる値を、書類生成コンテキストから取り出す */
+function referralPatientContextFrom(ctx: DocumentGenerationContext): ReferralPatientContext {
+  return {
+    patientName: ctx.patientName,
+    patientNameKana: ctx.patientNameKana ?? '',
+    sex: ctx.sex === '男' || ctx.sex === '女' ? ctx.sex : '',
+    dateOfBirth: ctx.dateOfBirth,
+    age: ctx.age,
+    postalCode: ctx.postalCode ?? '',
+    address: ctx.address ?? '',
+    phone: ctx.phone ?? '',
+    occupation: ctx.occupation ?? '',
+  };
+}
+
+function toSexLabel(raw: string | null | undefined): string {
+  if (raw === 'F' || raw === '女') return '女';
+  if (raw === 'M' || raw === '男') return '男';
+  return '';
 }
 
 function formatJapaneseDate(date: Date): string {

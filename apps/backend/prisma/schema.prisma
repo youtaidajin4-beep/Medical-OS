@@ -109,6 +109,11 @@ model Patient {
   phone       String?
   email       String?
   memo        String?
+  // 紹介状の患者欄に印刷する属性。問診票のOCRから取り込み、空欄のときだけ埋める
+  nameKana    String?  @map("name_kana")
+  postalCode  String?  @map("postal_code")
+  address     String?
+  occupation  String?
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
   clinic      Clinic   @relation(fields: [clinicId], references: [id])
@@ -374,6 +379,8 @@ model ConsultationAttachment {
   mimeType       String   @map("mime_type")
   storageKey     String   @map("storage_key")
   ocrText        String?  @map("ocr_text")
+  // 問診票から読み取った患者属性（氏名・カナ・生年月日・住所・電話・職業）。転記元の記録として残す
+  structuredData Json?    @map("structured_data")
   documentKind   String   @default("other") @map("document_kind")
   createdAt      DateTime @default(now()) @map("created_at")
   consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)

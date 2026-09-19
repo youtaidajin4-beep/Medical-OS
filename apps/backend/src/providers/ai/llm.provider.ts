@@ -173,26 +173,17 @@ export class MockLlmProvider implements LlmProvider {
 
     switch (type) {
       case GeneratedDocumentType.REFERRAL:
+        // 患者欄・発行日・固定文は DocumentsService が雛形どおりに埋めるので、
+        // モックも医師がチャットで話す項目と宛先だけを返す
         return {
-          issuedDate,
           recipientHospital: '長崎みなとメディカルセンター',
           recipientDepartment: '脳神経外科',
-          recipientDoctor: '御机下',
-          patientName: '患者',
-          patientNameKana: 'カンジャ',
-          sex: '—',
-          address: '長崎県大村市',
-          phone: '',
-          dateOfBirth: '',
-          age: null,
-          occupation: '',
+          recipientDoctor: '',
           diagnosis,
-          purpose: '精査・加療のため紹介',
+          purpose: '',
           pastHistory: scenario.structured.pastHistory ?? '',
-          examResults: '別紙を同封しております。',
-          clinicalCourse: scenario.structured.presentIllness ?? '',
-          greeting: '',
-          remarks: scenario.structured.plan ?? '',
+          currentPrescription: (scenario.structured.medications ?? []).join('\n'),
+          remarks: '',
         };
       case GeneratedDocumentType.PRESCRIPTION_LIST:
         return {

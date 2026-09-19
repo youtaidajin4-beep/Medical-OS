@@ -76,12 +76,93 @@
   min-height: 2.5em;
 }
 
+/* ─── 診療情報提供書（紙の雛形どおり） ─── */
+
+.doc-page-referral {
+  font-size: 9.5pt;
+}
+
+.doc-referral-date {
+  margin: 0 0 3mm;
+  font-size: 9pt;
+}
+
+.doc-referral-head {
+  font-size: 9pt;
+  margin-bottom: 3mm;
+}
+
+.doc-referral-head p {
+  margin: 0 0 0.8mm;
+}
+
+.doc-referral-to-doctor {
+  padding-left: 8mm;
+}
+
+.doc-referral-from {
+  margin-top: 5mm;
+  line-height: 1.55;
+}
+
+.doc-referral-patient {
+  border: 1px solid #000;
+  padding: 1.5mm 2mm;
+  margin-bottom: 2mm;
+  font-size: 9pt;
+  flex-shrink: 0;
+}
+
+.doc-referral-patient p {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.doc-referral-patient-row {
+  display: flex;
+  gap: 10mm;
+}
+
+/* 各欄は上から下まで1本の枠。行ごとに罫線で区切る（雛形と同じ） */
 .doc-referral-body {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 1.5mm;
+  border: 1px solid #000;
+}
+
+.doc-referral-section {
+  border-bottom: 1px solid #000;
+  padding: 1mm 2mm 1.2mm;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.doc-referral-section:last-child {
+  border-bottom: none;
+  flex: 0 0 auto;
+}
+
+/* 【現在の処方】…雛形では一番大きい欄。余りをここが吸う */
+.doc-referral-section-grow {
+  flex: 1;
+  min-height: 30mm;
+}
+
+.doc-referral-section .doc-edit-field {
+  flex: 1;
+  min-height: 0;
+}
+
+.doc-edit-wide {
+  min-width: 12em;
+}
+
+/* 印刷時だけ出すブロック（textarea は高さで文字が切れるため差し替える） */
+.doc-print-block {
+  display: none;
 }
 
 .doc-table {
@@ -324,9 +405,30 @@
     display: inline !important;
   }
 
-  .doc-referral-body .doc-edit-field {
-    max-height: 12mm;
-    min-height: 0;
+  /* 紹介状の各欄は、印刷では textarea ではなくテキストを出す（高さで切れないため） */
+  .doc-print-block {
+    display: block !important;
+  }
+
+  .doc-screen-only-block {
+    display: none !important;
+  }
+
+  .doc-referral-section .doc-field-line {
+    white-space: pre-wrap;
+    line-height: 1.4;
+  }
+
+  /* 紹介状だけは高さを固定しない。
+     処方が10剤あるような日に、A4からはみ出した分が黙って切り落とされると、
+     先生も紹介先も「そこに書いたはず」の薬に気づけない。2枚目に送る。 */
+  .doc-page-referral {
+    height: auto;
+    max-height: none;
+    min-height: 297mm;
+    overflow: visible;
+    page-break-inside: auto;
+    break-inside: auto;
   }
 
   .doc-page-cert .doc-edit-field {

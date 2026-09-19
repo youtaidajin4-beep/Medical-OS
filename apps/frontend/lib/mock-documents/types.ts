@@ -52,6 +52,12 @@ export type PrescriptionLine = {
   prescribedDate: string;
 };
 
+/**
+ * 診療情報提供書。並びは紙の雛形（谷口先生から受領）どおり。
+ *
+ * issuedDate・患者欄・examResults・clinicalCourse はバックエンドが雛形どおりに埋める
+ * （`referral-template.ts`）。画面では手直しできるが、AIは書き換えない。
+ */
 export type ReferralLetterData = {
   issuedDate: string;
   recipientHospital: string;
@@ -60,17 +66,25 @@ export type ReferralLetterData = {
   patientName: string;
   patientNameKana: string;
   sex: string;
+  postalCode: string;
   address: string;
   phone: string;
   dateOfBirth: string;
   age: number | null;
   occupation: string;
+  /** 【傷病名】 */
   diagnosis: string;
+  /** 【紹介目的】 */
   purpose: string;
+  /** 【既往歴及び家族歴】 */
   pastHistory: string;
+  /** 【検査結果】…雛形の固定文 */
   examResults: string;
+  /** 【治療経過】…雛形の固定文（挨拶2文） */
   clinicalCourse: string;
-  greeting: string;
+  /** 【現在の処方】 */
+  currentPrescription: string;
+  /** 【備考】 */
   remarks: string;
 };
 

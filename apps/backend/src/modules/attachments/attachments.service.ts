@@ -4,6 +4,12 @@ import { randomUUID } from 'crypto';
 import { PrismaService } from '../../database/prisma.service';
 import { ConsultationAccessService } from '../../common/services/consultation-access.service';
 import { STORAGE_PROVIDER, StorageProvider } from '../../providers/storage/storage.provider';
+import {
+  normalizeQuestionnaireProfile,
+  patientFieldsToFill,
+  QuestionnairePatientProfile,
+  QUESTIONNAIRE_PROFILE_SYSTEM,
+} from './questionnaire-profile';
 
 @Injectable()
 export class AttachmentsService {
@@ -91,6 +97,25 @@ export class AttachmentsService {
       },
     });
 
+    // 紹介状の患者欄（氏名カナ・住所・電話・生年月日・職業）はここが唯一の転記元。
+    // 読めた値は添付に残し、患者情報の空欄だけを埋める（受付が直した値は上書きしない）。
+    const profile = await this.extractPatientProfile(ocr);
+    if (Object.keys(profile).length > 0) {
+      await this.prisma.consultationAttachment.update({
+        where: { id: attachment.id },
+        data: { structuredData: profile },
+      });
+      if (consultation.patientId && consultation.patient) {
+        const fill = patientFieldsToFill(profile, consultation.patient);
+        if (Object.keys(fill).length > 0) {
+          await this.prisma.patient.update({
+            where: { id: consultation.patientId },
+            data: fill,
+          });
+        }
+      }
+    }
+
     let patientMemo: string | null = consultation.patient?.memo ?? null;
     if (consultation.patientId) {
       const current = consultation.patient?.memo ?? '';
@@ -134,6 +159,7 @@ export class AttachmentsService {
       ocrText: ocr,
       soap,
       patientMemo,
+      patientProfile: profile,
     };
   }
 
@@ -158,7 +184,10 @@ export class AttachmentsService {
           consultation.anonymousCaseId
             ? { anonymousCaseId: consultation.anonymousCaseId }
             : undefined,
-        ].filter(Boolean) as Array<{ patientId?: string; anonymousCaseId?: string }>,
+        ].filter(Boolean) as Array<{
+          patientId?: string;
+          anonymousCaseId?: string;
+        }>,
       },
       orderBy: { createdAt: 'desc' },
       take: 20,
@@ -188,6 +217,45 @@ export class AttachmentsService {
     };
   }
 
+  /**
+   * 問診票のOCR本文から患者属性を取り出す。
+   * 失敗しても問診票の取り込み自体は続ける（属性が空のままになるだけ）。
+   */
+  private async extractPatientProfile(ocrText: string): Promise<QuestionnairePatientProfile> {
+    const apiKey = this.config.get<string>('OPENAI_API_KEY', '');
+    const provider = this.config.get<string>('LLM_PROVIDER', 'mock');
+    if (provider !== 'openai' || !apiKey || !ocrText.trim()) return {};
+
+    try {
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: this.config.get('OPENAI_CORRECTION_MODEL', 'gpt-4o'),
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: QUESTIONNAIRE_PROFILE_SYSTEM },
+            { role: 'user', content: ocrText },
+          ],
+          max_tokens: 500,
+        }),
+      });
+      if (!res.ok) return {};
+      const json = (await res.json()) as {
+        choices?: Array<{ message?: { content?: string } }>;
+      };
+      const content = json.choices?.[0]?.message?.content;
+      if (!content) return {};
+      return normalizeQuestionnaireProfile(JSON.parse(content));
+    } catch {
+      // 属性が取れなくても問診票は取り込む。患者欄は画面で手入力できる
+      return {};
+    }
+  }
+
   private async runOcr(buffer: Buffer, mimeType: string): Promise<string> {
     const apiKey = this.config.get<string>('OPENAI_API_KEY', '');
     const provider = this.config.get<string>('LLM_PROVIDER', 'mock');
@@ -214,7 +282,10 @@ export class AttachmentsService {
           {
             role: 'user',
             content: [
-              { type: 'text', text: 'この医療書類・紙資料の内容をテキスト化してください。' },
+              {
+                type: 'text',
+                text: 'この医療書類・紙資料の内容をテキスト化してください。',
+              },
               { type: 'image_url', image_url: { url: dataUrl } },
             ],
           },

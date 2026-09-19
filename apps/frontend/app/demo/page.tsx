@@ -270,13 +270,16 @@ function buildDemoDocs(
     occupation,
     age,
     recipientHospital: hospital ? hospital : /紹介不要/.test(note) ? '（紹介不要）' : generated.referral.recipientHospital,
-    recipientDepartment: '内科',
+    recipientDepartment: '循環器内科',
+    recipientDoctor: '田中 一郎',
     diagnosis: '高血圧症、2型糖尿病',
-    purpose: note.includes('紹介不要') ? '紹介不要（再診経過観察）' : '必要時の精査・加療',
-    pastHistory: '高血圧、2型糖尿病',
-    examResults: '前回 HbA1c 7.2%',
-    clinicalCourse: [soap.subjective, soap.objective, note && `【医師判断】\n${note}`].filter(Boolean).join('\n\n'),
-    remarks: soap.plan,
+    purpose: note.includes('紹介不要')
+      ? '紹介不要（再診経過観察）'
+      : '上記疾患の精査・加療をお願い申し上げます。',
+    pastHistory: '高血圧症、2型糖尿病',
+    // 【検査結果】【治療経過】は雛形の固定文（generate-documents.ts で入る）ため触らない
+    currentPrescription: 'アムロジピン錠5mg　1回1錠　1日1回　朝食後\nメトホルミン錠250mg　1回1錠　1日2回　朝夕食後',
+    remarks: note.trim(),
   };
   return {
     ...generated,
