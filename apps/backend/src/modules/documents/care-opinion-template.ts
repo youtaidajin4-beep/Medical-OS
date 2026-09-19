@@ -12,7 +12,7 @@
  *
  * 様式の現物: 04_MVP_SPECIFICATION/assets/care-opinion-1.png / care-opinion-2.png
  */
-import { CLINIC } from './clinic';
+import { CLINIC, ClinicProfile } from './clinic';
 import { calcAge, formatBirthDate, ReferralPatientContext, toText } from './referral-template';
 
 const CLINIC_TIME_ZONE = 'Asia/Tokyo';
@@ -177,6 +177,7 @@ export function finalizeCareOpinion1(
   raw: Record<string, unknown> | null | undefined,
   patient: ReferralPatientContext,
   issuedAt: Date = new Date(),
+  clinic: ClinicProfile = CLINIC,
 ): Record<string, unknown> {
   const ai = raw ?? {};
   const today = formatReiwaDate(issuedAt);
@@ -193,14 +194,14 @@ export function finalizeCareOpinion1(
 
   return {
     // 毎回同じ
-    municipalityCode: CLINIC.municipalityCode,
-    supervisorMunicipalityCode: CLINIC.municipalityCode,
-    doctorNumber: CLINIC.doctorNumber,
-    physicianName: CLINIC.physicianName,
-    clinicName: CLINIC.legalName,
-    clinicAddress: CLINIC.address,
-    clinicTel: CLINIC.tel,
-    clinicFax: CLINIC.fax,
+    municipalityCode: clinic.municipalityCode,
+    supervisorMunicipalityCode: clinic.municipalityCode,
+    doctorNumber: clinic.doctorNumber,
+    physicianName: clinic.physicianName,
+    clinicName: clinic.legalName,
+    clinicAddress: clinic.address,
+    clinicTel: clinic.tel,
+    clinicFax: clinic.fax,
     consent: 'agree',
 
     // 谷口先生へのヒアリング待ち（空欄で出す）
@@ -259,6 +260,7 @@ export function finalizeCareOpinion1(
 export function finalizeCareOpinion2(
   raw: Record<string, unknown> | null | undefined,
   issuedAt: Date = new Date(),
+  clinic: ClinicProfile = CLINIC,
 ): Record<string, unknown> {
   const ai = raw ?? {};
   const paralysis = (ai.paralysis && typeof ai.paralysis === 'object'
@@ -280,7 +282,7 @@ export function finalizeCareOpinion2(
   >;
 
   return {
-    municipalityCode: CLINIC.municipalityCode,
+    municipalityCode: clinic.municipalityCode,
     insuredNumber: '',
     entryDate: formatReiwaDate(issuedAt),
 

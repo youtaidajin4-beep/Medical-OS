@@ -15,6 +15,8 @@
  * 雛形の現物: 2026-09-19 に谷口先生から受領（04_MVP_SPECIFICATION/assets/referral-template.png）
  */
 
+import { CLINIC, ClinicProfile } from './clinic';
+
 /** 雛形に印字されている、毎回同じ文 */
 export const REFERRAL_FIXED_TEXT = {
   /** 【検査結果】…検査結果の紙は病院側が作り、紹介状に同封して渡す運用 */
@@ -28,6 +30,13 @@ export const REFERRAL_FIXED_TEXT = {
 
 export type ReferralContent = {
   issuedDate: string;
+  /** 紹介元医療機関（毎回同じ。クリニックの設定から入る） */
+  clinicName: string;
+  clinicAddress: string;
+  clinicTel: string;
+  clinicFax: string;
+  clinicDepartment: string;
+  physicianName: string;
   recipientHospital: string;
   recipientDepartment: string;
   recipientDoctor: string;
@@ -173,6 +182,7 @@ export function finalizeReferralContent(
   raw: Record<string, unknown> | null | undefined,
   patient: ReferralPatientContext,
   issuedAt: Date = new Date(),
+  clinic: ClinicProfile = CLINIC,
 ): ReferralContent {
   const ai = raw ?? {};
   const purpose = blankIfPlaceholder(toText(ai.purpose));
@@ -180,6 +190,15 @@ export function finalizeReferralContent(
   return {
     // 作成した瞬間の日付。AIに書かせない（和暦になったり前回の日付が残ったりする）
     issuedDate: formatGregorianDate(issuedAt),
+
+    // 紹介元医療機関 — クリニックの設定から。AIにもチャットにも書かせない
+    clinicName: clinic.legalName,
+    clinicAddress: clinic.address,
+    // 様式どおりハイフン無し
+    clinicTel: clinic.tel.replace(/-/g, ''),
+    clinicFax: clinic.fax.replace(/-/g, ''),
+    clinicDepartment: clinic.department,
+    physicianName: clinic.physicianName,
 
     // 宛先 — 先生がチャットで指定したもの
     recipientHospital: normalizeHospital(ai.recipientHospital),

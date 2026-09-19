@@ -13,7 +13,7 @@
  *
  * 様式の現物: 04_MVP_SPECIFICATION/assets/certificate.png
  */
-import { CLINIC } from './clinic';
+import { CLINIC, ClinicProfile } from './clinic';
 import { formatReiwaDate } from './care-opinion-template';
 import { calcAge, ReferralPatientContext, toText } from './referral-template';
 
@@ -70,6 +70,7 @@ export function finalizeCertificate(
   raw: Record<string, unknown> | null | undefined,
   patient: ReferralPatientContext,
   issuedAt: Date = new Date(),
+  clinic: ClinicProfile = CLINIC,
 ): Record<string, unknown> {
   const ai = raw ?? {};
   const hearing = (ai.hearing && typeof ai.hearing === 'object' ? ai.hearing : {}) as Record<
@@ -174,9 +175,10 @@ export function finalizeCertificate(
     overallJudgement: judgement(ai.overallJudgement),
 
     // 毎回同じ
-    clinicAddress: CLINIC.address,
-    clinicName: CLINIC.legalName,
-    clinicTel: CLINIC.tel.replace(/-/g, ''),
-    physicianName: CLINIC.physicianName,
+    clinicAddress: clinic.address,
+    clinicName: clinic.legalName,
+    // 様式どおりハイフン無し
+    clinicTel: clinic.tel.replace(/-/g, ''),
+    physicianName: clinic.physicianName,
   };
 }

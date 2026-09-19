@@ -21,6 +21,9 @@ describe('書類の一括生成：1枚こけても残りは残る', () => {
     作られた書類.length = 0;
     return {
       aIExecution: { create: jest.fn() },
+      // クリニックの設定（書類に印刷する医療機関の情報）
+      clinic: { findUnique: jest.fn().mockResolvedValue(null) },
+      user: { findUnique: jest.fn().mockResolvedValue(null) },
       clinicalEntity: { findMany: jest.fn().mockResolvedValue([]) },
       transcriptCorrection: { findMany: jest.fn().mockResolvedValue([]) },
       revisionHistory: { findMany: jest.fn().mockResolvedValue([]) },

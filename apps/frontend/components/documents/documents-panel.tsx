@@ -84,6 +84,13 @@ function emptyGenerated(): GeneratedDocuments {
   return {
     referral: {
       issuedDate: '',
+      clinicName: '',
+      clinicAddress: '',
+      clinicTel: '',
+      clinicFax: '',
+      clinicDepartment: '',
+      physicianName: '',
+
       recipientHospital: '',
       recipientDepartment: '',
       recipientDoctor: '',

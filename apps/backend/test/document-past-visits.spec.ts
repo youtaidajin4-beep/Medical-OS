@@ -2,6 +2,7 @@ import { GeneratedDocumentType } from '@prisma/client';
 import { buildDocumentPrompt } from '../src/modules/documents/document-prompts';
 import { DocumentGenerationContext } from '../src/modules/documents/document-types';
 import { DEFAULT_PHYSICIAN_RULES } from '../src/modules/settings/physician-rules.types';
+import { CLINIC } from '../src/modules/documents/clinic';
 
 /**
  * 紹介状も主治医意見書も「経過」を書く書類。書類生成の材料は今回の診療1回分しか
@@ -22,6 +23,7 @@ const baseCtx: DocumentGenerationContext = {
   },
   structured: {},
   physicianRules: DEFAULT_PHYSICIAN_RULES,
+  clinic: CLINIC,
   revisionExamples: '',
   physicianSubkarte: '',
   todayJa: '令和8年9月17日',

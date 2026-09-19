@@ -23,6 +23,7 @@ import {
 import { finalizeReferralContent, ReferralPatientContext } from './referral-template';
 import { finalizeCareOpinion1, finalizeCareOpinion2 } from './care-opinion-template';
 import { finalizeCertificate } from './certificate-template';
+import { ClinicProfile, resolveClinicProfile } from './clinic';
 
 @Injectable()
 export class DocumentsService {
@@ -176,6 +177,7 @@ export class DocumentsService {
       FRONTEND_DOC_TYPE_MAP[type],
       raw,
       referralPatientContextFrom(context),
+      context.clinic,
     );
 
     const latest = await this.prisma.generatedDocument.findFirst({
@@ -215,19 +217,20 @@ export class DocumentsService {
     frontendType: string,
     content: Record<string, unknown>,
     patient: ReferralPatientContext,
+    clinic: ClinicProfile,
     issuedAt: Date = new Date(),
   ): Record<string, unknown> {
     if (frontendType === 'certificate') {
-      return finalizeCertificate(content, patient, issuedAt);
+      return finalizeCertificate(content, patient, issuedAt, clinic);
     }
     if (frontendType === 'care-opinion-1') {
-      return finalizeCareOpinion1(content, patient, issuedAt);
+      return finalizeCareOpinion1(content, patient, issuedAt, clinic);
     }
     if (frontendType === 'care-opinion-2') {
-      return finalizeCareOpinion2(content, issuedAt);
+      return finalizeCareOpinion2(content, issuedAt, clinic);
     }
     if (frontendType === 'referral') {
-      return finalizeReferralContent(content, patient, issuedAt) as unknown as Record<
+      return finalizeReferralContent(content, patient, issuedAt, clinic) as unknown as Record<
         string,
         unknown
       >;
@@ -236,7 +239,7 @@ export class DocumentsService {
       const referral = (content.referral ?? {}) as Record<string, unknown>;
       return {
         ...content,
-        referral: finalizeReferralContent(referral, patient, issuedAt),
+        referral: finalizeReferralContent(referral, patient, issuedAt, clinic),
       };
     }
     return content;
@@ -261,18 +264,20 @@ export class DocumentsService {
       'care-opinion-2',
     ];
     if (!paperTypes.includes(frontendType)) return content;
-    const patient = await this.loadReferralPatientContext(consultationId);
-    return this.applyPaperTemplate(frontendType, content, patient);
+    const { patient, clinic } = await this.loadPaperContext(consultationId);
+    return this.applyPaperTemplate(frontendType, content, patient, clinic);
   }
 
-  private async loadReferralPatientContext(
+  /** 紙の様式を当てるのに要る材料（患者欄とクリニックの情報） */
+  private async loadPaperContext(
     consultationId: string,
-  ): Promise<ReferralPatientContext> {
+  ): Promise<{ patient: ReferralPatientContext; clinic: ClinicProfile }> {
     const consultation = await this.prisma.consultation.findUnique({
       where: { id: consultationId },
       include: {
         patient: true,
         anonymousCase: true,
+        physician: true,
         attachments: {
           where: { documentKind: 'questionnaire' },
           orderBy: { createdAt: 'desc' },
@@ -281,11 +286,17 @@ export class DocumentsService {
       },
     });
     if (!consultation) throw new NotFoundException('Consultation not found');
-    return mergeReferralPatient(
-      consultation.patient,
-      consultation.anonymousCase,
-      consultation.attachments[0]?.structuredData,
-    );
+    const clinic = await this.prisma.clinic.findUnique({
+      where: { id: consultation.clinicId },
+    });
+    return {
+      patient: mergeReferralPatient(
+        consultation.patient,
+        consultation.anonymousCase,
+        consultation.attachments[0]?.structuredData,
+      ),
+      clinic: resolveClinicProfile(clinic, consultation.physician),
+    };
   }
 
   private getLlmUsage(): { inputTokens?: number; outputTokens?: number } {
@@ -390,6 +401,13 @@ export class DocumentsService {
       ? await this.settingsService.getPhysicianRules(physicianId)
       : await this.settingsService.getPhysicianRules(consultation.physicianId);
 
+    // 書類に印刷する医療機関の情報。院ごとに違うのでDBから読む
+    const [clinicRow, physicianRow] = await Promise.all([
+      this.prisma.clinic.findUnique({ where: { id: consultation.clinicId } }),
+      this.prisma.user.findUnique({ where: { id: consultation.physicianId } }),
+    ]);
+    const clinic = resolveClinicProfile(clinicRow, physicianRow);
+
     const revisionExamples = await this.buildRevisionExamples(consultation.physicianId);
 
     const chatMessages = await this.prisma.consultationChatMessage.findMany({
@@ -490,6 +508,7 @@ export class DocumentsService {
       },
       structured,
       physicianRules,
+      clinic,
       revisionExamples,
       referralPattern,
       physicianSubkarte,

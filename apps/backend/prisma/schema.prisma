@@ -65,6 +65,15 @@ model Clinic {
   /** Stable tenant key within the internal-medicine Supabase project (e.g. kushima_internal). */
   code       String   @unique
   name       String
+  // 書類に印刷する医療機関の情報。院ごとに違うのでコードに持たせない
+  legalName       String? @map("legal_name")
+  postalCode      String? @map("postal_code")
+  address         String?
+  tel             String?
+  fax             String?
+  department      String?
+  /// 主治医意見書の市町村コード・管理市町村コード（例: 大村市 42205）
+  municipalityCode String? @map("municipality_code")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
   users      User[]
@@ -81,6 +90,8 @@ model User {
   id           String    @id @default(uuid())
   clinicId     String    @map("clinic_id")
   name         String
+  /// 主治医意見書の医師番号。医師ごとに違う
+  doctorNumber String?   @map("doctor_number")
   email        String    @unique
   passwordHash String    @map("password_hash")
   role               UserRole  @default(PHYSICIAN)

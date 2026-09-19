@@ -1,6 +1,7 @@
 import { GeneratedDocumentType } from '@prisma/client';
 import { StructuredClinicalDataPayload } from '../../providers/ai/llm.provider';
 import { PhysicianRules } from '../settings/physician-rules.types';
+import { ClinicProfile } from './clinic';
 
 export type DocumentGenerationContext = {
   consultationId: string;
@@ -24,6 +25,8 @@ export type DocumentGenerationContext = {
   };
   structured: StructuredClinicalDataPayload;
   physicianRules: PhysicianRules;
+  /** 書類に印刷する医療機関の情報（クリニックの設定から。院ごとに違う） */
+  clinic: ClinicProfile;
   revisionExamples: string;
   referralPattern?: 'simple' | 'complex';
   /** 医師サブカルテ（チャットの user 発話）。書類生成時は SOAP より優先。 */

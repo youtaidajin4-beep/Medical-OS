@@ -94,6 +94,12 @@ export function generateDocuments(ctx: ConsultationContext): GeneratedDocuments 
 
   const referral: ReferralLetterData = {
     issuedDate: formatJapaneseDate(ctx.issuedAt),
+    clinicName: CLINIC_CONFIG.legalName,
+    clinicAddress: CLINIC_CONFIG.address,
+    clinicTel: CLINIC_CONFIG.telPlain,
+    clinicFax: CLINIC_CONFIG.faxPlain,
+    clinicDepartment: CLINIC_CONFIG.department,
+    physicianName: CLINIC_CONFIG.physicianName,
     recipientHospital: target.hospital,
     recipientDepartment: target.department,
     recipientDoctor: target.doctor,

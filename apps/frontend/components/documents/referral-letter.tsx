@@ -87,14 +87,16 @@ export function ReferralLetter({ data, onChange }: Props) {
             　先生　御机下
           </p>
         </div>
+        {/* 紹介元はクリニックの設定から入る。古い書類のために既定値を残してある */}
         <div className="doc-referral-from doc-right">
-          <p>紹介元医療機関の所在地：{CLINIC_CONFIG.address}</p>
-          <p>名称：{CLINIC_CONFIG.legalName}</p>
+          <p>紹介元医療機関の所在地：{data.clinicAddress || CLINIC_CONFIG.address}</p>
+          <p>名称：{data.clinicName || CLINIC_CONFIG.legalName}</p>
           <p>
-            電話番号：{CLINIC_CONFIG.telPlain}　FAX：{CLINIC_CONFIG.faxPlain}
+            電話番号：{data.clinicTel || CLINIC_CONFIG.telPlain}　FAX：
+            {data.clinicFax || CLINIC_CONFIG.faxPlain}
           </p>
-          <p>診療科名：{CLINIC_CONFIG.department}</p>
-          <p>医師氏名：{CLINIC_CONFIG.physicianName}　　印</p>
+          <p>診療科名：{data.clinicDepartment || CLINIC_CONFIG.department}</p>
+          <p>医師氏名：{data.physicianName || CLINIC_CONFIG.physicianName}　　印</p>
         </div>
       </div>
 

@@ -11,6 +11,18 @@ const prisma = new PrismaClient();
 const CLINIC_ID = '00000000-0000-0000-0000-000000000001';
 const CLINIC_CODE = 'kushima_internal';
 const CLINIC_NAME = 'くしま内科';
+/** 書類に印刷する医療機関の情報。表記は紙の様式に合わせてある */
+const CLINIC_PROFILE = {
+  legalName: '医療法人 十慶会　くしま内科クリニック',
+  postalCode: '856-0832',
+  address: '長崎県大村市本町 436-16',
+  tel: '0957-51-1256',
+  fax: '0957-51-4156',
+  department: '内科',
+  municipalityCode: '42205',
+};
+/** 主治医意見書の医師番号（谷口先生） */
+const DOCTOR_NUMBER = '0092618202';
 
 function resolveSeedPassword(): string {
   const fromEnv = process.env.SEED_PASSWORD?.trim();
@@ -36,20 +48,22 @@ async function main() {
 
   const clinic = await prisma.clinic.upsert({
     where: { id: CLINIC_ID },
-    update: { name: CLINIC_NAME, code: CLINIC_CODE },
+    update: { name: CLINIC_NAME, code: CLINIC_CODE, ...CLINIC_PROFILE },
     create: {
       id: CLINIC_ID,
       code: CLINIC_CODE,
       name: CLINIC_NAME,
+      ...CLINIC_PROFILE,
     },
   });
 
   const demoUser = await prisma.user.upsert({
     where: { email: 'doctor@demo.clinic' },
-    update: { name: '谷口 広明', clinicId: clinic.id },
+    update: { name: '谷口 広明', clinicId: clinic.id, doctorNumber: DOCTOR_NUMBER },
     create: {
       clinicId: clinic.id,
       name: '谷口 広明',
+      doctorNumber: DOCTOR_NUMBER,
       email: 'doctor@demo.clinic',
       passwordHash,
       role: UserRole.PHYSICIAN,

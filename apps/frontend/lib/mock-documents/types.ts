@@ -62,6 +62,13 @@ export type PrescriptionLine = {
  */
 export type ReferralLetterData = {
   issuedDate: string;
+  /** 紹介元医療機関（クリニックの設定から入る。院ごとに違う） */
+  clinicName: string;
+  clinicAddress: string;
+  clinicTel: string;
+  clinicFax: string;
+  clinicDepartment: string;
+  physicianName: string;
   recipientHospital: string;
   recipientDepartment: string;
   recipientDoctor: string;

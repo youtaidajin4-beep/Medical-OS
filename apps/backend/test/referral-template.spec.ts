@@ -183,6 +183,9 @@ describe('診療情報提供書：生成された書類にも雛形が当たる'
     const saved: Array<Record<string, unknown>> = [];
     const prisma = {
       aIExecution: { create: jest.fn() },
+      // クリニックの設定（書類に印刷する医療機関の情報）
+      clinic: { findUnique: jest.fn().mockResolvedValue(null) },
+      user: { findUnique: jest.fn().mockResolvedValue(null) },
       clinicalEntity: { findMany: jest.fn().mockResolvedValue([]) },
       transcriptCorrection: { findMany: jest.fn().mockResolvedValue([]) },
       revisionHistory: { findMany: jest.fn().mockResolvedValue([]) },
