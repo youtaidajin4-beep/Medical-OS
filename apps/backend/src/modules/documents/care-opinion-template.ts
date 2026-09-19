@@ -139,6 +139,19 @@ function oneOfLabel(value: unknown, allowed: string[]): string {
   return allowed.includes(text) ? text : '';
 }
 
+/**
+ * 「有」なのに中身が空のままの欄を作らない。
+ *
+ * 紙に「☑有」だけが立っていると、認定調査員は何を指しているのか読めない。
+ * 症状を挙げられないなら「有」を主張しない（空欄にして、先生が紙の上で足す）。
+ */
+function presenceWithContent(
+  presence: '' | 'none' | 'present',
+  hasContent: boolean,
+): '' | 'none' | 'present' {
+  return presence === 'present' && !hasContent ? '' : presence;
+}
+
 type DegreeRow = { checked: boolean; site?: string; degree: '' | 'mild' | 'moderate' | 'severe' };
 
 function degreeRow(value: unknown, withSite = true): DegreeRow {
@@ -168,6 +181,9 @@ export function finalizeCareOpinion1(
   const ai = raw ?? {};
   const today = formatReiwaDate(issuedAt);
   const diagnosesRaw = Array.isArray(ai.diagnoses) ? ai.diagnoses : [];
+  const peripheralSymptoms = onlyFromForm(ai.peripheralSymptoms, PERIPHERAL_SYMPTOMS);
+  const peripheralOther = toText(ai.peripheralOther);
+  const psychSymptomName = toText(ai.psychSymptomName);
   const diagnoses = [0, 1, 2].map((i) => {
     const d = (diagnosesRaw[i] && typeof diagnosesRaw[i] === 'object'
       ? diagnosesRaw[i]
@@ -223,11 +239,17 @@ export function finalizeCareOpinion1(
     shortTermMemory: oneOfLabel(ai.shortTermMemory, SHORT_TERM_MEMORY),
     decisionCapacity: oneOfLabel(ai.decisionCapacity, DECISION_CAPACITY),
     communicationAbility: oneOfLabel(ai.communicationAbility, COMMUNICATION_ABILITY),
-    peripheralPresence: oneOf(ai.peripheralPresence, ['none', 'present'] as const),
-    peripheralSymptoms: onlyFromForm(ai.peripheralSymptoms, PERIPHERAL_SYMPTOMS),
-    peripheralOther: toText(ai.peripheralOther),
-    psychSymptomPresence: oneOf(ai.psychSymptomPresence, ['none', 'present'] as const),
-    psychSymptomName: toText(ai.psychSymptomName),
+    peripheralPresence: presenceWithContent(
+      oneOf(ai.peripheralPresence, ['none', 'present'] as const),
+      peripheralSymptoms.length > 0 || peripheralOther !== '',
+    ),
+    peripheralSymptoms,
+    peripheralOther,
+    psychSymptomPresence: presenceWithContent(
+      oneOf(ai.psychSymptomPresence, ['none', 'present'] as const),
+      psychSymptomName !== '',
+    ),
+    psychSymptomName,
     specialistVisit: oneOf(ai.specialistVisit, ['yes', 'no'] as const),
     specialistDetail: toText(ai.specialistDetail),
   };

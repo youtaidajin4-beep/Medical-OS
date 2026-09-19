@@ -91,6 +91,29 @@ describe('主治医意見書①：様式で固定するところ', () => {
     ]);
   });
 
+  it('症状を挙げられないなら「有」を立てない', () => {
+    const 中身なし = finalizeCareOpinion1(
+      { peripheralPresence: 'present', peripheralSymptoms: [], psychSymptomPresence: 'present' },
+      患者,
+      作成日,
+    );
+    expect(中身なし.peripheralPresence).toBe('');
+    expect(中身なし.psychSymptomPresence).toBe('');
+
+    const 中身あり = finalizeCareOpinion1(
+      { peripheralPresence: 'present', peripheralSymptoms: ['徘徊'] },
+      患者,
+      作成日,
+    );
+    expect(中身あり.peripheralPresence).toBe('present');
+    expect(中身あり.peripheralSymptoms).toEqual(['徘徊']);
+
+    // 「無」はそのまま通す
+    expect(finalizeCareOpinion1({ peripheralPresence: 'none' }, 患者, 作成日).peripheralPresence).toBe(
+      'none',
+    );
+  });
+
   it('様式に無い選択肢は捨てる（紙に出ないチェックを持たせない）', () => {
     const doc = finalizeCareOpinion1(
       {
