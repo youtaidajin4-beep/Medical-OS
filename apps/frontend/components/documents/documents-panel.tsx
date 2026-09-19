@@ -8,7 +8,6 @@ import {
   FileHeart,
   FileText,
   Loader2,
-  Pill,
   Printer,
   RotateCcw,
   Stethoscope,
@@ -24,27 +23,44 @@ import {
   emptyCareOpinion2,
 } from '@/lib/mock-documents/care-opinion-options';
 import { ReferralLetter } from './referral-letter';
-import { PrescriptionList } from './prescription-list';
 import { MedicalCertificate } from './medical-certificate';
 import { CareOpinion1 } from './care-opinion-1';
 import { CareOpinion2 } from './care-opinion-2';
-import { InfoProvideCombined } from './info-provide-combined';
 import '@/styles/documents-print.css';
 
 /**
- * 主治医意見書は①②で必ず1セットで出す。片方だけ作る運用が無いので、
+ * くしま内科で作る書類は3種類。それぞれ出す先が違う。
+ *
+ * - 診療情報提供書 ＋ 診断書（検査結果）の2枚で、クリニックへの紹介状になる
+ * - 主治医意見書①②は市町村へ出し、介護認定審査会が要介護度の判定に使う
+ *
+ * 主治医意見書は①②で必ず1セット。片方だけ作る運用が無いので、
  * 選ぶのも印刷するのも1枚のカードにまとめている（保存は①②それぞれ）。
  */
 const DOCUMENT_OPTIONS: Array<{
   id: DocumentTypeId;
   label: string;
+  note: string;
   icon: typeof FileText;
 }> = [
-  { id: 'referral', label: '診療情報提供書', icon: FileText },
-  { id: 'info-combined', label: '情報提供書＋処方', icon: ClipboardList },
-  { id: 'prescription', label: '現在の処方', icon: Pill },
-  { id: 'certificate', label: '健康診断結果表', icon: Stethoscope },
-  { id: 'care-opinion-set', label: '主治医意見書①②', icon: FileHeart },
+  {
+    id: 'referral',
+    label: '診療情報提供書',
+    note: '診断書と2枚で紹介状',
+    icon: FileText,
+  },
+  {
+    id: 'certificate',
+    label: '診断書（検査結果）',
+    note: '紹介状に同封する',
+    icon: Stethoscope,
+  },
+  {
+    id: 'care-opinion-set',
+    label: '主治医意見書①②',
+    note: '市町村へ・要介護認定用',
+    icon: FileHeart,
+  },
 ];
 
 /** 出来なかった書類を医師へ名前で伝えるための対応表 */
@@ -52,7 +68,7 @@ const DOC_LABEL: Record<string, string> = Object.fromEntries(
   DOCUMENT_OPTIONS.map((o) => [o.id, o.label]),
 );
 
-const DEFAULT_SELECTED: DocumentTypeId[] = ['info-combined', 'certificate', 'care-opinion-set'];
+const DEFAULT_SELECTED: DocumentTypeId[] = ['referral', 'certificate'];
 
 const API_TYPE_TO_KEY: Record<string, keyof GeneratedDocuments> = {
   referral: 'referral',
@@ -307,19 +323,9 @@ export function DocumentsPanel({
           />
         );
       case 'prescription':
-        return (
-          <PrescriptionList
-            data={docs.prescription}
-            onChange={(prescription) => updateDocs('prescription', (d) => ({ ...d, prescription }))}
-          />
-        );
       case 'info-combined':
-        return docs.infoCombined ? (
-          <InfoProvideCombined
-            data={docs.infoCombined}
-            onChange={(infoCombined) => updateDocs('info-combined', (d) => ({ ...d, infoCombined }))}
-          />
-        ) : null;
+        // 2026-09-20 に画面から外した。処方は診療情報提供書の【現在の処方】欄に入る
+        return null;
       case 'certificate':
         return (
           <MedicalCertificate
@@ -424,7 +430,7 @@ export function DocumentsPanel({
       )}
 
       <div className="no-print grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {DOCUMENT_OPTIONS.map(({ id, label, icon: Icon }) => {
+        {DOCUMENT_OPTIONS.map(({ id, label, note, icon: Icon }) => {
           const active = selected.includes(id);
           return (
             <button
@@ -440,7 +446,17 @@ export function DocumentsPanel({
               )}
             >
               <Icon className={cn('h-4 w-4 shrink-0', active ? 'text-brand-600' : 'text-slate-400')} />
-              <span className="min-w-0 flex-1 truncate">{label}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate">{label}</span>
+                <span
+                  className={cn(
+                    'block truncate text-[11px] font-normal',
+                    active ? 'text-brand-700/70' : 'text-slate-400',
+                  )}
+                >
+                  {note}
+                </span>
+              </span>
               <span
                 className={cn(
                   'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors',

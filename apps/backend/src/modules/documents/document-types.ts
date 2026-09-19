@@ -53,13 +53,22 @@ export type DocumentGenerationContext = {
   }>;
 };
 
+/**
+ * くしま内科で作る書類は3種類。
+ *
+ * - 診療情報提供書 … 紹介先の医師が読む。検査結果の紙と2枚で紹介状になる
+ * - 診断書（検査結果） … 紹介状に同封する。紹介先が検査の数値を見るための紙
+ * - 主治医意見書①② … 市町村へ提出し、介護認定審査会が要介護度を判定するために読む
+ *
+ * 「現在の処方」と「情報提供書＋処方」は 2026-09-20 に外した。
+ * 処方は診療情報提供書の【現在の処方】欄に入るので、別の紙が要らなくなった。
+ * 型と対応表は、それ以前に作った書類を読むために残してある。
+ */
 export const GENERATED_DOCUMENT_TYPES: GeneratedDocumentType[] = [
   GeneratedDocumentType.REFERRAL,
-  GeneratedDocumentType.PRESCRIPTION_LIST,
   GeneratedDocumentType.MEDICAL_CERTIFICATE,
   GeneratedDocumentType.CARE_OPINION_1,
   GeneratedDocumentType.CARE_OPINION_2,
-  GeneratedDocumentType.INFO_PROVIDE_COMBINED,
 ];
 
 export const FRONTEND_DOC_TYPE_MAP: Record<GeneratedDocumentType, string> = {

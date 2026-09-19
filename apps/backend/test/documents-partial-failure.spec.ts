@@ -5,6 +5,7 @@ import { ConsultationAccessService } from '../src/common/services/consultation-a
 import { SettingsService } from '../src/modules/settings/settings.service';
 import { DEFAULT_PHYSICIAN_RULES } from '../src/modules/settings/physician-rules.types';
 import { LlmProvider } from '../src/providers/ai/llm.provider';
+import { GENERATED_DOCUMENT_TYPES } from '../src/modules/documents/document-types';
 
 /**
  * 書類の一括生成は「全か無か」にしない。
@@ -79,7 +80,7 @@ describe('書類の一括生成：1枚こけても残りは残る', () => {
     } as unknown as LlmProvider;
   }
 
-  it('1種類が429で落ちても、残り5種類は作られて返る', async () => {
+  it('1種類が429で落ちても、残りは作られて返る', async () => {
     const prisma = makePrisma();
     const service = new DocumentsService(
       prisma,
@@ -90,7 +91,7 @@ describe('書類の一括生成：1枚こけても残りは残る', () => {
 
     const { documents, failed } = await service.generateAll('c1', 'dr1');
 
-    expect(documents).toHaveLength(5);
+    expect(documents).toHaveLength(GENERATED_DOCUMENT_TYPES.length - 1);
     expect(failed).toHaveLength(1);
     expect(failed[0]!.type).toBe('referral');
     // 医師の画面には書類名で出す（チャットの返信はフロントの対応表を通らない）
@@ -122,13 +123,13 @@ describe('書類の一括生成：1枚こけても残りは残る', () => {
     expect(記録.errorMessage).toContain('診療情報提供書');
   });
 
-  it('全部そろえば、従来どおり6種類ぶん返って成功として記録される', async () => {
+  it('全部そろえば、作る種類ぶん返って成功として記録される', async () => {
     const prisma = makePrisma();
     const service = new DocumentsService(prisma, access, settings, makeLlm(null));
 
     const { documents, failed } = await service.generateAll('c1', 'dr1');
 
-    expect(documents).toHaveLength(6);
+    expect(documents).toHaveLength(GENERATED_DOCUMENT_TYPES.length);
     expect(failed).toHaveLength(0);
     const create = (prisma as unknown as {
       aIExecution: { create: jest.Mock };
