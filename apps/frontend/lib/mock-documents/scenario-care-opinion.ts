@@ -1,27 +1,23 @@
+/**
+ * デモ用の主治医意見書の中身。紙の様式にある選択肢の語をそのまま入れる。
+ * 本番の値はバックエンド（care-opinion-template.ts）が作る。
+ */
 import type { CareOpinion1Data, CareOpinion2Data } from './types';
 
-type CareOpinion1Mock = Omit<
-  CareOpinion1Data,
-  'municipalityCode' | 'doctorNumber' | 'applicationDate' | 'entryDate' | 'patientName' | 'patientNameKana' | 'dateOfBirth' | 'age' | 'contact' | 'diagnoses' | 'treatmentCourse'
->;
-
-type CareOpinion2Mock = Omit<
-  CareOpinion2Data,
-  'municipalityCode' | 'entryDate' | 'specialNotes' | 'riskPolicy'
->;
+type CareOpinion1Mock = Partial<CareOpinion1Data>;
+type CareOpinion2Mock = Partial<CareOpinion2Data>;
 
 const HYPERTENSION_CO1: CareOpinion1Mock = {
   stability: 'stable',
-  independencePhysical: '自立',
-  independenceCognitive: '自立',
-  specialMedicalCare: [],
-  coreSymptoms: {
-    shortTermMemory: '問題なし',
-    decisionMaking: '問題なし',
-    communication: '問題なし',
-  },
-  peripheralSymptoms: [],
-  otherPsychSymptoms: 'なし',
+  adlLevel: '自立',
+  dementiaLevel: '自立',
+  shortTermMemory: '問題なし',
+  decisionCapacity: '自立',
+  communicationAbility: '伝えられる',
+  peripheralPresence: 'none',
+  psychSymptomPresence: 'none',
+  opinionCount: 'first',
+  consent: 'agree',
 };
 
 const HYPERTENSION_CO2: CareOpinion2Mock = {
@@ -29,43 +25,26 @@ const HYPERTENSION_CO2: CareOpinion2Mock = {
   height: '158',
   weight: '62',
   weightChange: 'maintain',
-  physicalImpairments: [],
-  mobility: ['屋外歩行: 自立'],
-  nutrition: '食事行為: 自立 / 栄養状態: 良好',
-  risks: ['血圧管理'],
-  serviceOutlook: '期待できる',
-  medicalManagement: ['訪問診療: 不要', '訪問看護: 不要'],
-  servicePrecautions: '血圧・服薬状況の確認',
-  infectiousDisease: '無',
+  outdoorWalking: '自立',
+  wheelchair: '用いていない',
+  eating: '自立ないし何とか自分で食べられる',
+  nutritionState: '良好',
+  risks: ['転倒・骨折'],
+  serviceOutlook: 'expected',
+  medicalManagement: [],
+  infection: { state: 'none', detail: '' },
 };
 
 const BRONCHITIS_CO1: CareOpinion1Mock = {
+  ...HYPERTENSION_CO1,
   stability: 'unstable',
-  independencePhysical: '自立',
-  independenceCognitive: '自立',
-  specialMedicalCare: [],
-  coreSymptoms: {
-    shortTermMemory: '問題なし',
-    decisionMaking: '問題なし',
-    communication: '問題なし',
-  },
-  peripheralSymptoms: [],
-  otherPsychSymptoms: 'なし',
 };
 
 const BRONCHITIS_CO2: CareOpinion2Mock = {
-  dominantHand: 'right',
+  ...HYPERTENSION_CO2,
   height: '172',
   weight: '68',
-  weightChange: 'maintain',
-  physicalImpairments: [],
-  mobility: ['屋外歩行: 自立'],
-  nutrition: '食事行為: 自立 / 栄養状態: 良好',
-  risks: ['感染症'],
-  serviceOutlook: '期待できる',
-  medicalManagement: ['訪問診療: 不要'],
-  servicePrecautions: '特になし',
-  infectiousDisease: '無',
+  risks: ['易感染症'],
 };
 
 export function getCareOpinion1Mock(caseCode: string): CareOpinion1Mock {

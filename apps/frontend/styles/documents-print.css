@@ -269,20 +269,331 @@
   padding: 0.8mm 1.2mm;
 }
 
-/* Care opinion — dense forms */
-.doc-page-care {
-  font-size: 7.5pt;
-  line-height: 1.28;
+/* ─── 主治医意見書①② — 紙の様式に合わせる ─── */
+
+.doc-page-care1,
+.doc-page-care2 {
+  font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif;
+  /* 様式の項目数が多い。A4一枚に収めるためにここまで詰める */
+  font-size: 6.6pt;
+  line-height: 1.32;
+  padding: 5mm 6mm;
 }
 
-.doc-page-care .doc-title {
-  font-size: 12pt;
-  margin-bottom: 2mm;
+.doc-care-title {
+  font-size: 11.5pt;
+  letter-spacing: 0.15em;
+  margin: 0 0 1.8mm;
+  font-weight: 700;
 }
 
-.doc-page-care .doc-box {
-  padding: 1.5mm 2mm;
+.doc-care-header {
+  display: flex;
+  gap: 6mm;
+  margin-bottom: 1.2mm;
+  flex-shrink: 0;
+}
+
+.doc-care-header p {
+  margin: 0 0 0.6mm;
+  white-space: nowrap;
+}
+
+.doc-care-header-left {
+  min-width: 52mm;
+}
+
+.doc-care-header-mid {
+  flex: 1;
+}
+
+.doc-care-header-2 {
+  gap: 10mm;
+  align-items: baseline;
+}
+
+.doc-care-key {
+  display: inline-block;
+  min-width: 26mm;
+}
+
+/* 表 — 申請者欄・最終診察日など */
+.doc-care-table {
+  width: 100%;
+  border-collapse: collapse;
   margin-bottom: 1.5mm;
+  flex-shrink: 0;
+}
+
+.doc-care-table th,
+.doc-care-table td {
+  border: 1px solid #000;
+  padding: 0.5mm 1.2mm;
+  vertical-align: middle;
+  text-align: left;
+  font-weight: 400;
+}
+
+.doc-care-th {
+  background: #d9d9d9;
+  font-weight: 600;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.doc-care-th-wide {
+  width: 24mm;
+}
+
+.doc-care-narrow {
+  width: 16mm;
+}
+
+.doc-care-blank {
+  width: 26mm;
+}
+
+.doc-care-contact {
+  width: 48mm;
+}
+
+.doc-care-age {
+  margin-left: 4mm;
+}
+
+.doc-care-consent {
+  border: 1px solid #000;
+  border-top: none;
+  padding: 0.8mm 1.5mm 1mm;
+  margin-bottom: 1mm;
+  flex-shrink: 0;
+}
+
+.doc-care-consent > p {
+  margin: 0 0 0.8mm;
+}
+
+.doc-care-clinic p {
+  margin: 0.6mm 0 0;
+}
+
+.doc-care-tel {
+  margin-left: 6mm;
+}
+
+/* 左の縦帯（1 傷病に関する意見 … 5 特記すべき事項） */
+.doc-care-section {
+  display: flex;
+  border: 1px solid #000;
+  border-bottom: none;
+  flex-shrink: 0;
+}
+
+.doc-care-section:last-of-type {
+  border-bottom: 1px solid #000;
+}
+
+.doc-care-section-grow {
+  flex: 1;
+  min-height: 0;
+}
+
+.doc-care-spine {
+  width: 7mm;
+  flex-shrink: 0;
+  background: #d9d9d9;
+  border-right: 1px solid #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1.5mm;
+  padding: 1.5mm 0;
+  font-weight: 600;
+}
+
+.doc-care-spine-num {
+  font-size: 8pt;
+}
+
+.doc-care-spine-label {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+}
+
+.doc-care-body {
+  flex: 1;
+  min-width: 0;
+  padding: 0.8mm 1.5mm 1mm;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4mm;
+}
+
+.doc-care-body-grow {
+  flex: 1;
+  min-height: 0;
+}
+
+/* 伸びる欄の中の記入スペース（印刷でも高さを保つ） */
+.doc-care-section-grow .doc-care-body {
+  flex: 1;
+  min-height: 0;
+}
+
+.doc-care-section-grow .doc-care-block-grow .doc-field-line {
+  flex: 1;
+}
+
+.doc-care-block {
+  border-top: 1px solid #000;
+  padding-top: 0.7mm;
+  margin-top: 0.4mm;
+}
+
+.doc-care-block:first-child {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.doc-care-block-grow {
+  flex: 1;
+  min-height: 18mm;
+  display: flex;
+  flex-direction: column;
+}
+
+.doc-care-lead {
+  margin: 0 0 0.6mm;
+  font-weight: 600;
+}
+
+.doc-care-note {
+  margin: 0 0 0.4mm;
+  font-size: 6.2pt;
+}
+
+/* 見出し＋選択肢の1行 */
+.doc-care-kv {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3mm 2.5mm;
+  margin-bottom: 0.3mm;
+}
+
+.doc-care-kv-top {
+  align-items: flex-start;
+}
+
+.doc-care-kv-key {
+  min-width: 30mm;
+  flex-shrink: 0;
+}
+
+.doc-care-arrow {
+  font-weight: 700;
+}
+
+.doc-care-dx {
+  display: flex;
+  align-items: center;
+  gap: 2mm;
+  margin: 0 0 0.3mm;
+}
+
+.doc-care-dx-no {
+  width: 5mm;
+}
+
+.doc-care-onset {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.doc-care-paralysis {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4mm;
+}
+
+.doc-care-paralysis-row {
+  display: flex;
+  gap: 8mm;
+}
+
+.doc-care-precautions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5mm 4mm;
+}
+
+.doc-care-footer {
+  display: flex;
+  justify-content: center;
+  gap: 14mm;
+  margin-top: 1.5mm;
+  flex-shrink: 0;
+}
+
+/* チェック欄 — 紙の□をそのまま押せるようにする */
+.doc-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 1mm;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.doc-check:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 1px;
+}
+
+.doc-check-box {
+  display: inline-block;
+  width: 2.6mm;
+  height: 2.6mm;
+  border: 1px solid #000;
+  background: #fff;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.doc-check-box.is-checked::after {
+  content: '';
+  position: absolute;
+  left: 0.4mm;
+  top: 0.4mm;
+  right: 0.4mm;
+  bottom: 0.4mm;
+  background: #000;
+}
+
+.doc-check-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5mm 2.5mm;
+}
+
+.doc-check-col {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5mm;
+}
+
+.doc-inline-label {
+  white-space: nowrap;
 }
 
 /* Editable fields — screen only chrome */
@@ -403,6 +714,12 @@
 
   .doc-print-only {
     display: inline !important;
+  }
+
+  /* 主治医意見書は項目が多い。印刷の余白も画面と同じだけ詰める */
+  .doc-page-care1,
+  .doc-page-care2 {
+    padding: 5mm 6mm;
   }
 
   /* 紹介状の各欄は、印刷では textarea ではなくテキストを出す（高さで切れないため） */

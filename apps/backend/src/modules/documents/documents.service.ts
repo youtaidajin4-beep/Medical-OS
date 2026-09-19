@@ -21,6 +21,7 @@ import {
   GENERATED_DOCUMENT_TYPES,
 } from './document-types';
 import { finalizeReferralContent, ReferralPatientContext } from './referral-template';
+import { finalizeCareOpinion1, finalizeCareOpinion2 } from './care-opinion-template';
 
 @Injectable()
 export class DocumentsService {
@@ -160,8 +161,9 @@ export class DocumentsService {
     const context = ctx ?? (await this.buildContext(consultationId, ''));
     const { system, user } = buildDocumentPrompt(type, context);
     const raw = await this.llmProvider.generateDocument(type, system, user);
-    // 紹介状は紙の雛形が決まっている。固定文・患者欄・発行日はAIの出力を採用せず、ここで上書きする
-    const content = await this.applyReferralTemplate(
+    // 紹介状も主治医意見書も紙の様式が決まっている。
+    // 固定文・患者欄・日付はAIの出力を採用せず、ここで上書きする
+    const content = this.applyPaperTemplate(
       FRONTEND_DOC_TYPE_MAP[type],
       raw,
       referralPatientContextFrom(context),
@@ -195,17 +197,23 @@ export class DocumentsService {
   }
 
   /**
-   * 紹介状（と情報提供書＋処方の紹介状部分）に、紙の雛形を当てる。
+   * 紙の様式が決まっている書類（紹介状・情報提供書＋処方・主治医意見書①②）に、様式を当てる。
    *
-   * AIやチャットが返した内容のうち、雛形で決まっているところ（固定文・患者欄・発行日）を
-   * 捨てて、こちらの値で埋め直す。紹介状以外の書類はそのまま通す。
+   * AIやチャットが返した内容のうち、様式で決まっているところ（固定文・患者欄・日付・
+   * 印字されている選択肢）を捨てて、こちらの値で埋め直す。他の書類はそのまま通す。
    */
-  applyReferralTemplate(
+  applyPaperTemplate(
     frontendType: string,
     content: Record<string, unknown>,
     patient: ReferralPatientContext,
     issuedAt: Date = new Date(),
   ): Record<string, unknown> {
+    if (frontendType === 'care-opinion-1') {
+      return finalizeCareOpinion1(content, patient, issuedAt);
+    }
+    if (frontendType === 'care-opinion-2') {
+      return finalizeCareOpinion2(content, issuedAt);
+    }
     if (frontendType === 'referral') {
       return finalizeReferralContent(content, patient, issuedAt) as unknown as Record<
         string,
@@ -228,14 +236,15 @@ export class DocumentsService {
    * 画面での手直し（updateDocument）には当てない。先生が紙の文面を直したいときに
    * 書き戻してしまうため、雛形を強制するのは「AIが書いたものを保存する経路」だけにする。
    */
-  async applyReferralTemplateFor(
+  async applyPaperTemplateFor(
     consultationId: string,
     frontendType: string,
     content: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
-    if (frontendType !== 'referral' && frontendType !== 'info-combined') return content;
+    const paperTypes = ['referral', 'info-combined', 'care-opinion-1', 'care-opinion-2'];
+    if (!paperTypes.includes(frontendType)) return content;
     const patient = await this.loadReferralPatientContext(consultationId);
-    return this.applyReferralTemplate(frontendType, content, patient);
+    return this.applyPaperTemplate(frontendType, content, patient);
   }
 
   private async loadReferralPatientContext(

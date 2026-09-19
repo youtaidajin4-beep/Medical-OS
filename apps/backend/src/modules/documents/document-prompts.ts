@@ -152,47 +152,123 @@ const PROMPTS: Record<GeneratedDocumentType, { system: string; schema: string }>
   },
   CARE_OPINION_1: {
     system: `${BASE_RULES}
-介護保険の主治医意見書（1）を作成します。`,
+介護保険の「主治医意見書①」を作成します。紙の様式が決まっていて、
+ヘッダー（市町村コード・医師番号）・申請者欄・医療機関欄・日付はシステム側が埋めます。
+あなたが書くのは、医師が診療で判断した次の項目だけです。
+
+あなたが書く項目:
+- diagnoses（1(1) 診断名及び発症年月日）… 最大3つ。**1番目は生活機能低下の直接の原因となっている傷病**を書く。
+  正式な病名にする。発症年月日は分かるものだけ（「平成30年頃」のように分かる粒度で。不明なら空文字）
+- stability（1(2) 症状としての安定性）… "stable" | "unstable" | "unknown"。
+  **基本は stable。** がんの末期・急性増悪・転倒を繰り返している・数週間で状態が変わっているなど、
+  介護の計画がすぐ変わりうる状態のときだけ unstable。医師が「不安定」と述べていればそれに従う
+- instabilityDetail … unstable のときだけ、具体的な状況を1〜2文
+- courseAndTreatment（1(3) 経過及び投薬内容を含む治療内容）… **SOAPと過去の診療から書く**。
+  概ね6か月以内で介護に影響した出来事、今の状態、現在の投薬内容（薬剤名 規格 用法）の順に、
+  である調で4〜8文。介護認定の審査員が読んで生活機能の低下が想像できること。
+  SOAPに無いことは書かない。材料が足りないときは、分かる範囲だけ書いて残りは書かない
+- opinionCount … "first"（初回）| "repeat"（2回目以上）。分からなければ空文字
+- otherDepartmentVisit / otherDepartments … 他科受診。診療記録・問診票に受診が出てくるときだけ
+- procedures / specialResponses / incontinenceResponses（2 特別な医療）…
+  **過去14日以内に受けた医療だけ**。様式の語からそのまま選ぶ。医師サブカルテと問診票に根拠があるものだけ
+- adlLevel / dementiaLevel / shortTermMemory / decisionCapacity / communicationAbility /
+  peripheralPresence / peripheralSymptoms / psychSymptomPresence（3(1)〜(4)）…
+  問診票と診療記録に根拠があるものだけ。**根拠が無ければ空文字（空の配列）**。
+  歩けている・会話ができていると読み取れるなら、それに沿った選択肢を選んでよい
+
+選択肢は様式に印字されている語をそのまま使う（別の言い方に変えない）。
+様式に無い語を書くと捨てられて空欄になります。
+
+出力しないでよい項目（システムが様式どおりに埋めます）:
+- 市町村コード・管理市町村コード・医師番号・被保険者番号・調査回数
+- 申請日・記入日・申請者の氏名/フリガナ/生年月日/年齢/連絡先
+- 医師氏名・医療機関名・所在地・電話・FAX・同意の有無`,
     schema: `{
-  "municipalityCode": "市町村番号",
-  "doctorNumber": "医師番号",
-  "applicationDate": "申請日",
-  "entryDate": "記入日",
-  "patientName": "氏名",
-  "patientNameKana": "カナ",
-  "dateOfBirth": "生年月日",
-  "age": 数値またはnull,
-  "contact": "連絡先",
-  "diagnoses": [{"name": "病名", "onsetDate": "発症日"}],
+  "diagnoses": [{"name": "病名", "onsetDate": "発症年月日（分かるものだけ）"}],
   "stability": "stable|unstable|unknown",
-  "treatmentCourse": "治療経過",
-  "independencePhysical": "身体機能",
-  "independenceCognitive": "認知機能",
-  "specialMedicalCare": ["特別な医療"],
-  "coreSymptoms": {"key": "value"},
-  "peripheralSymptoms": ["周辺症状"],
-  "otherPsychSymptoms": "その他"
+  "instabilityDetail": "不安定のときだけ具体的な状況",
+  "courseAndTreatment": "経過及び投薬内容を含む治療内容（SOAPから）",
+  "lastExamDate": "最終診察日（指定があるときだけ。無ければ空文字）",
+  "opinionCount": "first|repeat|空文字",
+  "otherDepartmentVisit": "yes|no|空文字",
+  "otherDepartments": ["内科", "整形外科", ...様式の語],
+  "otherDepartmentOther": "その他の科",
+  "procedures": ["点滴の管理", "透析", ...様式の語],
+  "specialResponses": ["モニター測定（血圧、心拍、酸素飽和度 等）", "褥瘡の処置"],
+  "incontinenceResponses": ["カテーテル（コンドームカテーテル、留置カテーテル 等）"],
+  "adlLevel": "自立|J1|J2|A1|A2|B1|B2|C1|C2|空文字",
+  "dementiaLevel": "自立|Ⅰ|Ⅱa|Ⅱb|Ⅲa|Ⅲb|Ⅳ|M|空文字",
+  "shortTermMemory": "問題なし|問題あり|空文字",
+  "decisionCapacity": "自立|いくらか困難|見守りが必要|判断できない|空文字",
+  "communicationAbility": "伝えられる|いくらか困難|具体的要求に限られる|伝えられない|空文字",
+  "peripheralPresence": "none|present|空文字",
+  "peripheralSymptoms": ["幻視・幻聴", "妄想", ...様式の語],
+  "peripheralOther": "その他の周辺症状",
+  "psychSymptomPresence": "none|present|空文字",
+  "psychSymptomName": "症状名",
+  "specialistVisit": "yes|no|空文字",
+  "specialistDetail": "専門医の受診先"
 }`,
   },
   CARE_OPINION_2: {
     system: `${BASE_RULES}
-介護保険の主治医意見書（2）を作成します。`,
+介護保険の「主治医意見書②」を作成します。3(5)身体の状態・4生活機能とサービスに関する意見・5特記すべき事項。
+市町村コード・被保険者番号・記入日はシステム側が埋めます。
+
+書き方:
+- **根拠があるものだけチェックする。** 問診票・SOAP・医師サブカルテに出てこない症状を選ばない。
+  空欄で出して先生が紙の上で足すほうが、間違ったチェックが入っているより安全です
+- 身長・体重は問診票や診療記録に数値があるときだけ
+- risks（4(3)）は「今あるか、これから起きやすい状態」。診断名や経過から自然に導けるものだけ
+  （例: 膝関節症で歩行が不安定 → 転倒・骨折）
+- riskPolicy（→対処方針）と nutritionNote（→留意点）は、選んだ項目に対する具体的な方針を1〜2文
+- medicalManagement（4(5)）は**今後必要なサービス**。当院が実際に行う予定のものだけ
+- precautions（4(6)）は、サービス提供時に気をつけることがある項目だけ detail を書き、
+  無いものは none: true にする
+- specialNotes（5 特記すべき事項）は、認定調査員・ケアマネージャーが知っておくべきことを3〜6文。
+  SOAPと問診票にある事実だけで書く
+
+選択肢は様式に印字されている語をそのまま使う。様式に無い語は捨てられます。`,
     schema: `{
-  "municipalityCode": "市町村番号",
-  "entryDate": "記入日",
-  "dominantHand": "right|left",
-  "height": "", "weight": "",
-  "weightChange": "increase|maintain|decrease",
-  "physicalImpairments": ["身体障害"],
-  "mobility": ["移動"],
-  "nutrition": "栄養",
-  "risks": ["リスク"],
-  "riskPolicy": "リスク対応",
-  "serviceOutlook": "サービス見通し",
-  "medicalManagement": ["医学的管理"],
-  "servicePrecautions": "サービス留意点",
-  "infectiousDisease": "感染症",
-  "specialNotes": "特記事項"
+  "dominantHand": "right|left|空文字",
+  "height": "cm（数値のみ）", "weight": "kg（数値のみ）",
+  "weightChange": "increase|maintain|decrease|空文字",
+  "limbLoss": {"checked": false, "site": ""},
+  "paralysis": {
+    "checked": false,
+    "rightUpper": {"checked": false, "degree": "mild|moderate|severe|空文字"},
+    "leftUpper": {...}, "rightLower": {...}, "leftLower": {...}, "other": {...}
+  },
+  "muscleWeakness": {"checked": false, "site": "", "degree": ""},
+  "jointContracture": {"checked": false, "site": "", "degree": ""},
+  "jointPain": {"checked": false, "site": "", "degree": ""},
+  "ataxia": {"checked": false, "upper": ["右"|"左"], "lower": [...], "trunk": [...]},
+  "pressureUlcer": {"checked": false, "site": "", "degree": ""},
+  "otherSkinDisease": {"checked": false, "site": "", "degree": ""},
+  "outdoorWalking": "自立|介助があればしている|していない|空文字",
+  "wheelchair": "用いていない|主に自分で操作している|主に他人が操作している|空文字",
+  "walkingAids": ["用いてない"|"屋外で使用"|"屋内で使用"],
+  "eating": "自立ないし何とか自分で食べられる|全面介助|空文字",
+  "nutritionState": "良好|不良|空文字",
+  "nutritionNote": "栄養・食生活上の留意点",
+  "risks": ["転倒・骨折", "低栄養", ...様式の語],
+  "riskOther": "その他の状態",
+  "riskPolicy": "対処方針",
+  "serviceOutlook": "expected|notExpected|unknown|空文字",
+  "medicalManagement": ["訪問診療", "訪問看護", ...様式の語],
+  "medicalManagementOther": "その他の医療系サービス",
+  "precautions": {
+    "bloodPressure": {"none": true, "detail": ""},
+    "movement": {"none": true, "detail": ""},
+    "eating": {"none": true, "detail": ""},
+    "exercise": {"none": true, "detail": ""},
+    "swallowing": {"none": true, "detail": ""},
+    "other": ""
+  },
+  "infection": {"state": "none|present|unknown|空文字", "detail": ""},
+  "specialNotes": "特記すべき事項",
+  "notifyCarePlan": "yes|no|空文字",
+  "notifyResult": "yes|no|空文字"
 }`,
   },
   INFO_PROVIDE_COMBINED: {

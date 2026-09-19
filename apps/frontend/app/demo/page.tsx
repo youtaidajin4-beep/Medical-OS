@@ -316,21 +316,28 @@ function buildDemoDocs(
         { name: '高血圧症', onsetDate: '' },
         { name: '2型糖尿病', onsetDate: '' },
       ],
-      stability: 'stable',
-      treatmentCourse: [soap.subjective, soap.objective, soap.plan, note].filter(Boolean).join('\n'),
-      independencePhysical: '自立',
-      independenceCognitive: '自立',
+      stability: 'stable' as const,
+      courseAndTreatment: [soap.subjective, soap.objective, soap.plan, note]
+        .filter(Boolean)
+        .join('\n'),
+      adlLevel: '自立',
+      dementiaLevel: '自立',
     },
     careOpinion2: {
       ...generated.careOpinion2,
       height,
       weight,
       weightChange: 'maintain',
-      risks: ['血圧管理', '血糖管理'],
-      servicePrecautions: '血圧・服薬状況の確認。便秘の経過観察。',
-      infectiousDisease: '無',
-      medicalManagement: ['訪問診療: 不要', '訪問看護: 不要'],
-      specialNotes: [soap.assessment, soap.plan, note, patient.questionnaireText].filter(Boolean).join('\n'),
+      risks: ['転倒・骨折'],
+      precautions: {
+        ...generated.careOpinion2.precautions,
+        bloodPressure: { none: false, detail: '服薬状況とあわせて確認' },
+      },
+      infection: { state: 'none' as const, detail: '' },
+      medicalManagement: [],
+      specialNotes: [soap.assessment, soap.plan, note, patient.questionnaireText]
+        .filter(Boolean)
+        .join('\n'),
       riskPolicy: soap.plan,
     },
   };

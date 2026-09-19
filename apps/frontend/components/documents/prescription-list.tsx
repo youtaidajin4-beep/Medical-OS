@@ -17,8 +17,8 @@ export function PrescriptionList({ data, onChange }: Props) {
     <div className="doc-page doc-page-rx">
       <p className="doc-section-title">【現在の処方】</p>
       <div className="doc-rx-list">
-        {data.items.map((item) => (
-          <div key={item.index} className="doc-rx-item">
+        {data.items.map((item, i) => (
+          <div key={`${item.index}-${i}`} className="doc-rx-item">
             <div>
               <p>
                 （{item.index}）

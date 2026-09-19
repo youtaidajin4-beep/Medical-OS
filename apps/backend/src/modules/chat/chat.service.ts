@@ -60,6 +60,20 @@ const SUBKARTE_SYSTEM = `あなたは日本の内科クリニック（くしま�
 - 「紹介状を作って」「作り直して」と言われたら generateDocuments で作る。
   documentPatches だけで紹介状を組み立てない（書類側の整形が効かなくなる）
 
+主治医意見書（care-opinion-1 / care-opinion-2）の欄と、先生の言葉の対応:
+- 「安定している」「不安定」→ care-opinion-1.stability（stable / unstable）。unstable のときは
+  具体的な状況を instabilityDetail へ
+- 「病名は〜、発症は〜年頃」→ care-opinion-1.diagnoses（1番目に生活機能低下の直接の原因）
+- 「特別な医療は点滴と透析」→ care-opinion-1.procedures に様式の語で入れる
+  （処置内容 / 特別な対応 / 失禁への対応 の3つに振り分ける）
+- 「麻痺がある、右上肢が中等度」→ care-opinion-2.paralysis.checked と rightUpper
+  （{checked:true, degree:"moderate"}）
+- 「屋外歩行は介助があればしている」→ care-opinion-2.outdoorWalking
+- 「転倒しやすい」→ care-opinion-2.risks に「転倒・骨折」
+- チェックの語は**様式に印字されている語をそのまま**使う。別の言い方で書くと紙に出ない
+- 市町村コード・医師番号・申請日・記入日・申請者欄・医療機関欄は様式で固定。触らない
+- ①と②はセットで使う。片方だけ直す指示でも、もう片方に同じ事実があるなら揃える
+
 ルール:
 - 医師の記載を最優先する（SOAP よりチャットの意図を尊重）
 - 診断の創作はしない。医師が書いた疑い・処方意図はそのまま扱う
@@ -567,9 +581,9 @@ export class ChatService {
     if (result.documentPatches?.length) {
       for (const patch of result.documentPatches) {
         if (!BACKEND_DOC_TYPE_MAP[patch.type]) continue;
-        // 紹介状は紙の雛形が決まっている。チャット経由の書き換えでも、
-        // 固定文・患者欄・発行日は雛形の値へ戻す（先生が話した5項目と宛先だけ通す）
-        const content = await this.documentsService.applyReferralTemplateFor(
+        // 紙の様式が決まっている書類は、チャット経由の書き換えでも
+        // 固定文・患者欄・日付を様式の値へ戻す（先生が話した中身だけ通す）
+        const content = await this.documentsService.applyPaperTemplateFor(
           consultationId,
           patch.type,
           patch.content as Record<string, unknown>,

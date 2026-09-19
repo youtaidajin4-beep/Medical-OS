@@ -3,10 +3,13 @@ import { getCareOpinion1Mock, getCareOpinion2Mock } from './scenario-care-opinio
 import { getCertificateMock } from './scenario-certificate';
 import { getPrescriptionsForCase } from './scenario-prescriptions';
 import type {
+  CareOpinion1Data,
+  CareOpinion2Data,
   ConsultationContext,
   GeneratedDocuments,
   ReferralLetterData,
 } from './types';
+import { emptyCareOpinion1, emptyCareOpinion2 } from './care-opinion-options';
 
 const PATIENT_DEFAULTS: Record<string, { kana: string; address: string; phone: string; occupation: string }> = {
   'P-001': { kana: 'ヤマダ タロウ', address: '長崎県大村市西乾馬町 1-2-3', phone: '0957-50-1234', occupation: '会社員' },
@@ -122,22 +125,38 @@ export function generateDocuments(ctx: ConsultationContext): GeneratedDocuments 
     ...certMock,
   };
 
-  const careOpinion1 = {
+  // 毎回同じところ（コード・医療機関）と日付・患者欄を先に埋め、症例ごとの中身を重ねる
+  const careOpinion1: CareOpinion1Data = {
+    ...emptyCareOpinion1(),
     municipalityCode: CLINIC_CONFIG.municipalityCode,
+    supervisorMunicipalityCode: CLINIC_CONFIG.municipalityCode,
     doctorNumber: CLINIC_CONFIG.doctorNumber,
-    applicationDate: formatJapaneseDate(ctx.issuedAt),
+    applicationDate: formatReiwaDate(ctx.issuedAt),
     entryDate: formatReiwaDate(ctx.issuedAt),
+    lastExamDate: formatReiwaDate(ctx.issuedAt),
     patientName: ctx.patientName,
     patientNameKana: ctx.patientNameKana ?? '',
     dateOfBirth: formatBirthDate(ctx.dateOfBirth),
     age: ctx.age,
     contact: ctx.phone ?? '',
-    diagnoses: [{ name: diagnosis, onsetDate: '' }],
-    treatmentCourse: [ctx.soap.subjective, ctx.soap.objective, ctx.soap.plan].filter(Boolean).join('\n'),
+    physicianName: CLINIC_CONFIG.physicianName,
+    clinicName: CLINIC_CONFIG.legalName,
+    clinicAddress: CLINIC_CONFIG.address,
+    clinicTel: CLINIC_CONFIG.tel,
+    clinicFax: CLINIC_CONFIG.fax,
+    diagnoses: [
+      { name: diagnosis, onsetDate: '' },
+      { name: '', onsetDate: '' },
+      { name: '', onsetDate: '' },
+    ],
+    courseAndTreatment: [ctx.soap.subjective, ctx.soap.objective, ctx.soap.plan]
+      .filter(Boolean)
+      .join('\n'),
     ...co1Mock,
   };
 
-  const careOpinion2 = {
+  const careOpinion2: CareOpinion2Data = {
+    ...emptyCareOpinion2(),
     municipalityCode: CLINIC_CONFIG.municipalityCode,
     entryDate: formatReiwaDate(ctx.issuedAt),
     specialNotes: [ctx.soap.assessment, ctx.soap.plan, ctx.memo].filter(Boolean).join('\n'),

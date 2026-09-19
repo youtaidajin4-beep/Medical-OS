@@ -19,6 +19,10 @@ import { Alert } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api-client';
 import type { DocumentTypeId, GeneratedDocuments, SoapData } from '@/lib/mock-documents/types';
+import {
+  emptyCareOpinion1,
+  emptyCareOpinion2,
+} from '@/lib/mock-documents/care-opinion-options';
 import { ReferralLetter } from './referral-letter';
 import { PrescriptionList } from './prescription-list';
 import { MedicalCertificate } from './medical-certificate';
@@ -27,6 +31,10 @@ import { CareOpinion2 } from './care-opinion-2';
 import { InfoProvideCombined } from './info-provide-combined';
 import '@/styles/documents-print.css';
 
+/**
+ * 主治医意見書は①②で必ず1セットで出す。片方だけ作る運用が無いので、
+ * 選ぶのも印刷するのも1枚のカードにまとめている（保存は①②それぞれ）。
+ */
 const DOCUMENT_OPTIONS: Array<{
   id: DocumentTypeId;
   label: string;
@@ -36,8 +44,7 @@ const DOCUMENT_OPTIONS: Array<{
   { id: 'info-combined', label: '情報提供書＋処方', icon: ClipboardList },
   { id: 'prescription', label: '現在の処方', icon: Pill },
   { id: 'certificate', label: '健康診断結果表', icon: Stethoscope },
-  { id: 'care-opinion-1', label: '主治医意見書①', icon: FileHeart },
-  { id: 'care-opinion-2', label: '主治医意見書②', icon: FileHeart },
+  { id: 'care-opinion-set', label: '主治医意見書①②', icon: FileHeart },
 ];
 
 /** 出来なかった書類を医師へ名前で伝えるための対応表 */
@@ -45,7 +52,7 @@ const DOC_LABEL: Record<string, string> = Object.fromEntries(
   DOCUMENT_OPTIONS.map((o) => [o.id, o.label]),
 );
 
-const DEFAULT_SELECTED: DocumentTypeId[] = ['info-combined', 'certificate', 'care-opinion-1', 'care-opinion-2'];
+const DEFAULT_SELECTED: DocumentTypeId[] = ['info-combined', 'certificate', 'care-opinion-set'];
 
 const API_TYPE_TO_KEY: Record<string, keyof GeneratedDocuments> = {
   referral: 'referral',
@@ -106,44 +113,8 @@ function emptyGenerated(): GeneratedDocuments {
       overallGrade: '',
       remarks: '',
     },
-    careOpinion1: {
-      municipalityCode: '',
-      doctorNumber: '',
-      applicationDate: '',
-      entryDate: '',
-      patientName: '',
-      patientNameKana: '',
-      dateOfBirth: '',
-      age: null,
-      contact: '',
-      diagnoses: [],
-      stability: 'unknown',
-      treatmentCourse: '',
-      independencePhysical: '',
-      independenceCognitive: '',
-      specialMedicalCare: [],
-      coreSymptoms: {},
-      peripheralSymptoms: [],
-      otherPsychSymptoms: '',
-    },
-    careOpinion2: {
-      municipalityCode: '',
-      entryDate: '',
-      dominantHand: 'right',
-      height: '',
-      weight: '',
-      weightChange: 'maintain',
-      physicalImpairments: [],
-      mobility: [],
-      nutrition: '',
-      risks: [],
-      riskPolicy: '',
-      serviceOutlook: '',
-      medicalManagement: [],
-      servicePrecautions: '',
-      infectiousDisease: '',
-      specialNotes: '',
-    },
+    careOpinion1: emptyCareOpinion1(),
+    careOpinion2: emptyCareOpinion2(),
   };
 }
 
@@ -285,11 +256,6 @@ export function DocumentsPanel({
     }
   }
 
-  function handlePrintCareOpinionSet() {
-    setSelected(['care-opinion-1', 'care-opinion-2']);
-    requestAnimationFrame(() => window.print());
-  }
-
   async function persistDoc(type: DocumentTypeId, updated: GeneratedDocuments) {
     const contentMap: Record<DocumentTypeId, Record<string, unknown>> = {
       referral: updated.referral as unknown as Record<string, unknown>,
@@ -297,6 +263,7 @@ export function DocumentsPanel({
       certificate: updated.certificate as unknown as Record<string, unknown>,
       'care-opinion-1': updated.careOpinion1 as unknown as Record<string, unknown>,
       'care-opinion-2': updated.careOpinion2 as unknown as Record<string, unknown>,
+      'care-opinion-set': {},
       'info-combined': (updated.infoCombined ?? {}) as unknown as Record<string, unknown>,
     };
     if (hasApiDocs) {
@@ -360,20 +327,27 @@ export function DocumentsPanel({
             onChange={(certificate) => updateDocs('certificate', (d) => ({ ...d, certificate }))}
           />
         );
+      case 'care-opinion-set':
+        return (
+          <>
+            <CareOpinion1
+              data={docs.careOpinion1}
+              onChange={(careOpinion1) =>
+                updateDocs('care-opinion-1', (d) => ({ ...d, careOpinion1 }))
+              }
+            />
+            <CareOpinion2
+              data={docs.careOpinion2}
+              onChange={(careOpinion2) =>
+                updateDocs('care-opinion-2', (d) => ({ ...d, careOpinion2 }))
+              }
+            />
+          </>
+        );
       case 'care-opinion-1':
-        return (
-          <CareOpinion1
-            data={docs.careOpinion1}
-            onChange={(careOpinion1) => updateDocs('care-opinion-1', (d) => ({ ...d, careOpinion1 }))}
-          />
-        );
       case 'care-opinion-2':
-        return (
-          <CareOpinion2
-            data={docs.careOpinion2}
-            onChange={(careOpinion2) => updateDocs('care-opinion-2', (d) => ({ ...d, careOpinion2 }))}
-          />
-        );
+        // 画面では care-opinion-set にまとめている（保存の型としてだけ残す）
+        return null;
     }
   }
 
@@ -419,15 +393,6 @@ export function DocumentsPanel({
           onClick={handleGenerateAll}
         >
           {generating ? '生成中…' : '書類を全部作る'}
-        </Button>
-        <Button
-          size="sm"
-          variant="secondary"
-          icon={<Printer />}
-          disabled={!approved}
-          onClick={handlePrintCareOpinionSet}
-        >
-          意見書①②セット印刷
         </Button>
         {!approved && (
           <p className="self-center text-sm text-amber-700">書類生成には先に「確認済みにする」が必要です</p>
