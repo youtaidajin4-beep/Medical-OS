@@ -115,6 +115,14 @@ export function correctTranscriptWithKnowledge(
       best.hit.riskLevel === 'critical' ||
       best.hit.riskLevel === 'high';
 
+    // 文字起こしが既に正しい語になっている（原文＝正式名称）なら、医師に確かめて
+    // もらうことが何も無い。ここを要確認に積むと「原文: 血圧 → 候補: 血圧」が並び、
+    // 2026-09-19の検証では1回の診療で19件出た。数が多いと医師は中身を見なくなるし、
+    // 高リスクの未承認は書類作成をブロックするため、**正しく認識できているのに
+    // 書類が作れない**という状態になる。
+    /** 文字起こしが既に正式名称と同じ＝直すところが無い */
+    const alreadyCanonical = hit.surface === best.hit.canonicalName;
+
     // Patient context only boosts ranking scores above — never forces auto-apply.
     // High-risk categories never auto-apply; physician must approve.
     const shouldReplace =
@@ -130,7 +138,12 @@ export function correctTranscriptWithKnowledge(
       confidence: best.score,
       startPosition: hit.start,
       endPosition: hit.end,
-      needsReview: !shouldReplace || isHighRisk,
+      // 文字起こしが既に正式名称そのものなら、医師に決めてもらうことが無い。
+      // ここを要確認に積むと「原文: 血圧 → 候補: 血圧」が並び、2026-09-19の検証では
+      // 1回の診療で19件出た。数が多いと医師は中身を見なくなるうえ、高リスクの未承認は
+      // 書類作成をブロックするため、**正しく認識できているのに書類が作れない**状態になる。
+      // 用語の検出自体は残す（辞書のヒットとして下流で使う）。
+      needsReview: alreadyCanonical ? false : !shouldReplace || isHighRisk,
       riskLevel: best.hit.riskLevel,
       candidates: ranked.slice(0, 5).map((r) => ({
         candidateValue: r.hit.canonicalName,

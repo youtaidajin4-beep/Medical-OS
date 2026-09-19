@@ -65,6 +65,9 @@ const SOAP_SYSTEM = `あなたは日本のクリニック向けSOAP作成アシ�
 - 定型床は「変化がないときの下書き」。構造化データに具体事実があれば床を上書きする
 - 通常診察(ROUTINE)で差分がなければ assessment=stable / plan=定時薬を継続する。 を使う
 - 健診(CHECKUP)で差分がなければ床の S/O を使い、A/P は根拠がなければ空文字
+- 健診(CHECKUP)では、O に必ず身体所見の行に続けて CXR： と ECG： の行を入れる。
+  会話に胸部レントゲン・心電図が出てきたらその内容を、出てこなければ床の文言を使う。
+  （谷口先生の健診カルテの書式。この2行が無いと先生が毎回打ち足すことになる）
 - 出力は次の4キーのみ。各値は必ずプレーンテキストの文字列（ネストしたオブジェクト不可）:
 subjective, objective, assessment, plan`;
 
@@ -102,6 +105,8 @@ const TRANSCRIPT_CORRECTION_SYSTEM = `あなたは日本の内科クリニック
 - 否定表現を反転させない
 - 商品名と一般名は双方向に正しく正規化してよい（例: カロナール→アセトアミノフェン、またはその逆で文脈に合わせる）
 - 不明な場合は原文維持 + （要確認）を付ける
+- **入力は「番号: 本文」の形式で渡される。出力も必ず同じ番号を付け、1行につき1行で返す**
+- 行を統合・分割・削除しない。番号は入力と同じものを使う
 - 出力は校正後の文字起こしテキストのみ`;
 
 export class OpenAiLlmProvider implements LlmProvider {
@@ -126,7 +131,7 @@ export class OpenAiLlmProvider implements LlmProvider {
     const result = await this.chatWithModel(
       this.correctionModel,
       TRANSCRIPT_CORRECTION_SYSTEM,
-      `文字起こし:\n${clipped}${hint}`,
+      `文字起こし（「番号: 本文」。同じ番号を付けて1行ずつ返すこと）:\n${clipped}${hint}`,
       false,
     );
     return result.content.trim() || transcript;

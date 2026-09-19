@@ -19,7 +19,10 @@ import {
   assessSoapEvidence,
   buildMissingEvidenceWarning,
 } from '../../providers/ai/soap-evidence';
-import { redistributeCorrectedLines } from '../../providers/ai/speaker-role-mapper';
+import {
+  numberTranscriptLines,
+  redistributeCorrectedLines,
+} from '../../providers/ai/speaker-role-mapper';
 import {
   resolveSoapVisitType,
   SOAP_TEMPLATE_FLOORS,
@@ -245,8 +248,9 @@ export class AiPipelineService {
         });
         const llmCorrectStart = Date.now();
         const beforeLlm = segmentTexts;
+        // 番号付きで渡して、番号付きで戻してもらう。行数がずれても対応が崩れない
         const llmCorrected = await this.llmProvider.correctTranscript(
-          segmentTexts.join('\n'),
+          numberTranscriptLines(segmentTexts),
           glossaryWithHits,
           consultationId,
         );
