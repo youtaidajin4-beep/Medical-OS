@@ -52,12 +52,32 @@ function isDiarizeModel(model: string): boolean {
   return model.includes('diarize');
 }
 
+/** リクエストの作り方が悪くて断られた種類のエラーか（作り直せば通る可能性がある） */
+function isBadRequest(error: unknown): boolean {
+  return error instanceof Error && /\(4\d\d\)/.test(error.message);
+}
+
+/**
+ * どの経路で文字起こししたか。
+ *
+ * 話者分離が落ちると whisper-1 へ黙って下がり、画面には「話者が全部不明」だけが残る。
+ * 2026-09-05 に谷口先生が見たのがその状態で、原因が分離の失敗なのか本当に1人しか
+ * 喋っていないのかを、あとから区別できなかった。実行ログに経路を残す。
+ */
+export type SttMode =
+  | 'diarize'
+  | 'diarize-no-language'
+  | 'fallback-whisper'
+  | 'whisper';
+
 export class OpenAiSttProvider implements SttProvider {
   readonly name = 'openai';
   private readonly logger = new Logger(OpenAiSttProvider.name);
   private readonly apiKey: string;
   private readonly model: string;
   private readonly fallbackModel: string;
+  private lastSttMode: SttMode = 'diarize';
+  private lastSttDetail?: string;
 
   constructor(config: OpenAiSttConfig) {
     this.apiKey = config.apiKey;
@@ -98,14 +118,17 @@ export class OpenAiSttProvider implements SttProvider {
     const mimeType = isWav ? 'audio/wav' : isMp3 ? 'audio/mpeg' : 'audio/webm';
 
     if (isDiarizeModel(this.model)) {
+      this.lastSttMode = 'diarize';
+      this.lastSttDetail = undefined;
       try {
         return await this.transcribeDiarized(audio, filename, mimeType);
       } catch (error) {
-        this.logger.warn(
-          `Diarize STT failed, falling back to ${this.fallbackModel}: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        );
+        const reason = error instanceof Error ? error.message : String(error);
+        this.logger.warn(`Diarize STT failed, falling back to ${this.fallbackModel}: ${reason}`);
+        // ここへ来た時点で話者分離は失われる。画面には「話者が全部不明」としか
+        // 出ないので、理由を実行ログへ残しておく
+        this.lastSttMode = 'fallback-whisper';
+        this.lastSttDetail = reason;
         return this.transcribeWhisper(
           audio,
           filename,
@@ -116,7 +139,14 @@ export class OpenAiSttProvider implements SttProvider {
       }
     }
 
+    this.lastSttMode = 'whisper';
+    this.lastSttDetail = undefined;
     return this.transcribeWhisper(audio, filename, mimeType, options?.whisperPrompt, this.model);
+  }
+
+  /** 直近の文字起こしがどの経路だったか。実行ログに残して原因を追えるようにする */
+  getLastSttMode(): { mode: SttMode; detail?: string } {
+    return { mode: this.lastSttMode, detail: this.lastSttDetail };
   }
 
   private assertApiKey() {
@@ -144,12 +174,24 @@ export class OpenAiSttProvider implements SttProvider {
     return form;
   }
 
-  private buildDiarizeForm(audio: Buffer, filename: string, mimeType: string): FormData {
+  /**
+   * @param withLanguage `language` を付けるか。
+   *   gpt-4o-transcribe-diarize の公式ドキュメントに `language` の記載が無い。
+   *   受け付ける実装なら日本語の精度が上がるので既定では送るが、
+   *   これが理由で弾かれると話者分離ごと失うため、外して1度やり直せるようにしておく。
+   */
+  private buildDiarizeForm(
+    audio: Buffer,
+    filename: string,
+    mimeType: string,
+    withLanguage: boolean,
+  ): FormData {
     const form = new FormData();
     form.append('file', new Blob([audio], { type: mimeType }), filename);
     form.append('model', this.model);
-    form.append('language', 'ja');
+    if (withLanguage) form.append('language', 'ja');
     form.append('response_format', 'diarized_json');
+    // 30秒を超える音声では auto が必要。診察は必ず超える
     form.append('chunking_strategy', 'auto');
     return form;
   }
@@ -159,7 +201,21 @@ export class OpenAiSttProvider implements SttProvider {
     filename: string,
     mimeType: string,
   ): Promise<SttTranscriptSegment[]> {
-    const data = await this.requestDiarize(audio, filename, mimeType);
+    let data: DiarizedResponse;
+    try {
+      data = await this.requestDiarize(audio, filename, mimeType, true);
+    } catch (error) {
+      // `language` はこのモデルの公式ドキュメントに記載が無い。これが理由で 400 に
+      // なっているだけなら、外せば通る。話者分離を捨てる前にもう一度試す。
+      if (!isBadRequest(error)) throw error;
+      this.logger.warn(
+        `Diarize rejected the request; retrying without language: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      this.lastSttMode = 'diarize-no-language';
+      data = await this.requestDiarize(audio, filename, mimeType, false);
+    }
     const segments = (data.segments ?? [])
       .map((seg) => ({
         text: (seg.text ?? '').trim(),
@@ -238,9 +294,10 @@ export class OpenAiSttProvider implements SttProvider {
     audio: Buffer,
     filename: string,
     mimeType: string,
+    withLanguage = true,
     attempt = 0,
   ): Promise<DiarizedResponse> {
-    const form = this.buildDiarizeForm(audio, filename, mimeType);
+    const form = this.buildDiarizeForm(audio, filename, mimeType, withLanguage);
     let response: Response;
     try {
       response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
@@ -264,7 +321,7 @@ export class OpenAiSttProvider implements SttProvider {
           `Diarize retry ${attempt + 1}/${MAX_RETRIES} after ${response.status} (wait ${delayMs}ms)`,
         );
         await new Promise((r) => setTimeout(r, delayMs));
-        return this.requestDiarize(audio, filename, mimeType, attempt + 1);
+        return this.requestDiarize(audio, filename, mimeType, withLanguage, attempt + 1);
       }
       if (response.status === 429) {
         throw new Error('混み合っています。しばらく待ってから再試行してください。');

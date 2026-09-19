@@ -144,13 +144,21 @@ export class AiPipelineService {
                 this.resolvePhysicianSpeaker(sampleA, sampleB),
         },
       );
+      // どの経路で文字起こししたか（話者分離が落ちて whisper へ下がっていないか）。
+      // 画面には「話者が全部不明」としか出ないので、原因はここでしか辿れない
+      const sttMode = (
+        this.sttProvider as SttProvider & {
+          getLastSttMode?: () => { mode: string; detail?: string };
+        }
+      ).getLastSttMode?.();
       await logAiExecution(this.prisma, {
         consultationId,
         step: 'stt_complete',
         provider: this.sttProvider.name,
         status: 'completed',
         durationMs: Date.now() - sttStart,
-        promptVersion: isMock ? 'mock-v1' : 'openai-diarize-v1',
+        promptVersion: isMock ? 'mock-v1' : `openai-${sttMode?.mode ?? 'diarize'}-v1`,
+        errorMessage: sttMode?.detail,
       });
 
       const segments = await this.transcriptService.getSegments(consultationId, { final: true });
