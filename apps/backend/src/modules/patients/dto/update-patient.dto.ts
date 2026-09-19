@@ -21,4 +21,21 @@ export class UpdatePatientDto {
   @IsOptional()
   @IsString()
   memo?: string;
+
+  /** ふりがな（紹介状・主治医意見書の申請者欄に印刷する） */
+  @IsOptional()
+  @IsString()
+  nameKana?: string;
+
+  @IsOptional()
+  @IsString()
+  postalCode?: string;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  occupation?: string;
 }

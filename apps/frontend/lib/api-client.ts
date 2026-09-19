@@ -117,6 +117,10 @@ export const api = {
         dateOfBirth?: string | null;
         phone?: string | null;
         memo?: string | null;
+        nameKana?: string | null;
+        postalCode?: string | null;
+        address?: string | null;
+        occupation?: string | null;
         visitCount?: number;
       }>;
       anonymousCases: Array<{
@@ -135,6 +139,10 @@ export const api = {
     dateOfBirth?: string;
     phone?: string;
     memo?: string;
+    nameKana?: string;
+    postalCode?: string;
+    address?: string;
+    occupation?: string;
   }) =>
     requestWithNetworkCheck<{
       id: string;
@@ -146,6 +154,10 @@ export const api = {
       dateOfBirth?: string | null;
       phone?: string | null;
       memo?: string | null;
+      nameKana?: string | null;
+      postalCode?: string | null;
+      address?: string | null;
+      occupation?: string | null;
       visitCount?: number;
     }>('/patients', { method: 'POST', body: JSON.stringify(data) }),
   updatePatient: (
@@ -156,6 +168,10 @@ export const api = {
       dateOfBirth?: string;
       phone?: string;
       memo?: string;
+      nameKana?: string;
+      postalCode?: string;
+      address?: string;
+      occupation?: string;
     },
   ) =>
     requestWithNetworkCheck<{
@@ -168,6 +184,10 @@ export const api = {
       dateOfBirth?: string | null;
       phone?: string | null;
       memo?: string | null;
+      nameKana?: string | null;
+      postalCode?: string | null;
+      address?: string | null;
+      occupation?: string | null;
       visitCount?: number;
     }>(`/patients/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   createAnonymousCase: (data: { displayName: string; age?: number; sex?: string }) =>
@@ -562,6 +582,8 @@ export const api = {
       fileName: string;
       ocrText: string | null;
       documentKind?: string;
+      /** 写真は保存できたが読み取れなかったときのメッセージ */
+      warning?: string;
     }>;
   },
   applyQuestionnaire: (consultationId: string, attachmentId: string) =>

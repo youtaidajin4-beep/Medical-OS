@@ -75,7 +75,13 @@ export class AttachmentsService {
       await this.applyQuestionnaire(consultationId, physicianId, attachment.id);
     }
 
-    return attachment;
+    return {
+      ...attachment,
+      // 写真は残すが読み取れなかった、という状態を画面へ伝える
+      warning: ocrText
+        ? undefined
+        : '紙を読み取れませんでした。写真は保存しています。明るいところで、文字が水平になるように撮り直してください。',
+    };
   }
 
   async applyQuestionnaire(consultationId: string, physicianId: string, attachmentId: string) {
@@ -256,15 +262,30 @@ export class AttachmentsService {
     }
   }
 
-  private async runOcr(buffer: Buffer, mimeType: string): Promise<string> {
+  /**
+   * 紙の読み取り。
+   *
+   * モデルは個人情報の載った紙を「書き起こせません」と断ることがある。
+   * その断り文をそのまま ocrText に入れると、【問診票】として**患者のSOAPへ貼られる**。
+   * 診療録に謝罪文が残るので、断られたときは読み取り無しとして扱う（写真は残す）。
+   */
+  private async runOcr(buffer: Buffer, mimeType: string): Promise<string | null> {
     const apiKey = this.config.get<string>('OPENAI_API_KEY', '');
     const provider = this.config.get<string>('LLM_PROVIDER', 'mock');
     if (provider !== 'openai' || !apiKey) {
       return '（OCRモック）紙資料を読み取りました。内容を確認し、必要なら SOAP / 紹介状に反映してください。';
     }
 
-    const base64 = buffer.toString('base64');
-    const dataUrl = `data:${mimeType};base64,${base64}`;
+    // 断られたときのために一度だけやり直す（同じ紙でも通ることがある）
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const text = await this.askOcr(buffer, mimeType, apiKey);
+      if (text && !isTranscriptionRefusal(text)) return text;
+    }
+    return null;
+  }
+
+  private async askOcr(buffer: Buffer, mimeType: string, apiKey: string): Promise<string> {
+    const dataUrl = `data:${mimeType};base64,${buffer.toString('base64')}`;
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -274,17 +295,13 @@ export class AttachmentsService {
       body: JSON.stringify({
         model: this.config.get('OPENAI_CORRECTION_MODEL', 'gpt-4o'),
         messages: [
-          {
-            role: 'system',
-            content:
-              'あなたは医療書類のOCRアシスタントです。画像から読み取れる日本語テキストを抽出してください。診断の断定はしないでください。読めない部分は「要確認」としてください。',
-          },
+          { role: 'system', content: OCR_SYSTEM },
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: 'この医療書類・紙資料の内容をテキスト化してください。',
+                text: 'この紙の内容を、書かれているとおりにテキスト化してください。',
               },
               { type: 'image_url', image_url: { url: dataUrl } },
             ],
@@ -302,6 +319,35 @@ export class AttachmentsService {
     const json = (await res.json()) as {
       choices?: Array<{ message?: { content?: string } }>;
     };
-    return json.choices?.[0]?.message?.content?.trim() || '（読み取り結果なし）';
+    return (json.choices?.[0]?.message?.content ?? '').trim();
   }
+}
+
+/**
+ * 誰が何のために撮った紙なのかを書いておかないと、モデルは
+ * 「個人情報なので書き起こせません」と断ることがある。
+ */
+const OCR_SYSTEM = `あなたは日本の診療所の事務を補助するOCRです。
+この画像は、当院を受診した患者本人が記入し、当院が保有している紙（問診票・紹介状・検査結果など）を、診療録へ転記するために撮影したものです。
+
+- 書かれている文字をそのまま書き起こす（要約・解釈・診断はしない）
+- 氏名・ふりがな・生年月日・住所・電話番号も、診療録へ転記するための情報なのでそのまま書き起こす
+- 読めない文字は「要確認」と書く
+- 書き起こしたテキストだけを返す（前置きや説明は書かない）`;
+
+/**
+ * 「書き起こせません」という断りを、読み取り結果と取り違えないための判定。
+ *
+ * 判定はきつくする。患者が問診票に「階段を上ることができません」と書くことがあり、
+ * そこを断り文と誤判定すると、読めている紙を捨ててしまう。
+ * 断り文は必ず短く、冒頭が謝罪で始まる。その形だけを拾う。
+ */
+export function isTranscriptionRefusal(text: string): boolean {
+  const body = text.trim();
+  if (body.length >= 300) return false;
+  return (
+    /^(申し訳|すみません|恐れ入り|残念ながら|I'm sorry|I am sorry|Sorry|I cannot|I can't|Unfortunately)/i.test(
+      body,
+    ) || /お手伝いできることがあれば/.test(body)
+  );
 }

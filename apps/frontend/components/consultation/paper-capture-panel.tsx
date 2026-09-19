@@ -64,7 +64,8 @@ export function PaperCapturePanel({
     setUploading(true);
     setError('');
     try {
-      await api.uploadAttachment(consultationId, file, kind);
+      const uploaded = await api.uploadAttachment(consultationId, file, kind);
+      if (uploaded?.warning) setError(uploaded.warning);
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'アップロードに失敗しました');

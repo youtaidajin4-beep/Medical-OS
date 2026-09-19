@@ -47,6 +47,10 @@ export class PatientsService {
         dateOfBirth: p.dateOfBirth?.toISOString().slice(0, 10) ?? null,
         phone: p.phone,
         memo: p.memo,
+        nameKana: p.nameKana,
+        postalCode: p.postalCode,
+        address: p.address,
+        occupation: p.occupation,
         visitCount: p._count.consultations,
       })),
       anonymousCases: anonymousCases.map((c) => ({
@@ -80,6 +84,10 @@ export class PatientsService {
         dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
         phone: dto.phone?.trim() || undefined,
         memo: dto.memo?.trim() || undefined,
+        nameKana: dto.nameKana?.trim() || undefined,
+        postalCode: dto.postalCode?.trim() || undefined,
+        address: dto.address?.trim() || undefined,
+        occupation: dto.occupation?.trim() || undefined,
       },
     });
 
@@ -106,6 +114,10 @@ export class PatientsService {
               : null,
         phone: dto.phone === undefined ? undefined : dto.phone.trim() || null,
         memo: dto.memo === undefined ? undefined : dto.memo.trim() || null,
+        nameKana: dto.nameKana === undefined ? undefined : dto.nameKana.trim() || null,
+        postalCode: dto.postalCode === undefined ? undefined : dto.postalCode.trim() || null,
+        address: dto.address === undefined ? undefined : dto.address.trim() || null,
+        occupation: dto.occupation === undefined ? undefined : dto.occupation.trim() || null,
       },
     });
 
@@ -121,6 +133,10 @@ export class PatientsService {
       dateOfBirth: Date | null;
       phone: string | null;
       memo: string | null;
+      nameKana: string | null;
+      postalCode: string | null;
+      address: string | null;
+      occupation: string | null;
     },
     visitCount: number,
   ) {
@@ -138,6 +154,11 @@ export class PatientsService {
       dateOfBirth: patient.dateOfBirth?.toISOString().slice(0, 10) ?? null,
       phone: patient.phone,
       memo: patient.memo,
+      // 紹介状・主治医意見書の患者欄に印刷する項目。問診票の取り込みでも埋まる
+      nameKana: patient.nameKana,
+      postalCode: patient.postalCode,
+      address: patient.address,
+      occupation: patient.occupation,
       visitCount,
     };
   }

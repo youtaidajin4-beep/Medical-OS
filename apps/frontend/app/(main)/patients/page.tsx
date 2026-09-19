@@ -23,24 +23,47 @@ type PatientRow = {
   dateOfBirth?: string | null;
   phone?: string | null;
   memo?: string | null;
+  /** 紹介状・主治医意見書の患者欄に印刷する項目（問診票からも入る） */
+  nameKana?: string | null;
+  postalCode?: string | null;
+  address?: string | null;
+  occupation?: string | null;
   visitCount?: number;
 };
 
 type FormState = {
   name: string;
+  nameKana: string;
   sex: string;
   dateOfBirth: string;
+  postalCode: string;
+  address: string;
   phone: string;
+  occupation: string;
   memo: string;
 };
 
 const emptyForm: FormState = {
   name: '',
+  nameKana: '',
   sex: '',
   dateOfBirth: '',
+  postalCode: '',
+  address: '',
   phone: '',
+  occupation: '',
   memo: '',
 };
+
+/** 紹介状・主治医意見書の患者欄に必要な項目 */
+const DOCUMENT_FIELDS: Array<{ key: keyof FormState; label: string }> = [
+  { key: 'name', label: '氏名' },
+  { key: 'nameKana', label: 'ふりがな' },
+  { key: 'sex', label: '性別' },
+  { key: 'dateOfBirth', label: '生年月日' },
+  { key: 'address', label: '住所' },
+  { key: 'phone', label: '電話番号' },
+];
 
 function sexLabel(sex: string | null | undefined) {
   if (sex === 'M') return '男';
@@ -58,6 +81,7 @@ export default function PatientsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [mode, setMode] = useState<'create' | 'edit'>('create');
+  const missingCount = DOCUMENT_FIELDS.filter(({ key }) => form[key].trim() === '').length;
   const [saving, setSaving] = useState(false);
   const [startingId, setStartingId] = useState<string | null>(null);
   const [visitType, setVisitType] = useState<'ROUTINE' | 'CHECKUP'>('ROUTINE');
@@ -95,9 +119,13 @@ export default function PatientsPage() {
     setSelectedId(p.id);
     setForm({
       name: p.name,
+      nameKana: p.nameKana ?? '',
       sex: p.sex === 'M' || p.sex === 'F' ? p.sex : '',
       dateOfBirth: p.dateOfBirth ?? '',
+      postalCode: p.postalCode ?? '',
+      address: p.address ?? '',
       phone: p.phone ?? '',
+      occupation: p.occupation ?? '',
       memo: p.memo ?? '',
     });
     setSuccess('');
@@ -116,10 +144,14 @@ export default function PatientsPage() {
     try {
       const payload = {
         name: form.name.trim(),
+        nameKana: form.nameKana.trim(),
         sex: form.sex === 'M' || form.sex === 'F' ? form.sex : undefined,
         dateOfBirth: form.dateOfBirth || undefined,
-        phone: form.phone.trim() || undefined,
-        memo: form.memo.trim() || undefined,
+        postalCode: form.postalCode.trim(),
+        address: form.address.trim(),
+        phone: form.phone.trim(),
+        occupation: form.occupation.trim(),
+        memo: form.memo.trim(),
       };
       if (mode === 'edit' && selectedId) {
         await api.updatePatient(selectedId, payload);
@@ -235,6 +267,38 @@ export default function PatientsPage() {
             </h2>
           </div>
 
+          {/* 紹介状・主治医意見書の患者欄はここが唯一の出どころ。
+              欠けていると紙が空欄のまま出るので、作る前に気づけるようにする */}
+          {mode === 'edit' && (
+            <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+              <p className="text-xs font-semibold text-slate-600">書類に入る情報</p>
+              <ul className="mt-1.5 grid gap-x-4 gap-y-1 text-xs sm:grid-cols-2">
+                {DOCUMENT_FIELDS.map(({ key, label }) => {
+                  const filled = form[key].trim() !== '';
+                  return (
+                    <li key={key} className="flex items-center gap-1.5">
+                      <span
+                        className={cn(
+                          'inline-block h-1.5 w-1.5 shrink-0 rounded-full',
+                          filled ? 'bg-brand-500' : 'bg-amber-400',
+                        )}
+                      />
+                      <span className="text-slate-500">{label}</span>
+                      <span className={cn('truncate', filled ? 'text-slate-800' : 'text-amber-700')}>
+                        {filled ? form[key] : '未入力'}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+              {missingCount > 0 && (
+                <p className="mt-2 text-xs text-amber-700">
+                  {missingCount}件が未入力です。問診票を撮って取り込むか、下の欄に直接入力してください。
+                </p>
+              )}
+            </div>
+          )}
+
           <form onSubmit={handleSave} className="space-y-3">
             <div className="space-y-1.5">
               <label htmlFor="name" className="text-sm font-medium text-slate-700">
@@ -246,6 +310,18 @@ export default function PatientsPage() {
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                 placeholder="例: 山田 太郎"
                 required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="nameKana" className="text-sm font-medium text-slate-700">
+                ふりがな
+              </label>
+              <Input
+                id="nameKana"
+                value={form.nameKana}
+                onChange={(e) => setForm((f) => ({ ...f, nameKana: e.target.value }))}
+                placeholder="例: ヤマダ タロウ"
               />
             </div>
 
@@ -278,16 +354,54 @@ export default function PatientsPage() {
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label htmlFor="phone" className="text-sm font-medium text-slate-700">
-                電話番号
-              </label>
-              <Input
-                id="phone"
-                value={form.phone}
-                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                placeholder="例: 090-1234-5678"
-              />
+            <div className="grid gap-3 sm:grid-cols-[10rem_1fr]">
+              <div className="space-y-1.5">
+                <label htmlFor="postalCode" className="text-sm font-medium text-slate-700">
+                  郵便番号
+                </label>
+                <Input
+                  id="postalCode"
+                  value={form.postalCode}
+                  onChange={(e) => setForm((f) => ({ ...f, postalCode: e.target.value }))}
+                  placeholder="例: 856-0832"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="address" className="text-sm font-medium text-slate-700">
+                  住所
+                </label>
+                <Input
+                  id="address"
+                  value={form.address}
+                  onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+                  placeholder="例: 長崎県大村市本町 436-16"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label htmlFor="phone" className="text-sm font-medium text-slate-700">
+                  電話番号
+                </label>
+                <Input
+                  id="phone"
+                  value={form.phone}
+                  onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                  placeholder="例: 090-1234-5678"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="occupation" className="text-sm font-medium text-slate-700">
+                  職業
+                </label>
+                <Input
+                  id="occupation"
+                  value={form.occupation}
+                  onChange={(e) => setForm((f) => ({ ...f, occupation: e.target.value }))}
+                  placeholder="例: 無職（元会社員）"
+                />
+              </div>
             </div>
 
             <div className="space-y-1.5">
