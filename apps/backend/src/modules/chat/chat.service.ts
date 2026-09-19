@@ -74,6 +74,14 @@ const SUBKARTE_SYSTEM = `あなたは日本の内科クリニック（くしま�
 - 市町村コード・医師番号・申請日・記入日・申請者欄・医療機関欄は様式で固定。触らない
 - ①と②はセットで使う。片方だけ直す指示でも、もう片方に同じ事実があるなら揃える
 
+書類を「作る」と「直す」の使い分け（重要）:
+- 「◯◯を作って」「作り直して」「もう一度作って」は**必ず generateDocuments**。
+  同じ書類が既にあっても、documentPatches で組み立て直さない。
+  パッチは生成のあとに適用されるので、書類側の整形（正式な病名・様式の選択肢・固定文）が
+  効いていない版で上書きしてしまう
+- documentPatches を使うのは、**出来ている書類の1〜2欄を直すとき**だけ
+  （「備考に〜を足して」「宛先を◯◯病院に変えて」「傷病名を◯◯に直して」）
+
 ルール:
 - 医師の記載を最優先する（SOAP よりチャットの意図を尊重）
 - 診断の創作はしない。医師が書いた疑い・処方意図はそのまま扱う
@@ -226,17 +234,29 @@ export class ChatService {
       },
       context,
     );
+    // 「作って」と言われたのにパッチで済ませようとすることがある。そのときは生成に回す
+    const generateRequest = resolveGenerateRequest(
+      trimmed,
+      result.generateDocuments,
+      result.documentPatches,
+    );
     const generatedResult = await this.runGenerateDocuments(
       consultationId,
       physicianId,
-      result.generateDocuments,
+      generateRequest,
     );
     const generated = generatedResult.documents;
-    const patchedDocs = result.documentPatches?.length
+    // 同じ発話で生成した書類は、生成のほうが新しくて丁寧（様式の整形も効いている）。
+    // その上にチャットのパッチを当てると、先生の言葉をそのまま写した版へ戻ってしまう。
+    const remainingPatches = dropPatchesForGeneratedTypes(
+      result.documentPatches,
+      generated.map((d) => d.type),
+    );
+    const patchedDocs = remainingPatches.length
       ? await this.applyPatches(
           consultationId,
           physicianId,
-          { reply: result.reply, documentPatches: result.documentPatches },
+          { reply: result.reply, documentPatches: remainingPatches },
           await this.buildEditContext(consultationId),
         )
       : { documents: undefined };
@@ -289,7 +309,7 @@ export class ChatService {
         };
       }
       const out: DocReturn[] = [];
-      for (const front of generate) {
+      for (const front of withCareOpinionPair(generate)) {
         const backendType = BACKEND_DOC_TYPE_MAP[front] as GeneratedDocumentType | undefined;
         if (!backendType) continue;
         const doc = await this.documentsService.generateOne(consultationId, backendType);
@@ -627,4 +647,62 @@ export class ChatService {
       documents: documents.length ? documents : undefined,
     };
   }
+}
+
+/**
+ * 同じ発話で生成した書類あてのパッチを落とす。
+ *
+ * チャットは「紹介状を作って」と言われたとき、生成と同時に documentPatches も返すことがある。
+ * パッチは生成のあとに適用されるので、そのままだと**丁寧に作った版が毎回上書きされる**
+ * （2026-09-19に紹介状で、2026-09-20に主治医意見書で実際に起きた）。
+ * 生成した種類だけを落とし、生成していない書類へのパッチはそのまま通す。
+ */
+export function dropPatchesForGeneratedTypes(
+  patches: Array<{ type: string; content: Record<string, unknown> }> | undefined,
+  generatedTypes: string[],
+): Array<{ type: string; content: Record<string, unknown> }> {
+  if (!patches?.length) return [];
+  const generated = new Set(generatedTypes);
+  return patches.filter((p) => !generated.has(p.type));
+}
+
+/** 「作って」「作り直して」と読める言い方 */
+const ASKS_TO_CREATE = /(作って|作り直|作成して|作成し直|もう一度作|生成して)/;
+
+/**
+ * 医師が「作って」と言ったのに、チャットが generateDocuments を返さず
+ * documentPatches だけ返したときは、生成に回す。
+ *
+ * パッチは生成のあとに適用されるうえ、書類側の整形（正式な病名・様式の選択肢・固定文）を
+ * 通らない。「作って」と言われた以上は、生成の経路で作る。
+ */
+export function resolveGenerateRequest(
+  userText: string,
+  generate: SubkarteLlmResult['generateDocuments'],
+  patches: Array<{ type: string }> | undefined,
+): SubkarteLlmResult['generateDocuments'] {
+  if (generate) return generate;
+  if (!patches?.length || !ASKS_TO_CREATE.test(userText)) return generate;
+  const types = Array.from(
+    new Set(patches.map((p) => p.type).filter((t): t is (typeof DOC_TYPES)[number] =>
+      (DOC_TYPES as readonly string[]).includes(t),
+    )),
+  );
+  return types.length ? types : generate;
+}
+
+/**
+ * 主治医意見書は①②で1セット。片方だけ作ると、記入日も患者欄も揃わない紙が出る。
+ * どちらかが指定されたら、もう片方も作る。
+ */
+export function withCareOpinionPair(
+  types: ReadonlyArray<(typeof DOC_TYPES)[number]>,
+): Array<(typeof DOC_TYPES)[number]> {
+  const out = [...types];
+  const hasCareOpinion = out.includes('care-opinion-1') || out.includes('care-opinion-2');
+  if (!hasCareOpinion) return out;
+  for (const t of ['care-opinion-1', 'care-opinion-2'] as const) {
+    if (!out.includes(t)) out.push(t);
+  }
+  return out;
 }
