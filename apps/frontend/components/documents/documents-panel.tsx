@@ -198,14 +198,14 @@ export function DocumentsPanel({
 
   useEffect(() => {
     if (autoGenerate && !hasApiDocs && !generating && approved) {
-      void handleGenerateAll();
+      void handleGenerateSelected();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoGenerate, hasApiDocs, approved]);
 
   useEffect(() => {
     if (openTrigger && openTrigger > 0 && approved) {
-      void handleGenerateAll();
+      void handleGenerateSelected();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openTrigger]);
@@ -223,18 +223,21 @@ export function DocumentsPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingDocPatches]);
 
-  async function handleGenerateAll() {
+  /** 選んだ書類だけ作る。選んでいないものは作らない（待ち時間も費用も減る） */
+  async function handleGenerateSelected() {
+    if (selected.length === 0) {
+      setError('作る書類を選んでください');
+      return;
+    }
     setGenerating(true);
     setError('');
     try {
       const { documents, failed } = await api.generateAllDocuments(consultationId, {
         referralPattern: referralPattern ?? 'simple',
+        types: selected,
       });
-      setDocs(apiDocsToGenerated(documents));
+      setDocs((prev) => apiDocsToGenerated(documents, prev));
       setHasApiDocs(true);
-      setSelected((prev) =>
-        prev.length ? prev : [...DEFAULT_SELECTED],
-      );
       // 一部だけ出なかったときは、出たものを残したまま、どれが出ていないかを言う。
       // 黙って欠けていると、医師は揃ったつもりで印刷してしまう。
       if (failed?.length) {
@@ -364,7 +367,9 @@ export function DocumentsPanel({
 
       {!hasApiDocs && !docs && !generating && (
         <div className="rounded-[2rem] border border-dashed border-[#b7cfc8] bg-[#fbfaf6] px-6 py-10 text-center">
-          <p className="text-sm text-slate-500">まだ書類がありません。確認済みにしたあと、下のボタンで作成できます。</p>
+          <p className="text-sm text-slate-500">
+            まだ書類がありません。下のカードで必要な書類を選び、「選んだ書類を作る」を押してください。
+          </p>
         </div>
       )}
 
@@ -373,9 +378,9 @@ export function DocumentsPanel({
           size="sm"
           icon={generating ? <Loader2 className="animate-spin" /> : <Wand2 />}
           disabled={!approved || generating}
-          onClick={handleGenerateAll}
+          onClick={handleGenerateSelected}
         >
-          {generating ? '生成中…' : '書類を全部作る'}
+          {generating ? '作成中…' : `選んだ書類を作る（${selected.length}件）`}
         </Button>
         {!approved && (
           <p className="self-center text-sm text-amber-700">書類生成には先に「確認済みにする」が必要です</p>

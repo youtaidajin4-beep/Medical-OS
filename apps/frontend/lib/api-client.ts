@@ -381,7 +381,7 @@ export const api = {
     >(`/consultations/${consultationId}/documents`),
   generateAllDocuments: (
     consultationId: string,
-    options?: { referralPattern?: 'simple' | 'complex' },
+    options?: { referralPattern?: 'simple' | 'complex'; types?: string[] },
   ) =>
     request<{
       documents: Array<{

@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import { IsIn, IsObject, IsOptional } from 'class-validator';
+import { IsArray, IsIn, IsObject, IsOptional, IsString } from 'class-validator';
 import { DocumentsService } from './documents.service';
 import { JwtAuthGuard, AuthUser } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -13,6 +13,12 @@ class GenerateAllDto {
   @IsOptional()
   @IsIn(['simple', 'complex'])
   referralPattern?: 'simple' | 'complex';
+
+  /** 画面で選ばれた書類だけ作る。省略したときは全種類 */
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  types?: string[];
 }
 
 @Controller('consultations/:consultationId/documents')
@@ -33,6 +39,7 @@ export class DocumentsController {
   ) {
     return this.documentsService.generateAll(consultationId, user.sub, {
       referralPattern: dto?.referralPattern ?? 'simple',
+      types: dto?.types,
     });
   }
 

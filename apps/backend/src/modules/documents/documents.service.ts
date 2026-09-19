@@ -91,10 +91,17 @@ export class DocumentsService {
     }));
   }
 
+  /**
+   * 選んだ書類だけ作る。
+   *
+   * 以前は押すたびに全種類を作っていた。実際には1回の診療で要るのは1〜2枚で、
+   * 使わない書類のぶんだけ待たされて、そのぶん課金されていた（4枚まとめると15円、
+   * 必要な1枚なら3円）。types を渡さなかったときだけ、従来どおり全種類を作る。
+   */
   async generateAll(
     consultationId: string,
     physicianId: string,
-    options?: { referralPattern?: 'simple' | 'complex' },
+    options?: { referralPattern?: 'simple' | 'complex'; types?: string[] },
   ) {
     await this.consultationAccess.assertPhysicianOwns(consultationId, physicianId);
     await this.assertHighRiskKnowledgeApproved(consultationId);
@@ -107,8 +114,9 @@ export class DocumentsService {
     // JSON を崩したりすると、**出来ていた5枚も一緒に捨てられていた**。
     // 診療の合間に押すボタンなので、ここで全部失うのは実運用で一番痛い。
     // 出来たものは残し、出来なかったものだけ理由をつけて医師へ返す。
+    const requested = resolveRequestedTypes(options?.types);
     const settled = await Promise.allSettled(
-      GENERATED_DOCUMENT_TYPES.map((type) => this.generateOne(consultationId, type, ctx)),
+      requested.map((type) => this.generateOne(consultationId, type, ctx)),
     );
 
     const documents: Awaited<ReturnType<typeof this.generateOne>>[] = [];
@@ -118,7 +126,7 @@ export class DocumentsService {
         documents.push(result.value);
         return;
       }
-      const type = GENERATED_DOCUMENT_TYPES[i]!;
+      const type = requested[i]!;
       failed.push({
         type: FRONTEND_DOC_TYPE_MAP[type],
         // 医師の目に触れる経路（チャットの返信）で英語のIDを出さないため、書類名も返す
@@ -436,16 +444,11 @@ export class DocumentsService {
       })
       .filter((v): v is NonNullable<typeof v> => v !== null);
 
-    const TRANSCRIPT_EXCERPT_LIMIT = 8000;
     const transcriptFull = consultation.transcriptSegments
       .map((seg) => seg.text.trim())
       .filter(Boolean)
       .join('\n');
-    const transcriptExcerpt = transcriptFull
-      ? transcriptFull.length > TRANSCRIPT_EXCERPT_LIMIT
-        ? `${transcriptFull.slice(0, TRANSCRIPT_EXCERPT_LIMIT)}\n…（以降省略）`
-        : transcriptFull
-      : undefined;
+    const transcriptExcerpt = buildTranscriptExcerpt(transcriptFull);
 
     const questionnaireText = consultation.attachments[0]?.ocrText?.trim() || undefined;
 
@@ -606,6 +609,25 @@ function mergeReferralPatient(
   };
 }
 
+/**
+ * 画面で選ばれた書類だけに絞る。主治医意見書は①②で1セットなので、
+ * カード1枚（care-opinion-set）から2種類へ展開する。
+ */
+function resolveRequestedTypes(types?: string[]): GeneratedDocumentType[] {
+  if (!types?.length) return GENERATED_DOCUMENT_TYPES;
+  const wanted = new Set<GeneratedDocumentType>();
+  for (const front of types) {
+    if (front === 'care-opinion-set') {
+      wanted.add(GeneratedDocumentType.CARE_OPINION_1);
+      wanted.add(GeneratedDocumentType.CARE_OPINION_2);
+      continue;
+    }
+    const type = BACKEND_DOC_TYPE_MAP[front];
+    if (type && GENERATED_DOCUMENT_TYPES.includes(type)) wanted.add(type);
+  }
+  return wanted.size ? GENERATED_DOCUMENT_TYPES.filter((t) => wanted.has(t)) : GENERATED_DOCUMENT_TYPES;
+}
+
 /** 紹介状の患者欄に入れる値を、書類生成コンテキストから取り出す */
 function referralPatientContextFrom(ctx: DocumentGenerationContext): ReferralPatientContext {
   return {
@@ -625,6 +647,30 @@ function toSexLabel(raw: string | null | undefined): string {
   if (raw === 'F' || raw === '女') return '女';
   if (raw === 'M' || raw === '男') return '男';
   return '';
+}
+
+/**
+ * 書類へ渡す会話記録の抜粋。
+ *
+ * 以前は8000字まるごと渡していて、**書類1枚につき入力8000トークン**かかっていた。
+ * 4枚作ると同じ会話を4回送ることになる。20分の診察で測ったところ、
+ * 紹介状は全文でも2000字でも出力がまったく同じで、費用だけ 3.4円→2.0円 だった。
+ *
+ * 会話の要点は前半（主訴・現病歴）と終盤（方針・処方）に寄るので、その両端を取る。
+ * 真ん中を落としても、SOAPと構造化データが同じ内容を持っている。
+ */
+const TRANSCRIPT_EXCERPT_HEAD = 1200;
+const TRANSCRIPT_EXCERPT_TAIL = 800;
+
+export function buildTranscriptExcerpt(transcript: string): string | undefined {
+  const text = transcript.trim();
+  if (!text) return undefined;
+  if (text.length <= TRANSCRIPT_EXCERPT_HEAD + TRANSCRIPT_EXCERPT_TAIL) return text;
+  return [
+    text.slice(0, TRANSCRIPT_EXCERPT_HEAD),
+    '…（中略）…',
+    text.slice(-TRANSCRIPT_EXCERPT_TAIL),
+  ].join('\n');
 }
 
 function formatJapaneseDate(date: Date): string {

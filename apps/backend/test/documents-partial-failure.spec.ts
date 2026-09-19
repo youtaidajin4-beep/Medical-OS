@@ -151,4 +151,28 @@ describe('書類の一括生成：1枚こけても残りは残る', () => {
       /書類を作成できませんでした/,
     );
   });
+
+  /**
+   * 1回の診療で要る書類は1〜2枚。押すたびに全種類を作っていたので、
+   * 使わない書類のぶんだけ待たされ、そのぶん課金されていた。
+   */
+  it('選んだ種類だけ作る', async () => {
+    const prisma = makePrisma();
+    const service = new DocumentsService(prisma, access, settings, makeLlm(null));
+
+    const { documents } = await service.generateAll('c1', 'dr1', { types: ['referral'] });
+
+    expect(documents.map((d) => d.type)).toEqual(['referral']);
+  });
+
+  it('主治医意見書は①②セットで作る（カード1枚から2種類）', async () => {
+    const prisma = makePrisma();
+    const service = new DocumentsService(prisma, access, settings, makeLlm(null));
+
+    const { documents } = await service.generateAll('c1', 'dr1', {
+      types: ['care-opinion-set'],
+    });
+
+    expect(documents.map((d) => d.type)).toEqual(['care-opinion-1', 'care-opinion-2']);
+  });
 });
