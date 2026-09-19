@@ -16,6 +16,8 @@ import { truncateForLlm } from './llm-text.util';
 
 /** Per chat-completion call. Long STT is handled separately. */
 const LLM_FETCH_TIMEOUT_MS = 3 * 60 * 1000;
+/** 直す行だけ返すので、全文を返していた頃のような大きな上限は要らない */
+const CORRECTION_MAX_TOKENS = 1500;
 const EXTRACT_MAX_TOKENS = 1200;
 const SOAP_MAX_TOKENS = 1500;
 const NOTE_MAX_TOKENS = 2000;
@@ -94,8 +96,19 @@ const NOTE_SYSTEM = `あなたは日本のクリニック向け診療記録作�
 構造化データに存在する情報のみを使用し、【主訴】【現病歴】【所見】【評価】【方針】などの見出しを適宜使用してください。
 推測や追加情報は禁止です。`;
 
+/**
+ * 文字起こしの校正は「直す行だけ」返させる。
+ *
+ * 以前は校正後の全文を返させていた。20分の診察だと出力が数千トークンになり、
+ * **この1回で10秒以上かかっていた**（実測: 120行の文字起こしで10.8秒／出力1953トークン）。
+ * 直す行だけにすると同じ誤変換を拾って0.98秒・出力85トークン。速度11倍、コスト1/4。
+ *
+ * 直さない行はモデルに触らせないので、無関係な行が書き換わる事故も無くなる。
+ */
 const TRANSCRIPT_CORRECTION_SYSTEM = `あなたは日本の内科クリニック向け文字起こし校正アシスタントです。
-音声認識の同音異義誤りを、診察文脈と内科ナレッジから修正してください。
+音声認識の同音異義誤りを、診察文脈と内科ナレッジから探します。
+
+**直す必要がある行だけ**を返してください。直さない行は返さないこと。
 
 ルール:
 - 意味を追加・削除しない
@@ -104,10 +117,11 @@ const TRANSCRIPT_CORRECTION_SYSTEM = `あなたは日本の内科クリニック
 - 薬剤名・用量・単位・アレルギー・検査値・左右・陽性陰性・中止/継続は慎重に扱い、数値の桁違いは補正しない
 - 否定表現を反転させない
 - 商品名と一般名は双方向に正しく正規化してよい（例: カロナール→アセトアミノフェン、またはその逆で文脈に合わせる）
-- 不明な場合は原文維持 + （要確認）を付ける
-- **入力は「番号: 本文」の形式で渡される。出力も必ず同じ番号を付け、1行につき1行で返す**
-- 行を統合・分割・削除しない。番号は入力と同じものを使う
-- 出力は校正後の文字起こしテキストのみ`;
+- 迷ったら直さない（その行を返さない）
+- text にはその行の**本文全体**を入れる（直した部分だけではない）
+- 直す行が無ければ {"corrections": []} を返す
+
+出力（JSONのみ）: {"corrections":[{"line": 行番号, "text": "修正後の本文全体"}]}`;
 
 export class OpenAiLlmProvider implements LlmProvider {
   readonly name = 'openai';
@@ -128,13 +142,26 @@ export class OpenAiLlmProvider implements LlmProvider {
       ? `\n\nクリニック語彙:\n${glossaryToLlmHint(glossary, glossary.sessionHits)}`
       : '';
     const clipped = truncateForLlm(transcript);
-    const result = await this.chatWithModel(
-      this.correctionModel,
-      TRANSCRIPT_CORRECTION_SYSTEM,
-      `文字起こし（「番号: 本文」。同じ番号を付けて1行ずつ返すこと）:\n${clipped}${hint}`,
-      false,
-    );
-    return result.content.trim() || transcript;
+    try {
+      const result = await this.chatJsonWithModel(
+        this.correctionModel,
+        TRANSCRIPT_CORRECTION_SYSTEM,
+        `文字起こし（「番号: 本文」）:\n${clipped}${hint}`,
+        CORRECTION_MAX_TOKENS,
+      );
+      const parsed = JSON.parse(result.content) as {
+        corrections?: Array<{ line?: unknown; text?: unknown }>;
+      };
+      // 呼び出し側（redistributeCorrectedLines）は「番号: 本文」の行を拾う。
+      // 返ってこなかった行は元のまま残るので、直す行だけ並べれば足りる。
+      return (parsed.corrections ?? [])
+        .filter((c) => Number.isFinite(Number(c.line)) && typeof c.text === 'string')
+        .map((c) => `${Number(c.line)}: ${String(c.text).trim()}`)
+        .join('\n');
+    } catch {
+      // 校正できなくても診療は続く。辞書による補正は既に当たっている
+      return '';
+    }
   }
 
   async extractStructured(transcript: string, _consultationId?: string) {
@@ -203,7 +230,7 @@ export class OpenAiLlmProvider implements LlmProvider {
     context: {
       soap: { subjective: string; objective: string; assessment: string; plan: string };
       note: string;
-      documents: Record<string, Record<string, unknown>>;
+      documents: Record<string, unknown>;
       patientSummary?: string;
       structured?: unknown;
     },

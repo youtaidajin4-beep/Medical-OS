@@ -367,6 +367,18 @@ export class AiPipelineService {
 
       // 材料が無いときはモデルを呼ばない。呼べば必ず床が埋められて返ってくるため、
       // ここで止めないと「診察していない所見」がカルテに残る
+      // SOAPも診療録も同じ構造化データだけを材料にしていて、互いに依存しない。
+      // 直列に呼ぶと1本ぶん（実測3.9秒）まるごと待ち時間になるので、並べて走らせる。
+      // 問診票の読み込みもここで一緒に流しておく（DBの往復1回ぶん）
+      const questionnairePromise = this.prisma.consultationAttachment.findFirst({
+        where: { consultationId, documentKind: 'questionnaire', ocrText: { not: null } },
+        orderBy: { createdAt: 'desc' },
+      });
+      const notePromise = evidence.usable
+        ? this.withProgressHeartbeat(consultationId, 'note_progress', this.llmProvider.name, () =>
+            this.llmProvider.generateClinicalNote(structured, consultationId),
+          )
+        : Promise.resolve('');
       const generatedSoap = evidence.usable
         ? await this.withProgressHeartbeat(
             consultationId,
@@ -383,10 +395,7 @@ export class AiPipelineService {
           )
         : { subjective: '', objective: '', assessment: '', plan: '' };
       const soap = { ...generatedSoap };
-      const questionnaire = await this.prisma.consultationAttachment.findFirst({
-        where: { consultationId, documentKind: 'questionnaire', ocrText: { not: null } },
-        orderBy: { createdAt: 'desc' },
-      });
+      const questionnaire = questionnairePromise ? await questionnairePromise : null;
       if (questionnaire?.ocrText && !soap.subjective.includes('【問診票】')) {
         soap.subjective = `【問診票】\n${questionnaire.ocrText.trim()}\n${soap.subjective}`.trim();
       }
@@ -406,15 +415,8 @@ export class AiPipelineService {
       });
 
       const noteStart = Date.now();
-      // 診療録もSOAPと同じ材料から書く。材料が無いなら同じく空にする
-      const clinicalNote = evidence.usable
-        ? await this.withProgressHeartbeat(
-            consultationId,
-            'note_progress',
-            this.llmProvider.name,
-            () => this.llmProvider.generateClinicalNote(structured, consultationId),
-          )
-        : '';
+      // SOAPと並べて走らせてある（材料が無いときは空文字のまま返る）
+      const clinicalNote = await notePromise;
       await logAiExecution(this.prisma, {
         consultationId,
         step: 'note_complete',

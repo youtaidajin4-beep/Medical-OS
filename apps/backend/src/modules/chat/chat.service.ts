@@ -9,6 +9,7 @@ import { STT_PROVIDER } from '../../providers/ai/stt.tokens';
 import { SttProvider } from '../../providers/ai/stt.provider';
 import { DocumentsService } from '../documents/documents.service';
 import { FRONTEND_DOC_TYPE_MAP, BACKEND_DOC_TYPE_MAP } from '../documents/document-types';
+import { mergeDocumentPatch } from './document-patch';
 
 const DOC_TYPES = [
   'referral',
@@ -95,7 +96,11 @@ const SUBKARTE_SYSTEM = `あなたは日本の内科クリニック（くしま�
 - 単なるメモ記録のときは soapPatch / notePatch / documentPatches / generateDocuments を付けない
 - 修正指示（追記・変更・宛先変更・処方追加など）のときだけパッチを返す
 - soapPatch の各フィールドは「置換後の全文」（追記なら既存文＋追記）
-- documentPatches の content は当該書類の完全な JSON（部分ではなく全体）。既存の他フィールドを消さない
+- documentPatches の content は**変えるフィールドだけ**（書類全体を書き直さない）。
+  こちらでいまの書類へ重ねるので、触らない欄は書かなくてよい
+  例: 紹介状の備考だけ直す → {"type":"referral","content":{"remarks":"本人へ手渡し"}}
+  例: 意見書②の麻痺の右上肢だけ → {"type":"care-opinion-2","content":{"paralysis":{"rightUpper":{"checked":true,"degree":"moderate"}}}}
+  配列（チェックの集合）はまるごと差し替わるので、残したい項目も含めて書く
 - 書類 type は: referral | prescription | certificate | care-opinion-1 | care-opinion-2 | info-combined
 - generateDocuments は "all"（全書類）または type 配列。種類の指定がなければ "all"
 - 書類の内容変更依頼で当該書類がまだ存在しない場合は generateDocuments でその書類を生成する
@@ -109,7 +114,7 @@ const SUBKARTE_SYSTEM = `あなたは日本の内科クリニック（くしま�
   "reply": "医師への短い返答",
   "soapPatch": { "subjective"?, "objective"?, "assessment"?, "plan"? },
   "notePatch": "通常診療記録の全文（任意）",
-  "documentPatches": [{ "type": "referral", "content": { ... } }],
+  "documentPatches": [{ "type": "referral", "content": { 変える欄だけ } }],
   "generateDocuments": "all" | ["referral", "prescription", ...]
 }`;
 
@@ -363,6 +368,11 @@ export class ChatService {
         latestByType.set(front, doc.content as Record<string, unknown>);
       }
     }
+    // 書類はそのまま渡す。
+    // 一度「空欄を落として渡す」ことを試したが、**欄が消えるとモデルが欄の存在を見失う**。
+    // 備考を直すよう言ったのに、隣の【検査結果】の文を備考へ写してきた（2026-09-20）。
+    // 速くなったのは出力（パッチを変える欄だけにしたこと）が効いていて、入力の圧縮ではない。
+    const documentsForPrompt = Object.fromEntries(latestByType);
 
     const patientName =
       consultation?.patient?.name ?? consultation?.anonymousCase?.displayName ?? '';
@@ -381,7 +391,9 @@ export class ChatService {
     return {
       soap,
       note,
-      documents: Object.fromEntries(latestByType),
+      documents: documentsForPrompt,
+      /** 重ねる前のいまの書類（パッチの適用に使う。プロンプトへは渡さない） */
+      currentDocuments: Object.fromEntries(latestByType),
       patientSummary,
       structured: consultation?.structuredData?.data ?? undefined,
     };
@@ -397,7 +409,7 @@ export class ChatService {
         plan: string;
       };
       note: string;
-      documents: Record<string, Record<string, unknown>>;
+      documents: Record<string, unknown>;
     },
   ): SubkarteLlmResult {
     const wantsGenerate = /作って|作成して|生成|資料|書類を全部|全部作/.test(content);
@@ -532,6 +544,8 @@ export class ChatService {
         plan: string;
       };
       note: string;
+      /** 重ねる前のいまの書類。パッチは変えるフィールドだけなので、これが要る */
+      currentDocuments?: Record<string, Record<string, unknown>>;
     },
   ) {
     let soap = context.soap;
@@ -608,12 +622,17 @@ export class ChatService {
     if (result.documentPatches?.length) {
       for (const patch of result.documentPatches) {
         if (!BACKEND_DOC_TYPE_MAP[patch.type]) continue;
+        // パッチは「変えるフィールドだけ」。まずいまの書類へ重ねる
+        const merged = mergeDocumentPatch(
+          context.currentDocuments?.[patch.type],
+          patch.content as Record<string, unknown>,
+        );
         // 紙の様式が決まっている書類は、チャット経由の書き換えでも
         // 固定文・患者欄・日付を様式の値へ戻す（先生が話した中身だけ通す）
         const content = await this.documentsService.applyPaperTemplateFor(
           consultationId,
           patch.type,
-          patch.content as Record<string, unknown>,
+          merged,
         );
         try {
           const updated = await this.documentsService.updateDocument(

@@ -77,7 +77,7 @@ export interface LlmProvider {
     context: {
       soap: { subjective: string; objective: string; assessment: string; plan: string };
       note: string;
-      documents: Record<string, Record<string, unknown>>;
+      documents: Record<string, unknown>;
       patientSummary?: string;
       structured?: unknown;
     },
@@ -306,7 +306,7 @@ export class MockLlmProvider implements LlmProvider {
     context: {
       soap: { subjective: string; objective: string; assessment: string; plan: string };
       note: string;
-      documents: Record<string, Record<string, unknown>>;
+      documents: Record<string, unknown>;
     },
   ) {
     const last = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
