@@ -17,8 +17,19 @@
 
 import { CLINIC, ClinicProfile } from './clinic';
 
-/** 雛形に印字されている、毎回同じ文 */
-export const REFERRAL_FIXED_TEXT = {
+/**
+ * 雛形に印字されている、毎回同じ文。
+ *
+ * **院ごとに違う**ので、医師の設定（physician_rules の fixedPhrases）から差し替えられる。
+ * ここにあるのは、設定が入っていないときの下敷き（くしま内科の値）。
+ */
+export type ReferralFixedText = {
+  examResults: string;
+  clinicalCourse: string;
+  defaultPurpose: string;
+};
+
+export const REFERRAL_FIXED_TEXT: ReferralFixedText = {
   /** 【検査結果】…検査結果の紙は病院側が作り、紹介状に同封して渡す運用 */
   examResults: '別紙を同封しております。',
   /** 【治療経過】…雛形に印字されている挨拶2文 */
@@ -26,7 +37,7 @@ export const REFERRAL_FIXED_TEXT = {
     'いつも大変お世話になっております。\n御多忙中誠に恐縮ですが、ご高診・ご加療を宜しくお願いいたします。',
   /** 【紹介目的】…医師が紹介目的を言わなかったときに入れる既定文 */
   defaultPurpose: '上記疾患につきまして、ご高診・ご加療のほどよろしくお願い申し上げます。',
-} as const;
+};
 
 export type ReferralContent = {
   issuedDate: string;
@@ -183,6 +194,7 @@ export function finalizeReferralContent(
   patient: ReferralPatientContext,
   issuedAt: Date = new Date(),
   clinic: ClinicProfile = CLINIC,
+  fixedText: ReferralFixedText = REFERRAL_FIXED_TEXT,
 ): ReferralContent {
   const ai = raw ?? {};
   const purpose = blankIfPlaceholder(toText(ai.purpose));
@@ -218,13 +230,13 @@ export function finalizeReferralContent(
 
     // 先生がチャットで話すところ
     diagnosis: blankIfPlaceholder(toText(ai.diagnosis)),
-    purpose: purpose || REFERRAL_FIXED_TEXT.defaultPurpose,
+    purpose: purpose || fixedText.defaultPurpose,
     pastHistory: blankIfPlaceholder(toText(ai.pastHistory)),
     currentPrescription: blankIfPlaceholder(toText(ai.currentPrescription)),
     remarks: blankIfPlaceholder(toText(ai.remarks)),
 
-    // 雛形に印字されている固定文
-    examResults: REFERRAL_FIXED_TEXT.examResults,
-    clinicalCourse: REFERRAL_FIXED_TEXT.clinicalCourse,
+    // 雛形に印字されている固定文（クリニックの設定から）
+    examResults: fixedText.examResults,
+    clinicalCourse: fixedText.clinicalCourse,
   };
 }

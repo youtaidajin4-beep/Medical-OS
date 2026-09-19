@@ -404,7 +404,13 @@ export const api = {
   getPhysicianRules: () =>
     request<{
       referralRules: Array<{ trigger: string; mustInclude: string[] }>;
-      fixedPhrases: { closing?: string; greeting?: string };
+      fixedPhrases: {
+      closing?: string;
+      greeting?: string;
+      referralExamResults?: string;
+      referralClinicalCourse?: string;
+      referralPurpose?: string;
+    };
       medicalGlossary?: {
         drugNames: string[];
         diagnoses: string[];
@@ -413,7 +419,13 @@ export const api = {
     }>('/settings/physician-rules'),
   updatePhysicianRules: (rules: {
     referralRules: Array<{ trigger: string; mustInclude: string[] }>;
-    fixedPhrases: { closing?: string; greeting?: string };
+    fixedPhrases: {
+      closing?: string;
+      greeting?: string;
+      referralExamResults?: string;
+      referralClinicalCourse?: string;
+      referralPurpose?: string;
+    };
     medicalGlossary?: {
       drugNames: string[];
       diagnoses: string[];

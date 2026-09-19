@@ -23,6 +23,19 @@ class FixedPhrasesDto {
   @IsOptional()
   @IsString()
   greeting?: string;
+
+  // 診療情報提供書の紙に印字されている文。院ごとに違う
+  @IsOptional()
+  @IsString()
+  referralExamResults?: string;
+
+  @IsOptional()
+  @IsString()
+  referralClinicalCourse?: string;
+
+  @IsOptional()
+  @IsString()
+  referralPurpose?: string;
 }
 
 class MedicalGlossaryReplacementDto {

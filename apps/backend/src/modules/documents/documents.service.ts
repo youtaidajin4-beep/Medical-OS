@@ -20,7 +20,12 @@ import {
   FRONTEND_DOC_TYPE_MAP,
   GENERATED_DOCUMENT_TYPES,
 } from './document-types';
-import { finalizeReferralContent, ReferralPatientContext } from './referral-template';
+import {
+  finalizeReferralContent,
+  REFERRAL_FIXED_TEXT,
+  ReferralFixedText,
+  ReferralPatientContext,
+} from './referral-template';
 import { finalizeCareOpinion1, finalizeCareOpinion2 } from './care-opinion-template';
 import { finalizeCertificate } from './certificate-template';
 import { ClinicProfile, resolveClinicProfile } from './clinic';
@@ -178,6 +183,7 @@ export class DocumentsService {
       raw,
       referralPatientContextFrom(context),
       context.clinic,
+      resolveReferralFixedText(context.physicianRules),
     );
 
     const latest = await this.prisma.generatedDocument.findFirst({
@@ -218,6 +224,7 @@ export class DocumentsService {
     content: Record<string, unknown>,
     patient: ReferralPatientContext,
     clinic: ClinicProfile,
+    fixedText: ReferralFixedText = REFERRAL_FIXED_TEXT,
     issuedAt: Date = new Date(),
   ): Record<string, unknown> {
     if (frontendType === 'certificate') {
@@ -230,16 +237,19 @@ export class DocumentsService {
       return finalizeCareOpinion2(content, issuedAt, clinic);
     }
     if (frontendType === 'referral') {
-      return finalizeReferralContent(content, patient, issuedAt, clinic) as unknown as Record<
-        string,
-        unknown
-      >;
+      return finalizeReferralContent(
+        content,
+        patient,
+        issuedAt,
+        clinic,
+        fixedText,
+      ) as unknown as Record<string, unknown>;
     }
     if (frontendType === 'info-combined') {
       const referral = (content.referral ?? {}) as Record<string, unknown>;
       return {
         ...content,
-        referral: finalizeReferralContent(referral, patient, issuedAt, clinic),
+        referral: finalizeReferralContent(referral, patient, issuedAt, clinic, fixedText),
       };
     }
     return content;
@@ -264,14 +274,16 @@ export class DocumentsService {
       'care-opinion-2',
     ];
     if (!paperTypes.includes(frontendType)) return content;
-    const { patient, clinic } = await this.loadPaperContext(consultationId);
-    return this.applyPaperTemplate(frontendType, content, patient, clinic);
+    const { patient, clinic, fixedText } = await this.loadPaperContext(consultationId);
+    return this.applyPaperTemplate(frontendType, content, patient, clinic, fixedText);
   }
 
   /** 紙の様式を当てるのに要る材料（患者欄とクリニックの情報） */
-  private async loadPaperContext(
-    consultationId: string,
-  ): Promise<{ patient: ReferralPatientContext; clinic: ClinicProfile }> {
+  private async loadPaperContext(consultationId: string): Promise<{
+    patient: ReferralPatientContext;
+    clinic: ClinicProfile;
+    fixedText: ReferralFixedText;
+  }> {
     const consultation = await this.prisma.consultation.findUnique({
       where: { id: consultationId },
       include: {
@@ -296,6 +308,9 @@ export class DocumentsService {
         consultation.attachments[0]?.structuredData,
       ),
       clinic: resolveClinicProfile(clinic, consultation.physician),
+      fixedText: resolveReferralFixedText(
+        await this.settingsService.getPhysicianRules(consultation.physicianId),
+      ),
     };
   }
 
@@ -645,6 +660,27 @@ function resolveRequestedTypes(types?: string[]): GeneratedDocumentType[] {
     if (type && GENERATED_DOCUMENT_TYPES.includes(type)) wanted.add(type);
   }
   return wanted.size ? GENERATED_DOCUMENT_TYPES.filter((t) => wanted.has(t)) : GENERATED_DOCUMENT_TYPES;
+}
+
+/**
+ * 紙に印字されている固定文は院ごとに違う。医師の設定から取り、
+ * 設定が空なら下敷き（くしま内科の値）を使う。
+ */
+function resolveReferralFixedText(rules: {
+  fixedPhrases?: {
+    referralExamResults?: string;
+    referralClinicalCourse?: string;
+    referralPurpose?: string;
+  };
+}): ReferralFixedText {
+  const phrases = rules.fixedPhrases ?? {};
+  const pick = (value: string | undefined, fallback: string) =>
+    value && value.trim() ? value : fallback;
+  return {
+    examResults: pick(phrases.referralExamResults, REFERRAL_FIXED_TEXT.examResults),
+    clinicalCourse: pick(phrases.referralClinicalCourse, REFERRAL_FIXED_TEXT.clinicalCourse),
+    defaultPurpose: pick(phrases.referralPurpose, REFERRAL_FIXED_TEXT.defaultPurpose),
+  };
 }
 
 /** 紹介状の患者欄に入れる値を、書類生成コンテキストから取り出す */

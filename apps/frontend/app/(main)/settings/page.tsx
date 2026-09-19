@@ -36,7 +36,14 @@ function SettingsPageContent() {
   const mustChangePassword = searchParams.get('changePassword') === '1';
   const [rules, setRules] = useState<{
     referralRules: Array<{ trigger: string; mustInclude: string[] }>;
-    fixedPhrases: { closing?: string; greeting?: string };
+    fixedPhrases: {
+      closing?: string;
+      greeting?: string;
+      /** 診療情報提供書の固定文（院ごとに違う） */
+      referralExamResults?: string;
+      referralClinicalCourse?: string;
+      referralPurpose?: string;
+    };
     medicalGlossary?: {
       drugNames: string[];
       diagnoses: string[];
@@ -252,6 +259,56 @@ function SettingsPageContent() {
                 })
               }
             />
+          </div>
+
+          {/* 紹介状の紙に印字されている文。院ごとに違うので、ここから直せるようにしてある */}
+          <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-sm font-semibold text-slate-700">診療情報提供書の固定文</p>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                【検査結果】に入れる文
+              </label>
+              <Input
+                value={rules.fixedPhrases.referralExamResults ?? ''}
+                onChange={(e) =>
+                  setRules({
+                    ...rules,
+                    fixedPhrases: { ...rules.fixedPhrases, referralExamResults: e.target.value },
+                  })
+                }
+                placeholder="別紙を同封しております。"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                【治療経過】に入れる文
+              </label>
+              <Textarea
+                value={rules.fixedPhrases.referralClinicalCourse ?? ''}
+                onChange={(e) =>
+                  setRules({
+                    ...rules,
+                    fixedPhrases: { ...rules.fixedPhrases, referralClinicalCourse: e.target.value },
+                  })
+                }
+                rows={2}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                【紹介目的】の既定文（先生が何も言わなかったとき）
+              </label>
+              <Textarea
+                value={rules.fixedPhrases.referralPurpose ?? ''}
+                onChange={(e) =>
+                  setRules({
+                    ...rules,
+                    fixedPhrases: { ...rules.fixedPhrases, referralPurpose: e.target.value },
+                  })
+                }
+                rows={2}
+              />
+            </div>
           </div>
           <Button onClick={saveRules}>ルールを保存</Button>
         </CardContent>

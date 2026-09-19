@@ -14,6 +14,12 @@ export type PhysicianRules = {
   fixedPhrases: {
     closing?: string;
     greeting?: string;
+    /** 診療情報提供書【検査結果】の固定文。院ごとに違う */
+    referralExamResults?: string;
+    /** 診療情報提供書【治療経過】の固定文（挨拶）。院ごとに違う */
+    referralClinicalCourse?: string;
+    /** 診療情報提供書【紹介目的】の既定文（先生が何も言わなかったとき） */
+    referralPurpose?: string;
   };
   medicalGlossary?: MedicalGlossary;
 };
@@ -29,7 +35,13 @@ export const DEFAULT_PHYSICIAN_RULES: PhysicianRules = {
   ],
   fixedPhrases: {
     closing: 'ご高診のほどよろしくお願い申し上げます。',
-    greeting: 'いつも大変お世話になっております。御多忙中誠に恐縮ですが、ご高診・ご加療を宜しくお願いいたします。',
+    greeting:
+      'いつも大変お世話になっております。御多忙中誠に恐縮ですが、ご高診・ご加療を宜しくお願いいたします。',
+    // 紙の様式に印字されている文（くしま内科の値）
+    referralExamResults: '別紙を同封しております。',
+    referralClinicalCourse:
+      'いつも大変お世話になっております。\n御多忙中誠に恐縮ですが、ご高診・ご加療を宜しくお願いいたします。',
+    referralPurpose: '上記疾患につきまして、ご高診・ご加療のほどよろしくお願い申し上げます。',
   },
   medicalGlossary: DEFAULT_MEDICAL_GLOSSARY,
 };

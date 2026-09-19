@@ -1,4 +1,8 @@
 import { CLINIC, resolveClinicProfile } from '../src/modules/documents/clinic';
+import {
+  finalizeReferralContent,
+  REFERRAL_FIXED_TEXT,
+} from '../src/modules/documents/referral-template';
 
 /**
  * 書類に印刷する医療機関の情報は院ごとに違う。
@@ -40,5 +44,35 @@ describe('クリニックの設定', () => {
 
   it('設定がまるごと無くても落ちない', () => {
     expect(resolveClinicProfile(null, null)).toEqual(CLINIC);
+  });
+});
+
+describe('紹介状の固定文', () => {
+  it('医師の設定で差し替えられる（院ごとに文が違うため）', () => {
+    const doc = finalizeReferralContent(
+      { diagnosis: '高血圧症' },
+      { patientName: 'テスト 次郎', sex: '男', age: 19 },
+      new Date('2026-07-10T09:00:00+09:00'),
+      undefined,
+      {
+        examResults: '検査結果は別紙のとおりです。',
+        clinicalCourse: 'いつもお世話になっております。',
+        defaultPurpose: 'ご高診をお願いいたします。',
+      },
+    );
+    expect(doc.examResults).toBe('検査結果は別紙のとおりです。');
+    expect(doc.clinicalCourse).toBe('いつもお世話になっております。');
+    // 医師が紹介目的を言わなかったので既定文
+    expect(doc.purpose).toBe('ご高診をお願いいたします。');
+  });
+
+  it('設定が無ければ、いまの文（くしま内科の様式）のまま', () => {
+    const doc = finalizeReferralContent(
+      {},
+      { patientName: 'テスト 次郎', sex: '男', age: 19 },
+      new Date('2026-07-10T09:00:00+09:00'),
+    );
+    expect(doc.examResults).toBe(REFERRAL_FIXED_TEXT.examResults);
+    expect(doc.clinicalCourse).toBe(REFERRAL_FIXED_TEXT.clinicalCourse);
   });
 });
