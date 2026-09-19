@@ -62,9 +62,34 @@ export type ReferralPatientContext = {
   occupation?: string;
 };
 
+/**
+ * 書類の日付は必ず日本時間で数える。
+ *
+ * 本番のサーバー（Railway）はUTCで動いている。サーバーの現地時間で日付を作ると、
+ * 日本時間の 0:00〜9:00 に作った書類が**前日の日付**で印刷される。
+ * 診療は朝8時台から始まるので、これは実際に紙へ出る。
+ */
+const CLINIC_TIME_ZONE = 'Asia/Tokyo';
+
+/** 日本時間での年・月・日 */
+function jstParts(date: Date): { year: number; month: number; day: number } {
+  // en-CA は YYYY-MM-DD 固定なので分解しやすい
+  const [year, month, day] = new Intl.DateTimeFormat('en-CA', {
+    timeZone: CLINIC_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
+    .format(date)
+    .split('-')
+    .map(Number);
+  return { year: year!, month: month!, day: day! };
+}
+
 /** 雛形の日付欄は西暦（例: 2026年7月10日）。和暦にしない */
 export function formatGregorianDate(date: Date): string {
-  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+  const { year, month, day } = jstParts(date);
+  return `${year}年${month}月${day}日`;
 }
 
 /** 生年月日欄は西暦のゼロ詰め（例: 2007年01月01日） */
@@ -72,9 +97,8 @@ export function formatBirthDate(value?: string | Date | null): string {
   if (!value) return '';
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return typeof value === 'string' ? value : '';
-  const mm = `${date.getMonth() + 1}`.padStart(2, '0');
-  const dd = `${date.getDate()}`.padStart(2, '0');
-  return `${date.getFullYear()}年${mm}月${dd}日`;
+  const { year, month, day } = jstParts(date);
+  return `${year}年${`${month}`.padStart(2, '0')}月${`${day}`.padStart(2, '0')}日`;
 }
 
 /** 発行日時点の満年齢。生年月日が無いときだけ、渡された年齢をそのまま使う */
@@ -82,10 +106,11 @@ export function calcAge(dateOfBirth: string | Date | null | undefined, at: Date)
   if (!dateOfBirth) return null;
   const dob = dateOfBirth instanceof Date ? dateOfBirth : new Date(dateOfBirth);
   if (Number.isNaN(dob.getTime())) return null;
-  let age = at.getFullYear() - dob.getFullYear();
+  const born = jstParts(dob);
+  const now = jstParts(at);
+  let age = now.year - born.year;
   const beforeBirthday =
-    at.getMonth() < dob.getMonth() ||
-    (at.getMonth() === dob.getMonth() && at.getDate() < dob.getDate());
+    now.month < born.month || (now.month === born.month && now.day < born.day);
   if (beforeBirthday) age -= 1;
   return age >= 0 ? age : null;
 }

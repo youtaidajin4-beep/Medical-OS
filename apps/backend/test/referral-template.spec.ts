@@ -147,6 +147,16 @@ describe('診療情報提供書：雛形で固定するところ', () => {
     expect(calcAge(null, new Date())).toBeNull();
   });
 
+  it('サーバーがUTCでも、日付は日本時間で入る', () => {
+    // 日本時間 2026-09-20 0:28（＝UTC 2026-09-19 15:28）に作った紹介状
+    const 深夜 = new Date('2026-09-19T15:28:00.000Z');
+    expect(formatGregorianDate(深夜)).toBe('2026年9月20日');
+
+    // 診療が始まる朝8時台も日本時間の当日になる
+    const 朝 = new Date('2026-09-19T23:30:00.000Z');
+    expect(formatGregorianDate(朝)).toBe('2026年9月20日');
+  });
+
   it('日付の表記は雛形どおり（発行日はゼロ詰めなし、生年月日はゼロ詰め）', () => {
     expect(formatGregorianDate(new Date('2026-07-05T00:00:00+09:00'))).toBe('2026年7月5日');
     expect(formatBirthDate('2007-01-01T00:00:00.000Z')).toBe('2007年01月01日');

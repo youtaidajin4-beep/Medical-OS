@@ -610,6 +610,8 @@ function toSexLabel(raw: string | null | undefined): string {
 
 function formatJapaneseDate(date: Date): string {
   return new Intl.DateTimeFormat('ja-JP-u-ca-japanese', {
+    // サーバーはUTCで動く。日本時間で数えないと、朝9時前に作った書類が前日付になる
+    timeZone: 'Asia/Tokyo',
     era: 'long',
     year: 'numeric',
     month: 'long',
