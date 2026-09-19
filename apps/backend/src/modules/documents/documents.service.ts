@@ -22,6 +22,7 @@ import {
 } from './document-types';
 import { finalizeReferralContent, ReferralPatientContext } from './referral-template';
 import { finalizeCareOpinion1, finalizeCareOpinion2 } from './care-opinion-template';
+import { finalizeCertificate } from './certificate-template';
 
 @Injectable()
 export class DocumentsService {
@@ -208,6 +209,9 @@ export class DocumentsService {
     patient: ReferralPatientContext,
     issuedAt: Date = new Date(),
   ): Record<string, unknown> {
+    if (frontendType === 'certificate') {
+      return finalizeCertificate(content, patient, issuedAt);
+    }
     if (frontendType === 'care-opinion-1') {
       return finalizeCareOpinion1(content, patient, issuedAt);
     }
@@ -241,7 +245,13 @@ export class DocumentsService {
     frontendType: string,
     content: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
-    const paperTypes = ['referral', 'info-combined', 'care-opinion-1', 'care-opinion-2'];
+    const paperTypes = [
+      'referral',
+      'info-combined',
+      'certificate',
+      'care-opinion-1',
+      'care-opinion-2',
+    ];
     if (!paperTypes.includes(frontendType)) return content;
     const patient = await this.loadReferralPatientContext(consultationId);
     return this.applyPaperTemplate(frontendType, content, patient);

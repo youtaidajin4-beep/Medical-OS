@@ -94,30 +94,93 @@ export type PrescriptionListData = {
   items: PrescriptionLine[];
 };
 
+/** 健診の判定。様式左下の判断基準 A〜G */
+export type ExamJudgement = '' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
+
+/** 値と判定の1行（身長・体重・血液検査など） */
+export type ExamValue = { value: string; judgement: ExamJudgement };
+
+export const emptyExamValue = (): ExamValue => ({ value: '', judgement: '' });
+
+/**
+ * 診断書（検査結果）。紹介状に同封して紹介先へ渡す紙。
+ * 並びは紙の様式どおり（04_MVP_SPECIFICATION/assets/certificate.png）。
+ *
+ * 数値はAIが作らない。先生がチャットへ貼った検査結果か、問診票から入る。
+ */
 export type MedicalCertificateData = {
-  issuedDate: string;
+  /** 患者情報・問診票から */
+  address: string;
   patientName: string;
+  /** 和暦（例: 平成19年1月1日） */
   dateOfBirth: string;
   age: number | null;
+  /** 健診日。SOAP・チャットから */
   examDate: string;
+  /** 右下の日付。この診断書を作った日（和暦） */
+  issuedDate: string;
+
+  /** 上3行。問診票から */
   interview: string;
-  smokingMeds: string;
+  smokingMedication: string;
   symptoms: string;
-  height: string;
-  weight: string;
-  waist: string;
-  bmi: string;
-  hearing: string;
-  vision: string;
-  bloodPressure: string;
-  pulse: string;
-  urinalysis: string;
-  chestXray: string;
-  ecg: string;
-  bloodTests: string;
-  doctorDiagnosis: string;
-  overallGrade: string;
+
+  /** 左列 */
+  height: ExamValue;
+  weight: ExamValue;
+  waist: ExamValue;
+  bmi: ExamValue;
+  hearing: {
+    right1000: '' | 'normal' | 'abnormal';
+    right4000: '' | 'normal' | 'abnormal';
+    left1000: '' | 'normal' | 'abnormal';
+    left4000: '' | 'normal' | 'abnormal';
+    judgement: ExamJudgement;
+  };
+  vision: {
+    right: string;
+    rightCorrected: string;
+    left: string;
+    leftCorrected: string;
+    judgement: ExamJudgement;
+  };
+  bloodPressure: { systolic: string; diastolic: string; judgement: ExamJudgement };
+  pulse: { rate: string; rhythm: '' | 'regular' | 'irregular'; judgement: ExamJudgement };
+  urinalysis: { glucose: string; protein: string; judgement: ExamJudgement };
+
+  /** 右列 */
+  chestXray: {
+    abnormality: '' | 'none' | 'present';
+    abnormalityDetail: string;
+    tuberculosis: '' | 'none' | 'present';
+    tuberculosisDetail: string;
+    judgement: ExamJudgement;
+  };
+  ecg: {
+    abnormality: '' | 'none' | 'present';
+    abnormalityDetail: string;
+    judgement: ExamJudgement;
+  };
+  /** 血液検査（空腹時） */
+  ast: ExamValue;
+  alt: ExamValue;
+  gtp: ExamValue;
+  ldl: ExamValue;
+  hdl: ExamValue;
+  triglyceride: ExamValue;
+  fastingGlucose: ExamValue;
+  hemoglobin: ExamValue;
+
+  /** 下部 */
   remarks: string;
+  doctorDiagnosis: string;
+  overallJudgement: ExamJudgement;
+
+  /** 毎回同じ（医療機関の表示） */
+  clinicAddress: string;
+  clinicName: string;
+  clinicTel: string;
+  physicianName: string;
 };
 
 /** 「程度: □軽 □中 □重」を伴う行（麻痺・筋力の低下・関節の拘縮など） */

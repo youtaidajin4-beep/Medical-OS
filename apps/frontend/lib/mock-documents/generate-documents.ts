@@ -5,11 +5,13 @@ import { getPrescriptionsForCase } from './scenario-prescriptions';
 import type {
   CareOpinion1Data,
   CareOpinion2Data,
+  MedicalCertificateData,
   ConsultationContext,
   GeneratedDocuments,
   ReferralLetterData,
 } from './types';
 import { emptyCareOpinion1, emptyCareOpinion2 } from './care-opinion-options';
+import { emptyMedicalCertificate } from './certificate-options';
 
 const PATIENT_DEFAULTS: Record<string, { kana: string; address: string; phone: string; occupation: string }> = {
   'P-001': { kana: 'ヤマダ タロウ', address: '長崎県大村市西乾馬町 1-2-3', phone: '0957-50-1234', occupation: '会社員' },
@@ -115,13 +117,19 @@ export function generateDocuments(ctx: ConsultationContext): GeneratedDocuments 
     remarks: ctx.soap.plan,
   };
 
-  const certificate = {
+  const certificate: MedicalCertificateData = {
+    ...emptyMedicalCertificate(),
     issuedDate: formatReiwaDate(ctx.issuedAt),
     patientName: ctx.patientName,
+    address: ctx.address ?? '',
     dateOfBirth: formatBirthDate(ctx.dateOfBirth),
     age: ctx.age,
-    examDate: formatJapaneseDate(ctx.issuedAt),
+    examDate: formatReiwaDate(ctx.issuedAt),
     doctorDiagnosis: diagnosis,
+    clinicAddress: CLINIC_CONFIG.address,
+    clinicName: CLINIC_CONFIG.legalName,
+    clinicTel: CLINIC_CONFIG.telPlain,
+    physicianName: CLINIC_CONFIG.physicianName,
     ...certMock,
   };
 

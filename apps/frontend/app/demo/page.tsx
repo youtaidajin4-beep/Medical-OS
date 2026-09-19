@@ -290,20 +290,20 @@ function buildDemoDocs(
       ...generated.certificate,
       patientName: patient.name,
       age,
-      height,
-      weight,
-      bmi,
-      bloodPressure: '138 / 82',
-      pulse: '72 回/分 整',
-      bloodTests:
-        'AST 24 / ALT 20 / γ-GTP 32 / LDL 142 / HDL 52 / TG 128 / 空腹時血糖 118 / HbA1c 7.2% / Hb 14.0',
+      height: { value: height, judgement: 'A' as const },
+      weight: { value: weight, judgement: 'A' as const },
+      bmi: { value: bmi, judgement: 'B' as const },
+      bloodPressure: { systolic: '138', diastolic: '82', judgement: 'C' as const },
+      pulse: { rate: '72', rhythm: 'regular' as const, judgement: 'A' as const },
+      ldl: { value: '142', judgement: 'C' as const },
+      fastingGlucose: { value: '118', judgement: 'C' as const },
       interview: patient.questionnaireText
-        ? `問診票より反映。高血圧症・2型糖尿病で当院フォロー中`
+        ? '問診票より反映。高血圧症・2型糖尿病で当院フォロー中'
         : '高血圧症・2型糖尿病で当院フォロー中',
-      smokingMeds: '喫煙歴なし。アムロジピン5mg・メトホルミン250mg 内服中',
+      smokingMedication: '喫煙歴なし。アムロジピン5mg・メトホルミン250mg 内服中',
       symptoms: '時に頭がぼっとする。胸痛なし。軽度便秘。',
       doctorDiagnosis: soap.assessment,
-      overallGrade: 'C',
+      overallJudgement: 'C' as const,
       remarks: soap.plan,
     },
     careOpinion1: {

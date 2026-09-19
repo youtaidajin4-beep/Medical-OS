@@ -144,23 +144,59 @@ const PROMPTS: Record<GeneratedDocumentType, { system: string; schema: string }>
   MEDICAL_CERTIFICATE: {
     system: `${BASE_RULES}
 診断書（検査結果）を作成します。**診療情報提供書に同封して紹介先へ渡す紙**で、
-紹介先の医師が検査の数値を見るためのものです。健診・結果表の形式で、
-測った値・実施した検査だけを書きます。測っていない項目は空欄にしてください（推測で埋めない）。`,
+紹介先の医師が検査の数値を見るためのものです。
+
+**数値を作らないでください。** ここは検査の結果そのものです。
+もっともらしい値を置くと、紹介先の医師がそれを見て判断してしまいます。
+
+- 数値は、医師サブカルテに貼られた検査結果・SOAP・問診票に**書かれているものだけ**
+- 書かれていない検査は空文字。「正常」「異常なし」で埋めない
+- 判定（A〜G）は、様式左下の判断基準から選ぶ：
+  A 異常なし／B 軽度異常／C 要注意（要再検査含）／D 病院受診（要精検査含）／
+  E 治療継続・経過観察要／F 通院受診／G 判定不能
+  値が無い項目に判定を付けない（空文字）
+- 問診（既往歴）・喫煙歴/服薬歴・自覚他覚症状は、問診票と診療記録から転記する
+- 健診日は、医師が述べた日付だけ。述べていなければ空文字
+- 備考・医師の診断・総合判定は、医師サブカルテの内容から書く。医師が述べていなければ空文字
+
+先生は検査値の一覧をそのままチャットへ貼ることがあります（「AST 24 ALT 20 …」）。
+その並びから、様式の各項目へ振り分けてください。単位は様式に印字されているので値だけで構いません。
+
+出力しないでよい項目（システムが様式どおりに埋めます）:
+- 住所・氏名・生年月日・年齢、右下の日付、医療機関の住所/名称/電話/医師氏名`,
     schema: `{
-  "issuedDate": "令和X年X月X日",
-  "patientName": "氏名",
-  "dateOfBirth": "生年月日",
-  "age": 数値またはnull,
-  "examDate": "診察日",
-  "interview": "問診",
-  "smokingMeds": "喫煙・服薬",
-  "symptoms": "症状",
-  "height": "", "weight": "", "waist": "", "bmi": "",
-  "hearing": "", "vision": "", "bloodPressure": "", "pulse": "",
-  "urinalysis": "", "chestXray": "", "ecg": "", "bloodTests": "",
+  "examDate": "健診日（医師が述べた日付だけ。無ければ空文字）",
+  "interview": "問診（既往歴）",
+  "smokingMedication": "喫煙歴・服薬歴",
+  "symptoms": "自覚・他覚症状",
+  "height": {"value": "cm", "judgement": "A〜G"},
+  "weight": {"value": "kg", "judgement": ""},
+  "waist": {"value": "cm", "judgement": ""},
+  "bmi": {"value": "", "judgement": ""},
+  "hearing": {
+    "right1000": "normal|abnormal|空文字", "right4000": "...",
+    "left1000": "...", "left4000": "...", "judgement": ""
+  },
+  "vision": {"right": "", "rightCorrected": "", "left": "", "leftCorrected": "", "judgement": ""},
+  "bloodPressure": {"systolic": "", "diastolic": "", "judgement": ""},
+  "pulse": {"rate": "", "rhythm": "regular|irregular|空文字", "judgement": ""},
+  "urinalysis": {"glucose": "", "protein": "", "judgement": ""},
+  "chestXray": {
+    "abnormality": "none|present|空文字", "abnormalityDetail": "",
+    "tuberculosis": "none|present|空文字", "tuberculosisDetail": "", "judgement": ""
+  },
+  "ecg": {"abnormality": "none|present|空文字", "abnormalityDetail": "", "judgement": ""},
+  "ast": {"value": "", "judgement": ""},
+  "alt": {"value": "", "judgement": ""},
+  "gtp": {"value": "", "judgement": ""},
+  "ldl": {"value": "", "judgement": ""},
+  "hdl": {"value": "", "judgement": ""},
+  "triglyceride": {"value": "", "judgement": ""},
+  "fastingGlucose": {"value": "", "judgement": ""},
+  "hemoglobin": {"value": "", "judgement": ""},
+  "remarks": "備考",
   "doctorDiagnosis": "医師の診断",
-  "overallGrade": "総合判定",
-  "remarks": "備考"
+  "overallJudgement": "総合判定 A〜G"
 }`,
   },
   CARE_OPINION_1: {

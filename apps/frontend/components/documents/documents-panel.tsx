@@ -22,6 +22,7 @@ import {
   emptyCareOpinion1,
   emptyCareOpinion2,
 } from '@/lib/mock-documents/care-opinion-options';
+import { emptyMedicalCertificate } from '@/lib/mock-documents/certificate-options';
 import { ReferralLetter } from './referral-letter';
 import { MedicalCertificate } from './medical-certificate';
 import { CareOpinion1 } from './care-opinion-1';
@@ -104,31 +105,7 @@ function emptyGenerated(): GeneratedDocuments {
       remarks: '',
     },
     prescription: { items: [] },
-    certificate: {
-      issuedDate: '',
-      patientName: '',
-      dateOfBirth: '',
-      age: null,
-      examDate: '',
-      interview: '',
-      smokingMeds: '',
-      symptoms: '',
-      height: '',
-      weight: '',
-      waist: '',
-      bmi: '',
-      hearing: '',
-      vision: '',
-      bloodPressure: '',
-      pulse: '',
-      urinalysis: '',
-      chestXray: '',
-      ecg: '',
-      bloodTests: '',
-      doctorDiagnosis: '',
-      overallGrade: '',
-      remarks: '',
-    },
+    certificate: emptyMedicalCertificate(),
     careOpinion1: emptyCareOpinion1(),
     careOpinion2: emptyCareOpinion2(),
   };
