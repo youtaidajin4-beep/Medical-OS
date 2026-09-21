@@ -19,6 +19,7 @@ import {
   assessSoapEvidence,
   buildMissingEvidenceWarning,
 } from '../../providers/ai/soap-evidence';
+import { rejectInventedExams } from '../medical-knowledge/invented-exam-guard';
 import {
   numberTranscriptLines,
   redistributeCorrectedLines,
@@ -255,10 +256,28 @@ export class AiPipelineService {
           consultationId,
         );
         const redistributed = redistributeCorrectedLines(beforeLlm, llmCorrected);
-        if (redistributed.join('\n') !== beforeLlm.join('\n')) {
-          segmentTexts = redistributed;
+        // 校正が「していない検査」を書き足すことがある。
+        // 実測: 聞き取れなかった「ほら強烈で」（洞調律）が「ホルター心電図で」になった。
+        // 増えた検査名はその行ごと捨て、聞こえたままを残す。
+        const guarded = rejectInventedExams(
+          beforeLlm,
+          redistributed,
+          this.medicalKnowledge.getIndex(),
+        );
+        if (guarded.texts.join('\n') !== beforeLlm.join('\n')) {
+          segmentTexts = guarded.texts;
         } else if (beforeLlm.length === 1 && llmCorrected.trim()) {
           segmentTexts = [llmCorrected.trim()];
+        }
+        if (guarded.rejected.length) {
+          // 黙って捨てると「なぜ直っていないのか」を辿れない
+          await logAiExecution(this.prisma, {
+            consultationId,
+            step: 'invented_exam_rejected',
+            provider: this.llmProvider.name,
+            status: 'skipped',
+            errorMessage: JSON.stringify(guarded.rejected),
+          });
         }
         // Line-count mismatch: keep original segments (speaker integrity) — never fan out N gpt-4o calls.
         await logAiExecution(this.prisma, {
