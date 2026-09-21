@@ -10,6 +10,13 @@ import { SttProvider } from '../../providers/ai/stt.provider';
 import { DocumentsService } from '../documents/documents.service';
 import { FRONTEND_DOC_TYPE_MAP, BACKEND_DOC_TYPE_MAP } from '../documents/document-types';
 import { mergeDocumentPatch } from './document-patch';
+import { SettingsService } from '../settings/settings.service';
+import { MedicalGlossary } from '../../providers/ai/medical-glossary.types';
+import {
+  numberTranscriptLines,
+  redistributeCorrectedLines,
+} from '../../providers/ai/speaker-role-mapper';
+import { glossaryToVocabularyPrompt } from './dictation-vocabulary';
 
 const DOC_TYPES = [
   'referral',
@@ -176,8 +183,22 @@ export class ChatService {
     private readonly documentsService: DocumentsService,
     @Inject(LLM_PROVIDER) private readonly llmProvider: LlmProvider,
     @Inject(STT_PROVIDER) private readonly sttProvider: SttProvider,
+    private readonly settingsService: SettingsService,
   ) {}
 
+  /**
+   * 医師がチャットへ口述した指示を文字にする。
+   *
+   * ここは長く「生の文字起こしをそのまま入力欄へ」返していた。診察の録音には
+   * 校正が走っているのに、**口述だけ何も通っていなかった**。先生が書類作成のときに
+   * 漢字の間違いを多く見ていたのはこれが理由で、2026-09-21に次の2つを入れた。
+   *
+   * 1. 話者分離を通さず、出てくる語を先にモデルへ渡す（分離モデルは語彙を受け付けない）
+   * 2. そのうえで校正を1回かける
+   *
+   * 実測（同じ音声）: 8.3秒「症状名は高血圧症と乳糖尿病、老削皮の共通の疑い」
+   *                → 1.9秒「病名は高血圧症と2型糖尿病、あと労作時の胸痛の疑い」
+   */
   async transcribeVoice(
     consultationId: string,
     physicianId: string,
@@ -187,26 +208,66 @@ export class ChatService {
     if (!file?.buffer?.length) {
       throw new BadRequestException('音声データがありません');
     }
+    const rules = await this.settingsService
+      .getPhysicianRules(physicianId)
+      .catch(() => null);
+    const glossary = rules?.medicalGlossary;
     try {
-      const segments = await this.sttProvider.transcribeFinal(file.buffer, consultationId, {
-        whisperPrompt:
-          '内科クリニックの医師がAIアシスタントへ出す短い指示。薬剤名・病名・病院名・用法を正確に。アムロジピン、メトホルミン、ムコダイン、HbA1c、eGFR、紹介状、処方継続。例: アムロジピン継続。紹介状を市立病院向けに作って。',
-      });
-      const text = segments
-        .map((s) => s.text.trim())
-        .filter(Boolean)
-        .join(' ')
-        .trim();
-      if (!text) {
+      const heard = await this.hearDictation(file.buffer, glossary, consultationId);
+      if (!heard) {
         throw new BadRequestException('音声を認識できませんでした。もう一度お話しください。');
       }
-      return { text };
+      return { text: await this.polishDictation(heard, glossary) };
     } catch (error) {
+      if (error instanceof BadRequestException) throw error;
       const message = error instanceof Error ? error.message : '';
       if (/短すぎ/.test(message)) {
         throw new BadRequestException('音声が短すぎます。マイクに向かってもう一度お話しください。');
       }
       throw error;
+    }
+  }
+
+  /** 口述を聞き取る。専用の経路が無いプロバイダでは従来どおり */
+  private async hearDictation(
+    audio: Buffer,
+    glossary: MedicalGlossary | undefined,
+    consultationId: string,
+  ): Promise<string> {
+    const vocabularyPrompt = glossaryToVocabularyPrompt(glossary);
+    if (this.sttProvider.transcribeDictation) {
+      return (await this.sttProvider.transcribeDictation(audio, { vocabularyPrompt })).trim();
+    }
+    const segments = await this.sttProvider.transcribeFinal(audio, consultationId, {
+      whisperPrompt: vocabularyPrompt,
+    });
+    return segments
+      .map((s) => s.text.trim())
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+  }
+
+  /**
+   * 聞き取った一文を校正する。
+   *
+   * 直せなかったときは**聞こえたままを返す**。口述は先生が送信前に目で見て直せるので、
+   * ここで例外にして入力そのものを失わせるほうが損になる。
+   */
+  private async polishDictation(
+    heard: string,
+    glossary: MedicalGlossary | undefined,
+  ): Promise<string> {
+    if (!this.llmProvider.correctTranscript) return heard;
+    try {
+      const corrected = await this.llmProvider.correctTranscript(
+        numberTranscriptLines([heard]),
+        glossary,
+      );
+      const [line] = redistributeCorrectedLines([heard], corrected);
+      return line?.trim() || heard;
+    } catch {
+      return heard;
     }
   }
 
