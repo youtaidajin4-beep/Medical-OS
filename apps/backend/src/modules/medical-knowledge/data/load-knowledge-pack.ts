@@ -220,6 +220,24 @@ export function knowledgePackSafetyRules(): string[] {
   return data.safety_rules ?? [];
 }
 
+/**
+ * 語の読み（ひらがな）。索引の鍵に使う。
+ *
+ * 医院辞書へ語を育てるときにも引く。読みを持たせないと、
+ * 音声認識がかなのまま出したときに当たらない。
+ */
+export function knowledgePackReading(canonicalName: string): string | undefined {
+  if (!readingByName) {
+    readingByName = new Map(
+      (data.terms ?? [])
+        .filter((t) => t.reading)
+        .map((t) => [t.canonical_name, t.reading as string]),
+    );
+  }
+  return readingByName.get(canonicalName);
+}
+let readingByName: Map<string, string> | null = null;
+
 export function knowledgePackMeta(): { name?: string; version?: string } {
   return { name: data.name, version: data.version };
 }

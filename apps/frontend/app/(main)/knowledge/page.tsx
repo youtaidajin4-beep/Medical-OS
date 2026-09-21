@@ -37,6 +37,9 @@ export default function KnowledgePage() {
   const [learn, setLearn] = useState<Awaited<ReturnType<typeof api.listLearningCandidates>>>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  // 先生が直した語は学習候補に溜まるが、溜まっていることが画面のどこにも出ていなかった。
+  // 開くきっかけが無いので、承認されないまま埋もれる。タブに件数を出す。
+  const [pendingLearn, setPendingLearn] = useState(0);
 
   const reload = async () => {
     setLoading(true);
@@ -65,6 +68,13 @@ export default function KnowledgePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
+  useEffect(() => {
+    api
+      .listLearningCandidates()
+      .then((rows) => setPendingLearn(rows.length))
+      .catch(() => setPendingLearn(0));
+  }, [learn]);
+
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
       <header className="space-y-1">
@@ -89,6 +99,11 @@ export default function KnowledgePage() {
             )}
           >
             {t.label}
+            {t.id === 'learn' && pendingLearn > 0 && (
+              <span className="ml-1.5 rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                {pendingLearn}
+              </span>
+            )}
           </button>
         ))}
       </div>

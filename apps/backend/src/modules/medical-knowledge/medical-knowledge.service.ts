@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { knowledgePackReading } from './data/load-knowledge-pack';
 import {
   MedicalKnowledgeSource,
   MedicalRiskLevel,
@@ -44,6 +45,10 @@ export class MedicalKnowledgeService implements OnModuleInit {
       const aliases = Array.isArray(t.aliases) ? (t.aliases as string[]) : [];
       for (const a of aliases) {
         idx.addClinicAlias(String(a), t.canonicalName, t.category as never);
+      }
+      // 医院で育てた語も読みで引けるようにする（音声認識はかなのまま出すことがある）
+      if (t.reading) {
+        idx.addClinicAlias(t.reading, t.canonicalName, t.category as never);
       }
     }
     const doctorTerms = await this.prisma.doctorDictionaryTerm.findMany({
@@ -325,16 +330,40 @@ export class MedicalKnowledgeService implements OnModuleInit {
       where: { id, clinicId },
     });
     if (!cand) throw new Error('Candidate not found');
-    await this.prisma.clinicDictionaryTerm.create({
-      data: {
-        clinicId,
-        canonicalName: cand.correctedTerm,
-        category: cand.category ?? MedicalTermCategory.other,
-        aliases: [cand.originalTerm],
-        frequency: cand.occurrenceCount,
-        priority: 150,
-      },
+    // 同じ語を二度承認すると行が増えていた。増えるほど索引が重くなるだけで、
+    // 医院辞書の画面でも同じ語が並ぶ。既にあるなら言い換えを足す形にする。
+    const existingTerm = await this.prisma.clinicDictionaryTerm.findFirst({
+      where: { clinicId, canonicalName: cand.correctedTerm },
     });
+    if (existingTerm) {
+      const aliases = Array.isArray(existingTerm.aliases)
+        ? (existingTerm.aliases as string[]).map(String)
+        : [];
+      if (!aliases.includes(cand.originalTerm)) aliases.push(cand.originalTerm);
+      await this.prisma.clinicDictionaryTerm.update({
+        where: { id: existingTerm.id },
+        data: {
+          aliases,
+          frequency: existingTerm.frequency + cand.occurrenceCount,
+          isActive: true,
+          // 途中で読みが分かることがある（辞書に載っている語だった場合）
+          reading: existingTerm.reading ?? knowledgePackReading(cand.correctedTerm) ?? null,
+        },
+      });
+    } else {
+      await this.prisma.clinicDictionaryTerm.create({
+        data: {
+          clinicId,
+          canonicalName: cand.correctedTerm,
+          // 読みを持たせておく。索引は読みでも引けるようにしてある
+          reading: knowledgePackReading(cand.correctedTerm) ?? null,
+          category: cand.category ?? MedicalTermCategory.other,
+          aliases: [cand.originalTerm],
+          frequency: cand.occurrenceCount,
+          priority: 150,
+        },
+      });
+    }
     await this.prisma.dictionaryLearningCandidate.update({
       where: { id },
       data: { status: 'approved' },
