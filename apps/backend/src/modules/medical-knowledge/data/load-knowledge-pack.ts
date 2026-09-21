@@ -4,6 +4,8 @@ import { AliasType, EntityType, RiskLevel, SeedTerm } from '../knowledge-types';
 
 type V2Term = {
   canonical_name: string;
+  /** ひらがなの読み。英字略語（HbA1c, CRP など）は持たない */
+  reading?: string;
   category: string;
   priority?: string;
   risk_level?: string;
@@ -133,6 +135,8 @@ function upsertTerm(byName: Map<string, SeedTerm>, next: SeedTerm) {
   byName.set(next.canonicalName, {
     ...existing,
     ...next,
+    // ブランド名や略語の行には読みが無い。あとから来た行で読みを消さない
+    reading: next.reading ?? existing.reading,
     aliases,
     priority: Math.max(existing.priority ?? 100, next.priority ?? 100),
     riskLevel:
@@ -153,6 +157,7 @@ export function loadInternalMedicineKnowledgePack(): SeedTerm[] {
     const category = mapPackCategory(t.category, t.canonical_name);
     upsertTerm(byName, {
       canonicalName: t.canonical_name,
+      reading: t.reading,
       category,
       subcategory: t.category,
       priority: mapPriority(t.priority),

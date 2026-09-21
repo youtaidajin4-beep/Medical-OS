@@ -45,9 +45,20 @@ export class KnowledgeIndex {
       sourceCode,
     };
     this.register(term.canonicalName, { ...base, matchAlias: term.canonicalName, aliasType: 'canonical' });
+    // 読みでも引けるようにする。
+    // 音声認識は知らない語をかなのまま出すことがあり（「きょうしんしょう」）、
+    // 漢字だけで索引していると当たらない。読みは表記ではなく**検索の鍵**として持つ。
+    if (term.reading && term.reading !== term.canonicalName) {
+      this.register(term.reading, { ...base, matchAlias: term.reading, aliasType: 'spoken' });
+      this.aliasToCanonical.set(normalizeMedicalText(term.reading), term.canonicalName);
+    }
     for (const a of term.aliases ?? []) {
       this.register(a.alias, { ...base, matchAlias: a.alias, aliasType: a.aliasType });
       this.aliasToCanonical.set(normalizeMedicalText(a.alias), term.canonicalName);
+      if (a.aliasReading && a.aliasReading !== a.alias) {
+        this.register(a.aliasReading, { ...base, matchAlias: a.aliasReading, aliasType: 'spoken' });
+        this.aliasToCanonical.set(normalizeMedicalText(a.aliasReading), term.canonicalName);
+      }
     }
   }
 
