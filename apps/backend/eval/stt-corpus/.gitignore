@@ -1,0 +1,3 @@
+audio/
+# 音声は scripts.json から作り直せる（build-stt-corpus.mjs --rebuild）。
+# 40本で数MBあり、リポジトリに置く意味がない。

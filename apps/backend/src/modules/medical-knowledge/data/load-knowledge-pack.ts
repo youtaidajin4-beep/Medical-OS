@@ -238,6 +238,34 @@ export function knowledgePackReading(canonicalName: string): string | undefined 
 }
 let readingByName: Map<string, string> | null = null;
 
+/**
+ * 校正へ渡す内科の語をひととおり。
+ *
+ * ここは長いあいだ各20語だけを渡していた。しかも五十音順の先頭20語なので、
+ * 循環器の病名ばかりで消化器も呼吸器も1語も入っていなかった。
+ * 実際の誤変換で測ると、渡す範囲を広げるほうが**回復率 33% → 42%**（各5回・ばらつき0）。
+ * eval/run-correction-eval.mjs で測り直せる。
+ *
+ * 増やせば増えるほど良い、という話ではない。手で作った問題では
+ * 「偏った200語」が「渡さない」より悪くなった。効くのは**実際に出る語を
+ * 覆っているか**であって、語数ではない。
+ */
+export function knowledgePackCorrectionTerms(): {
+  diagnoses: string[];
+  drugNames: string[];
+  symptoms: string[];
+  tests: string[];
+} {
+  const pick = (category: string) =>
+    (data.terms ?? []).filter((t) => t.category === category).map((t) => t.canonical_name);
+  return {
+    diagnoses: pick('diagnoses'),
+    drugNames: pick('medications_generic'),
+    symptoms: pick('symptoms_findings'),
+    tests: [...pick('laboratory_tests'), ...pick('imaging_procedures')],
+  };
+}
+
 export function knowledgePackMeta(): { name?: string; version?: string } {
   return { name: data.name, version: data.version };
 }

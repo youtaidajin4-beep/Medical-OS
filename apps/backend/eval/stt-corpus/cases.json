@@ -1,0 +1,645 @@
+{
+  "purpose": "音声認識の誤変換を、正解つきで集めるための読み上げ台本。内科の各領域を広くカバーする。ここに書いた文がそのまま正解になる。",
+  "limits": "合成音声で読み上げるので、実際の診察室の音（雑音・同時発話・小声・方言）とは違う。誤変換の傾向は本物だが、頻度はそのまま当てはまらない。谷口先生の実音声が手に入ったら差し替える。",
+  "created": "2026-09-21",
+  "generated": "2026-09-21",
+  "sttModel": "gpt-4o-transcribe",
+  "note": "正解は台本そのもの。heard は語彙ヒント無しで文字起こしした結果。",
+  "cases": [
+    {
+      "id": "cardio-01-1",
+      "area": "循環器",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "胸部絞扼感",
+          "accept": [
+            "胸部絞扼感"
+          ]
+        }
+      ],
+      "heard": "労作時の胸部攻略感があり、労作性狭心症を疑います。",
+      "expected": "労作時の胸部絞扼感があり、労作性狭心症を疑います。"
+    },
+    {
+      "id": "cardio-01-2",
+      "area": "循環器",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "洞調律",
+          "accept": [
+            "洞調律"
+          ]
+        }
+      ],
+      "heard": "心電図はオラ強律で、明らかなST変化はありません。",
+      "expected": "心電図は洞調律で、明らかなST変化はありません。"
+    },
+    {
+      "id": "cardio-02-2",
+      "area": "循環器",
+      "voice": "doctor",
+      "kind": "notation",
+      "targets": [],
+      "heard": "抗凝固療法としてエリキュース5mgを1日2回で開始します。",
+      "expected": "抗凝固療法としてエリキュース五ミリグラムを一日二回で開始します。"
+    },
+    {
+      "id": "resp-01-1",
+      "area": "呼吸器",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "咳嗽",
+          "accept": [
+            "咳嗽"
+          ]
+        },
+        {
+          "canonical": "喘鳴",
+          "accept": [
+            "喘鳴"
+          ]
+        }
+      ],
+      "heard": "外相が3週間続き、全例を聴取します。",
+      "expected": "咳嗽が三週間続き、喘鳴を聴取します。"
+    },
+    {
+      "id": "resp-02-2",
+      "area": "呼吸器",
+      "voice": "doctor",
+      "kind": "notation",
+      "targets": [],
+      "heard": "喫煙歴は40年。",
+      "expected": "喫煙歴は四十年。"
+    },
+    {
+      "id": "resp-02-3",
+      "area": "呼吸器",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "適応",
+          "accept": [
+            "適応"
+          ]
+        }
+      ],
+      "heard": "呼吸機能検査を実施し、在宅酸素療法の適用を検討します。",
+      "expected": "呼吸機能検査を実施し、在宅酸素療法の適応を検討します。"
+    },
+    {
+      "id": "gi-01-1",
+      "area": "消化器",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "心窩部痛",
+          "accept": [
+            "心窩部痛"
+          ]
+        },
+        {
+          "canonical": "胸やけ",
+          "accept": [
+            "胸やけ"
+          ]
+        }
+      ],
+      "heard": "心の痛みと胸焼けがあり、逆流性食道炎を疑います。",
+      "expected": "心窩部痛と胸やけがあり、逆流性食道炎を疑います。"
+    },
+    {
+      "id": "gi-02-1",
+      "area": "消化器",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "肝機能障害",
+          "accept": [
+            "肝機能障害"
+          ]
+        }
+      ],
+      "heard": "気持ちの障害を認め、ガンマGTPが上昇しています。",
+      "expected": "肝機能障害を認め、ガンマGTPが上昇しています。"
+    },
+    {
+      "id": "gi-02-2",
+      "area": "消化器",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "腹部超音波検査",
+          "accept": [
+            "腹部超音波検査"
+          ]
+        }
+      ],
+      "heard": "副部超音波検査で脂肪肝の所見です。",
+      "expected": "腹部超音波検査で脂肪肝の所見です。"
+    },
+    {
+      "id": "endo-01-1",
+      "area": "内分泌代謝",
+      "voice": "doctor",
+      "kind": "dictionary-gap",
+      "targets": [],
+      "heard": "2型糖尿病で、ヘモグロビンA1cは7.2%です。",
+      "expected": "二型糖尿病でヘモグロビンエーワンシーは七点二パーセントです。"
+    },
+    {
+      "id": "endo-02-1",
+      "area": "内分泌代謝",
+      "voice": "doctor",
+      "kind": "dictionary-gap",
+      "targets": [],
+      "heard": "脂質異常症でLDLコレステロールが160です。",
+      "expected": "脂質異常症で、エルディーエルコレステロールが百六十です。"
+    },
+    {
+      "id": "endo-02-2",
+      "area": "内分泌代謝",
+      "voice": "doctor",
+      "kind": "notation",
+      "targets": [],
+      "heard": "スタチンを開始し、3か月後に再検査とします。",
+      "expected": "スタチンを開始し、三か月後に再検査とします。"
+    },
+    {
+      "id": "renal-01-1",
+      "area": "腎",
+      "voice": "doctor",
+      "kind": "notation",
+      "targets": [],
+      "heard": "慢性腎臓病のステージ3です。",
+      "expected": "慢性腎臓病のステージ三です。"
+    },
+    {
+      "id": "renal-01-2",
+      "area": "腎",
+      "voice": "doctor",
+      "kind": "dictionary-gap",
+      "targets": [],
+      "heard": "eGFRは40で、クレアチニンは1.3。",
+      "expected": "イージーエフアールは四十五で、クレアチニンは一点三。"
+    },
+    {
+      "id": "renal-01-3",
+      "area": "腎",
+      "voice": "doctor",
+      "kind": "notation",
+      "targets": [],
+      "heard": "蛋白尿は2プラス。",
+      "expected": "蛋白尿は二プラス。"
+    },
+    {
+      "id": "infect-01-1",
+      "area": "感染症",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "咽頭痛",
+          "accept": [
+            "咽頭痛"
+          ]
+        }
+      ],
+      "heard": "発熱とのど頭痛があり、扁桃炎と診断します。",
+      "expected": "発熱と咽頭痛があり、扁桃炎と診断します。"
+    },
+    {
+      "id": "infect-01-2",
+      "area": "感染症",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "溶連菌迅速検査",
+          "accept": [
+            "溶連菌迅速検査"
+          ]
+        }
+      ],
+      "heard": "病原菌迅速検査は陰性でした。",
+      "expected": "溶連菌迅速検査は陰性でした。"
+    },
+    {
+      "id": "infect-01-3",
+      "area": "感染症",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "帯状疱疹",
+          "accept": [
+            "帯状疱疹"
+          ]
+        }
+      ],
+      "heard": "対処方針の寄与はありません。",
+      "expected": "帯状疱疹の既往はありません。"
+    },
+    {
+      "id": "neuro-01-1",
+      "area": "神経",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "構音障害",
+          "accept": [
+            "構音障害"
+          ]
+        }
+      ],
+      "heard": "めまいと嘔吐の紹介があり、脳梗塞を疑います。",
+      "expected": "めまいと構音障害があり、脳梗塞を疑います。"
+    },
+    {
+      "id": "neuro-01-2",
+      "area": "神経",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "頭部エムアールアイ",
+          "accept": [
+            "頭部エムアールアイ"
+          ]
+        }
+      ],
+      "heard": "頭部MRIを緊急で依頼します。",
+      "expected": "頭部エムアールアイを緊急で依頼します。"
+    },
+    {
+      "id": "general-01-1",
+      "area": "一般",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "倦怠感",
+          "accept": [
+            "倦怠感"
+          ]
+        }
+      ],
+      "heard": "前在感が強く、貧血を認めます。",
+      "expected": "倦怠感が強く、貧血を認めます。"
+    },
+    {
+      "id": "general-01-2",
+      "area": "一般",
+      "voice": "doctor",
+      "kind": "notation",
+      "targets": [],
+      "heard": "血色素量は9.8。",
+      "expected": "血色素量は九点八。"
+    },
+    {
+      "id": "rx-01-1",
+      "area": "処方",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "アムロジピン",
+          "accept": [
+            "アムロジピン",
+            "あむろじぴん",
+            "アムロジーピン"
+          ]
+        }
+      ],
+      "heard": "アブロジピン5mgを1日1回朝食後、メトホルミン250mgを1日2回朝夕食後で継続します。",
+      "expected": "アムロジピン五ミリグラムを一日一回朝食後、メトホルミン二百五十ミリグラムを一日二回朝夕食後で継続します。"
+    },
+    {
+      "id": "rx-02-1",
+      "area": "処方",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "カルボシステイン",
+          "accept": [
+            "カルボシステイン",
+            "ムコダイン"
+          ]
+        },
+        {
+          "canonical": "ムコダイン",
+          "accept": [
+            "ムコダイン"
+          ]
+        }
+      ],
+      "heard": "無糖炎とカロナールを処方します。",
+      "expected": "ムコダインとカロナールを五日分処方します。"
+    },
+    {
+      "id": "rx-02-2",
+      "area": "処方",
+      "voice": "doctor",
+      "kind": "dictionary-gap",
+      "targets": [],
+      "heard": "アセトアミノフェンは、投与で1回500mgまでとします。",
+      "expected": "アセトアミノフェンは頓用で一回五百ミリグラムまでとします。"
+    },
+    {
+      "id": "cardio-03-1",
+      "area": "循環器",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "下腿浮腫",
+          "accept": [
+            "下腿浮腫"
+          ]
+        }
+      ],
+      "heard": "咳嗽と労作時息切れがあり、慢性心不全の増悪を疑います。",
+      "expected": "下腿浮腫と労作時息切れがあり、慢性心不全の増悪を疑います。"
+    },
+    {
+      "id": "cardio-04-1",
+      "area": "循環器",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "動悸",
+          "accept": [
+            "動悸"
+          ]
+        }
+      ],
+      "heard": "動機の訴えで来院されました。",
+      "expected": "動悸の訴えで来院されました。"
+    },
+    {
+      "id": "cardio-04-2",
+      "area": "循環器",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "洞調律",
+          "accept": [
+            "洞調律"
+          ]
+        }
+      ],
+      "heard": "心電図で上室性期外収縮を認めますが、補充効率は保たれています。",
+      "expected": "心電図で上室性期外収縮を認めますが、洞調律は保たれています。"
+    },
+    {
+      "id": "cardio-05-2",
+      "area": "循環器",
+      "voice": "doctor",
+      "kind": "notation",
+      "targets": [],
+      "heard": "家庭血圧は収縮期140台で減塩指導を継続します。",
+      "expected": "家庭血圧は収縮期百四十台で、減塩指導を継続します。"
+    },
+    {
+      "id": "gi-04-1",
+      "area": "消化器",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "便潜血",
+          "accept": [
+            "便潜血"
+          ]
+        }
+      ],
+      "heard": "感染兆候のため、内視鏡検査を勧めます。",
+      "expected": "便潜血陽性のため、大腸内視鏡検査を勧めます。"
+    },
+    {
+      "id": "gi-04-2",
+      "area": "消化器",
+      "voice": "doctor",
+      "kind": "dictionary-gap",
+      "targets": [],
+      "heard": "疑惑の理由がありますが、精査は必要です。",
+      "expected": "痔核の既往がありますが、精査は必要です。"
+    },
+    {
+      "id": "gi-05-1",
+      "area": "消化器",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "心窩部痛",
+          "accept": [
+            "心窩部痛"
+          ]
+        }
+      ],
+      "heard": "心下部痛みに対し、プロトンポンプ阻害薬を投与しました。",
+      "expected": "心窩部痛に対しプロトンポンプ阻害薬を投与しました。"
+    },
+    {
+      "id": "endo-03-1",
+      "area": "内分泌代謝",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "甲状腺機能亢進症",
+          "accept": [
+            "甲状腺機能亢進症"
+          ]
+        }
+      ],
+      "heard": "甲状腺機能更新症を疑い、甲状腺刺激ホルモンとフリーサイロキシンを測定します。",
+      "expected": "甲状腺機能亢進症を疑い、甲状腺刺激ホルモンと遊離サイロキシンを測定します。"
+    },
+    {
+      "id": "endo-04-1",
+      "area": "内分泌代謝",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "糖尿病性神経障害",
+          "accept": [
+            "糖尿病性神経障害"
+          ]
+        }
+      ],
+      "heard": "糖尿病精神系障害による下肢のしびれです。",
+      "expected": "糖尿病性神経障害による下肢のしびれです。"
+    },
+    {
+      "id": "endo-05-1",
+      "area": "内分泌代謝",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "高尿酸血症",
+          "accept": [
+            "高尿酸血症"
+          ]
+        }
+      ],
+      "heard": "尿酸結晶で、痛風発作の既往があります。",
+      "expected": "高尿酸血症で痛風発作の既往があります。"
+    },
+    {
+      "id": "endo-05-2",
+      "area": "内分泌代謝",
+      "voice": "doctor",
+      "kind": "notation",
+      "targets": [],
+      "heard": "尿酸値は8.2で、フェブキソスタットを開始します。",
+      "expected": "尿酸値は八点二で、フェブキソスタットを開始します。"
+    },
+    {
+      "id": "renal-02-2",
+      "area": "腎",
+      "voice": "doctor",
+      "kind": "dictionary-gap",
+      "targets": [],
+      "heard": "臨床検の適応を、腎臓内科と相談します。",
+      "expected": "腎生検の適応を腎臓内科と相談します。"
+    },
+    {
+      "id": "infect-02-2",
+      "area": "感染症",
+      "voice": "doctor",
+      "kind": "notation",
+      "targets": [],
+      "heard": "オセルタミビルを5日間処方し、解熱後2日は登校を控えてもらいます。",
+      "expected": "オセルタミビルを五日間処方し、解熱後二日は登校を控えてもらいます。"
+    },
+    {
+      "id": "infect-03-2",
+      "area": "感染症",
+      "voice": "doctor",
+      "kind": "dictionary-gap",
+      "targets": [],
+      "heard": "抗菌薬を3日処方します。",
+      "expected": "抗菌薬を三日分処方します。"
+    },
+    {
+      "id": "neuro-02-1",
+      "area": "神経",
+      "voice": "doctor",
+      "kind": "notation",
+      "targets": [],
+      "heard": "片頭痛の発作が月に4回あります。",
+      "expected": "片頭痛の発作が月に四回あります。"
+    },
+    {
+      "id": "neuro-02-2",
+      "area": "神経",
+      "voice": "doctor",
+      "kind": "dictionary-gap",
+      "targets": [],
+      "heard": "トリプタン製剤を投与で処方し、予防薬を検討します。",
+      "expected": "トリプタン製剤を頓用で処方し、予防薬を検討します。"
+    },
+    {
+      "id": "neuro-03-1",
+      "area": "神経",
+      "voice": "doctor",
+      "kind": "dictionary-gap",
+      "targets": [],
+      "heard": "認知機能の低下が疑われ、長谷川式簡易機能評価スケールを実施します。",
+      "expected": "認知機能の低下が疑われ、長谷川式簡易知能評価スケールを実施します。"
+    },
+    {
+      "id": "derm-01-1",
+      "area": "皮膚",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "帯状疱疹",
+          "accept": [
+            "帯状疱疹"
+          ]
+        }
+      ],
+      "heard": "体上方針の皮疹が右記録部に沿って出ています。",
+      "expected": "帯状疱疹の皮疹が右季肋部に沿って出ています。"
+    },
+    {
+      "id": "general-02-2",
+      "area": "一般",
+      "voice": "doctor",
+      "kind": "dictionary-gap",
+      "targets": [],
+      "heard": "飲酒量は日本酒換算で2合、週5日です。",
+      "expected": "飲酒量は日本酒換算で二合、週に五日です。"
+    },
+    {
+      "id": "general-03-1",
+      "area": "一般",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "起立性低血圧",
+          "accept": [
+            "起立性低血圧"
+          ]
+        }
+      ],
+      "heard": "急性低血圧による失神と考えます。",
+      "expected": "起立性低血圧による失神と考えます。"
+    },
+    {
+      "id": "rx-03-1",
+      "area": "処方",
+      "voice": "doctor",
+      "kind": "notation",
+      "targets": [],
+      "heard": "ビソプロロール2.5mgを1日1回朝食後で開始します。",
+      "expected": "ビソプロロール二点五ミリグラムを一日一回、朝食後で開始します。"
+    },
+    {
+      "id": "rx-03-2",
+      "area": "処方",
+      "voice": "doctor",
+      "kind": "scorable",
+      "targets": [
+        {
+          "canonical": "徐脈",
+          "accept": [
+            "徐脈"
+          ]
+        }
+      ],
+      "heard": "脈に注意します。",
+      "expected": "徐脈に注意します。"
+    },
+    {
+      "id": "rx-04-1",
+      "area": "処方",
+      "voice": "doctor",
+      "kind": "dictionary-gap",
+      "targets": [],
+      "heard": "ロキソプロフェンは投与を中止し、胃薬のレバミピドを併用します。",
+      "expected": "ロキソプロフェンは頓用とし、胃薬のレバミピドを併用します。"
+    }
+  ]
+}

@@ -3,7 +3,10 @@ import {
   MedicalGlossary,
 } from './medical-glossary.types';
 import { PhysicianRules } from '../../modules/settings/physician-rules.types';
-import { knowledgePackGlossaryDefaults } from '../../modules/medical-knowledge/data/load-knowledge-pack';
+import {
+  knowledgePackCorrectionTerms,
+  knowledgePackGlossaryDefaults,
+} from '../../modules/medical-knowledge/data/load-knowledge-pack';
 
 const BASE_PROMPT =
   '内科診察の会話。主訴、現病歴、既往歴、聴診、再診、処方、経過観察。';
@@ -56,17 +59,26 @@ export type SessionKnowledgeHint = {
 };
 
 /**
- * LLM hints: small fixed clinic glossary + this consultation's knowledge hits only.
- * Never dump the full 1000+ term pack.
+ * 校正へ渡すクリニック語彙。
+ *
+ * 以前は各20語だけだった。五十音順の先頭20語なので循環器の病名ばかりで、
+ * 消化器も呼吸器も内分泌も1語も入っていなかった。実際の誤変換で測ると
+ * **回復率 33% → 42%**（各5回・ばらつき0）。eval/run-correction-eval.mjs で測り直せる。
+ *
+ * 読みは入れない。同じ語数で読みを足すと回復率が下がる（ヒントが2.4倍の長さになり、
+ * モデルの注意が薄まる）。読みは索引の鍵として持つのが正しい置き場所。
  */
 export function glossaryToLlmHint(
   glossary: MedicalGlossary,
   sessionHits?: SessionKnowledgeHint[],
 ): string {
   const pack = knowledgePackGlossaryDefaults();
+  const terms = knowledgePackCorrectionTerms();
   const lines = [
-    `常用診断: ${uniqueTerms([...glossary.diagnoses, ...pack.diagnoses]).slice(0, 20).join('、')}`,
-    `常用薬剤: ${uniqueTerms([...glossary.drugNames, ...pack.drugNames]).slice(0, 20).join('、')}`,
+    `常用診断: ${uniqueTerms([...glossary.diagnoses, ...terms.diagnoses]).join('、')}`,
+    `常用薬剤: ${uniqueTerms([...glossary.drugNames, ...terms.drugNames]).join('、')}`,
+    `症状・所見: ${uniqueTerms(terms.symptoms).join('、')}`,
+    `検査・画像: ${uniqueTerms(terms.tests).join('、')}`,
     `音声別名ヒント: ${pack.spokenHints.slice(0, 16).join('、')}`,
   ];
   if (glossary.customReplacements.length) {

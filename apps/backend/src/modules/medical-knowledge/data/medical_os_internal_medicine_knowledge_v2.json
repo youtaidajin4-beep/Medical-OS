@@ -1,6 +1,6 @@
 {
   "name": "Medical OS Internal Medicine Knowledge v2",
-  "version": "2.1",
+  "version": "2.2",
   "purpose": "内科診療の音声認識補正、医療エンティティ抽出、候補ランキング、SOAP生成前の品質チェック。診断判断エンジンではない。",
   "safety_rules": [
     "RAW transcriptは上書きしない",
@@ -7255,6 +7255,139 @@
       "priority": "normal",
       "risk_level": "normal",
       "reading": "じゅしんれき"
+    },
+    {
+      "canonical_name": "洞調律",
+      "category": "symptoms_findings",
+      "priority": "high",
+      "risk_level": "normal",
+      "reading": "どうちょうりつ"
+    },
+    {
+      "canonical_name": "胸部絞扼感",
+      "category": "symptoms_findings",
+      "priority": "high",
+      "risk_level": "normal",
+      "reading": "きょうぶこうやくかん"
+    },
+    {
+      "canonical_name": "絞扼感",
+      "category": "symptoms_findings",
+      "priority": "high",
+      "risk_level": "normal",
+      "reading": "こうやくかん"
+    },
+    {
+      "canonical_name": "圧迫感",
+      "category": "symptoms_findings",
+      "priority": "high",
+      "risk_level": "normal",
+      "reading": "あっぱくかん"
+    },
+    {
+      "canonical_name": "適応",
+      "category": "documents_workflow",
+      "priority": "high",
+      "risk_level": "normal",
+      "reading": "てきおう"
+    },
+    {
+      "canonical_name": "腹部超音波検査",
+      "category": "imaging_procedures",
+      "priority": "high",
+      "risk_level": "normal",
+      "reading": "ふくぶちょうおんぱけんさ"
+    },
+    {
+      "canonical_name": "溶連菌迅速検査",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal",
+      "reading": "ようれんきんじんそくけんさ"
+    },
+    {
+      "canonical_name": "インフルエンザ迅速検査",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal",
+      "reading": "いんふるえんざじんそくけんさ"
+    },
+    {
+      "canonical_name": "迅速検査",
+      "category": "laboratory_tests",
+      "priority": "high",
+      "risk_level": "normal",
+      "reading": "じんそくけんさ"
+    },
+    {
+      "canonical_name": "頭部エムアールアイ",
+      "category": "imaging_procedures",
+      "priority": "high",
+      "risk_level": "normal",
+      "reading": "とうぶえむあーるあい"
+    },
+    {
+      "canonical_name": "聴診",
+      "category": "treatment_actions",
+      "priority": "high",
+      "risk_level": "normal",
+      "reading": "ちょうしん"
+    },
+    {
+      "canonical_name": "触診",
+      "category": "treatment_actions",
+      "priority": "high",
+      "risk_level": "normal",
+      "reading": "しょくしん"
+    },
+    {
+      "canonical_name": "打診",
+      "category": "treatment_actions",
+      "priority": "high",
+      "risk_level": "normal",
+      "reading": "だしん"
+    },
+    {
+      "canonical_name": "脾腫",
+      "category": "symptoms_findings",
+      "priority": "high",
+      "risk_level": "normal",
+      "reading": "ひしゅ"
+    },
+    {
+      "canonical_name": "肝腫大",
+      "category": "symptoms_findings",
+      "priority": "high",
+      "risk_level": "normal",
+      "reading": "かんしゅだい"
+    },
+    {
+      "canonical_name": "腹水",
+      "category": "symptoms_findings",
+      "priority": "high",
+      "risk_level": "normal",
+      "reading": "ふくすい"
+    },
+    {
+      "canonical_name": "在宅酸素療法",
+      "category": "treatment_actions",
+      "priority": "high",
+      "risk_level": "normal",
+      "reading": "ざいたくさんそりょうほう"
+    },
+    {
+      "canonical_name": "吸入ステロイド",
+      "category": "medications_generic",
+      "priority": "high",
+      "risk_level": "normal",
+      "reading": "きゅうにゅうすてろいど"
+    },
+    {
+      "canonical_name": "心窩部",
+      "category": "symptoms_findings",
+      "priority": "high",
+      "risk_level": "normal",
+      "reading": "しんかぶ"
     }
   ],
   "medication_brand_generic": [

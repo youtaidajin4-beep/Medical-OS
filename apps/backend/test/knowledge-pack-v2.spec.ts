@@ -48,8 +48,15 @@ describe('scoped clinic/physician dictionaries', () => {
   });
 });
 
-describe('LLM hints stay compact', () => {
-  it('does not embed thousands of terms', () => {
+/**
+ * ヒントの中身は、実際の誤変換で測って決めた（eval/run-correction-eval.mjs）。
+ *
+ * 各20語 → 内科ぜんぶ で回復率 12% → 17%（各5回・ばらつき0・改悪0）。
+ * ただし**読みを足すと下がる**。同じ語数で読みを付けるとヒントが2.4倍になり、
+ * 回復率は 11/12 → 9/12 に落ちた。読みは索引の鍵として持ち、ヒントには出さない。
+ */
+describe('校正へ渡すクリニック語彙', () => {
+  it('内科の語をひととおり渡す（各20語では足りない）', () => {
     const hint = glossaryToLlmHint(DEFAULT_MEDICAL_GLOSSARY, [
       {
         rawValue: 'アムロジビン',
@@ -59,7 +66,18 @@ describe('LLM hints stay compact', () => {
       },
     ]);
     expect(hint.includes('アムロジビン→アムロジピン')).toBe(true);
-    expect(hint.length).toBeLessThan(4000);
+    // 循環器以外の領域が入っていること（以前は五十音順の先頭20語しか渡せていなかった）
+    expect(hint).toContain('逆流性食道炎');
+    expect(hint).toContain('気管支喘息');
+    expect(hint).toContain('咳嗽');
+    // 際限なく伸ばさない。長いほど効きが鈍る
+    expect(hint.length).toBeLessThan(8000);
+  });
+
+  it('読みはヒントに入れない（長くなって回復率が下がる）', () => {
+    const hint = glossaryToLlmHint(DEFAULT_MEDICAL_GLOSSARY);
+    expect(hint).not.toContain('きょうしんしょう');
+    expect(hint).not.toContain('（こうけつあつ）');
   });
 });
 
