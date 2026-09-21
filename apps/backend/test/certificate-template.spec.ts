@@ -80,6 +80,22 @@ describe('診断書：様式で固定するところ', () => {
     }
   });
 
+  it('健診日は紙の和暦に寄せる（カルテを貼ると西暦で入ってくる）', () => {
+    const 貼り付け = finalizeCertificate({ examDate: '2026/09/21' }, 患者, 作成日);
+    expect(貼り付け.examDate).toBe('令和8年9月21日');
+    expect(finalizeCertificate({ examDate: '2026-09-21' }, 患者, 作成日).examDate).toBe(
+      '令和8年9月21日',
+    );
+  });
+
+  it('日付として読めない健診日は勝手に決めず、そのまま残す', () => {
+    expect(finalizeCertificate({ examDate: '先週' }, 患者, 作成日).examDate).toBe('先週');
+    expect(finalizeCertificate({ examDate: '令和8年9月1日' }, 患者, 作成日).examDate).toBe(
+      '令和8年9月1日',
+    );
+    expect(finalizeCertificate({}, 患者, 作成日).examDate).toBe('');
+  });
+
   it('生年月日は和暦（サーバーがUTCでも日本時間で数える）', () => {
     // 日本時間 2026-09-20 0:28（＝UTC 2026-09-19 15:28）生まれとして
     expect(formatReiwaBirthDate('2007-01-01T00:00:00.000Z')).toBe('平成19年1月1日');

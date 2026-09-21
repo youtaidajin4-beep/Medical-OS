@@ -40,38 +40,65 @@ export class DocumentsService {
   ) {}
 
   /**
-   * Block final documents while high-risk knowledge entities still need physician approval.
+   * 医師の確認が要る用語（用量など）のうち、まだ確認されていないものを返す。
+   *
+   * 「5ミリ」は 5mg とも 5mL とも取れる。確かめずに紙へ出さないための関門で、
+   * 書類を作る前にここを通す。**一覧をそのまま画面へ出す**ので、医師は書類の画面から
+   * その場で〈確定〉か〈原文のまま〉を押せる。別の画面へ行かせるためのものではない。
    */
-  async assertHighRiskKnowledgeApproved(consultationId: string) {
+  async listUnresolvedHighRiskTerms(consultationId: string) {
     const entities = await this.prisma.clinicalEntity.findMany({
       where: {
         consultationId,
         needsReview: true,
         riskLevel: { in: [MedicalRiskLevel.high, MedicalRiskLevel.critical] },
       },
+      include: { candidates: { orderBy: { score: 'desc' }, take: 1 } },
     });
-    if (!entities.length) return;
+    if (!entities.length) return [];
 
     const approved = await this.prisma.transcriptCorrection.findMany({
       where: { consultationId, approvedByDoctor: true },
       select: { originalTerm: true, correctedTerm: true },
     });
     const approvedKeys = new Set(
-      approved.map((a) => `${a.originalTerm ?? ''}→${a.correctedTerm ?? ''}`),
+      approved.map((a) => `${a.originalTerm ?? ''}\u2192${a.correctedTerm ?? ''}`),
     );
+    // 医師が一度でもこの原文について判断していれば済んだものとして扱う。
+    // 以前は「原文→正規化後」と「原文→原文」の2通りだけを見ていたため、候補が
+    // 差し替わった回で同じ用語をもう一度押させることになっていた。
+    const decidedRaw = new Set(approved.map((a) => a.originalTerm ?? ''));
 
-    const unresolved = entities.filter((e) => {
-      const to = e.normalizedValue ?? e.rawValue;
-      return (
-        !approvedKeys.has(`${e.rawValue}→${to}`) && !approvedKeys.has(`${e.rawValue}→${e.rawValue}`)
-      );
-    });
+    return entities
+      .filter((e) => {
+        const to = e.normalizedValue ?? e.rawValue;
+        return (
+          !approvedKeys.has(`${e.rawValue}\u2192${to}`) &&
+          !approvedKeys.has(`${e.rawValue}\u2192${e.rawValue}`) &&
+          !decidedRaw.has(e.rawValue)
+        );
+      })
+      .map((e) => ({
+        id: e.id,
+        rawValue: e.rawValue,
+        entityType: e.entityType as string,
+        riskLevel: e.riskLevel as string,
+        suggestion: e.candidates[0]?.candidateValue ?? e.normalizedValue ?? null,
+      }));
+  }
 
-    if (unresolved.length > 0) {
-      throw new ConflictException(
-        `要確認の医療用語が ${unresolved.length} 件残っています。レビュー画面で確定してから書類を作成してください。`,
-      );
-    }
+  /**
+   * Block final documents while high-risk knowledge entities still need physician approval.
+   */
+  async assertHighRiskKnowledgeApproved(consultationId: string) {
+    const unresolved = await this.listUnresolvedHighRiskTerms(consultationId);
+    if (unresolved.length === 0) return;
+    throw new ConflictException(
+      `確認が要る用語が ${unresolved.length} 件あります（${unresolved
+        .map((u) => u.rawValue)
+        .slice(0, 3)
+        .join('、')}）。書類の画面に出ている「確定」か「原文のまま」を押してから、もう一度作ってください。`,
+    );
   }
 
   async list(consultationId: string, physicianId: string) {

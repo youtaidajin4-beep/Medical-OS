@@ -66,6 +66,24 @@ export function formatReiwaBirthDate(value?: string | Date | null): string {
   return formatReiwaDate(date);
 }
 
+/**
+ * 健診日を紙の表記（和暦）に寄せる。
+ *
+ * 先生は「健診日は今日」と言い、カルテを貼れば「2026/09/21」の形で入ってくる。
+ * どちらも紙の「令和8年9月21日」に直す。日付として読めない言い回し
+ * （「先週」など）はそのまま残す — 勝手に日付を決めない。
+ */
+export function normalizeExamDate(value: unknown): string {
+  const text = toText(value);
+  if (!text) return '';
+  const iso = text.match(/^(\d{4})[-/年.](\d{1,2})[-/月.](\d{1,2})/);
+  if (!iso) return text;
+  const [, y, m, d] = iso;
+  const date = new Date(Number(y), Number(m) - 1, Number(d));
+  if (Number.isNaN(date.getTime())) return text;
+  return formatReiwaDate(date);
+}
+
 export function finalizeCertificate(
   raw: Record<string, unknown> | null | undefined,
   patient: ReferralPatientContext,
@@ -109,7 +127,7 @@ export function finalizeCertificate(
     age: calcAge(patient.dateOfBirth, issuedAt) ?? patient.age,
     // 右下の日付は作成日。健診日は先生が入れる（言われていなければ空欄）
     issuedDate: formatReiwaDate(issuedAt),
-    examDate: toText(ai.examDate),
+    examDate: normalizeExamDate(ai.examDate),
 
     // 問診票から
     interview: toText(ai.interview),

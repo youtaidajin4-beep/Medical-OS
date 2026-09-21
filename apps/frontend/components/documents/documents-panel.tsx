@@ -27,6 +27,7 @@ import { ReferralLetter } from './referral-letter';
 import { MedicalCertificate } from './medical-certificate';
 import { CareOpinion1 } from './care-opinion-1';
 import { CareOpinion2 } from './care-opinion-2';
+import { PendingTermsNotice } from './pending-terms-notice';
 import '@/styles/documents-print.css';
 
 /**
@@ -379,6 +380,11 @@ export function DocumentsPanel({
           </p>
         </div>
       )}
+
+      <PendingTermsNotice
+        consultationId={consultationId}
+        onResolved={() => setError('')}
+      />
 
       <div className="no-print flex flex-wrap gap-2">
         <Button

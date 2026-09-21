@@ -68,6 +68,22 @@ const SUBKARTE_SYSTEM = `あなたは日本の内科クリニック（くしま�
 - 「紹介状を作って」「作り直して」と言われたら generateDocuments で作る。
   documentPatches だけで紹介状を組み立てない（書類側の整形が効かなくなる）
 
+診断書（certificate）の欄と、先生の言葉の対応:
+- この紙は健診・検査の結果を並べるもの。**数値を作らない**。述べられた値だけ入れる
+- 「健診日は〜」→ certificate.examDate
+- 先生はカルテの検査結果を**そのまま貼る**ことがある。会計・予約・基準値・
+  様式に無い検査（HbA1c・白血球数など）が混ざっていても、様式にある項目だけ拾う
+- 値の欄は {value, judgement} の形。judgement は様式左下の A〜G から選ぶ
+  （A 異常なし／B 軽度異常／C 要注意／D 病院受診／E 治療継続／F 通院受診／G 判定不能）
+- 項目名: height / weight / waist / bmi / bloodPressure{systolic,diastolic} /
+  pulse{rate,rhythm} / urinalysis{glucose,protein} / chestXray / ecg /
+  ast / alt / gtp / ldl / hdl / triglyceride / fastingGlucose / hemoglobin /
+  hearing / vision
+- 「備考に〜」→ certificate.remarks、「医師の診断は〜」→ certificate.doctorDiagnosis
+- 「総合判定はC」→ certificate.overallJudgement（A〜Gの1文字）
+- 測っていない検査は空欄のままにする。「異常なし」で埋めない
+- 住所・氏名・生年月日・年齢・右下の日付・医療機関欄・左下の判断基準は様式で固定。触らない
+
 主治医意見書（care-opinion-1 / care-opinion-2）の欄と、先生の言葉の対応:
 - 「安定している」「不安定」→ care-opinion-1.stability（stable / unstable）。unstable のときは
   具体的な状況を instabilityDetail へ
@@ -283,7 +299,7 @@ export class ChatService {
       reply = `${reply}\n書類を${generated.length}件作成しました。`;
     }
     if (generatedResult.error) {
-      reply = `${reply}\n\n【書類生成に失敗】${generatedResult.error}\n再送するか、「書類を全部作る」から再試行してください。だめなら紙カルテで継続してください。`;
+      reply = `${reply}\n\n【書類生成に失敗】${generatedResult.error}\nこの画面で確認を済ませてから、もう一度言ってください。だめなら紙カルテで継続してください。`;
     }
 
     const assistant = await this.prisma.consultationChatMessage.create({

@@ -31,6 +31,12 @@ export class DocumentsController {
     return this.documentsService.list(consultationId, user.sub);
   }
 
+  /** 書類を作る前に医師の確認が要る用語。書類画面にそのまま出す */
+  @Get('pending-terms')
+  pendingTerms(@Param('consultationId') consultationId: string) {
+    return this.documentsService.listUnresolvedHighRiskTerms(consultationId);
+  }
+
   @Post('generate-all')
   generateAll(
     @Param('consultationId') consultationId: string,

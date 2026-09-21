@@ -380,6 +380,17 @@ export const api = {
         updatedAt: string;
       }>
     >(`/consultations/${consultationId}/documents`),
+  /** 書類を作る前に医師の確認が要る用語。書類画面にそのまま出す */
+  listPendingTerms: (consultationId: string) =>
+    request<
+      Array<{
+        id: string;
+        rawValue: string;
+        entityType: string;
+        riskLevel: string;
+        suggestion: string | null;
+      }>
+    >(`/consultations/${consultationId}/documents/pending-terms`),
   generateAllDocuments: (
     consultationId: string,
     options?: { referralPattern?: 'simple' | 'complex'; types?: string[] },
