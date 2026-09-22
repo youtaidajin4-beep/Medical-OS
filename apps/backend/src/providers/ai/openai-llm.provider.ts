@@ -29,6 +29,16 @@ export interface OpenAiLlmConfig {
   correctionModel?: string;
   /** 書類生成用モデル。誤字脱字と転記精度を優先して既定は gpt-4o。 */
   documentModel?: string;
+  /**
+   * SOAP生成用モデル。既定は gpt-4o。
+   *
+   * 実測（2026-09-21）: gpt-4o-mini は「定型床は差分があれば上書きする」という指示に
+   * 従えず、労作時胸痛で狭心症を疑う新規症例でも assessment=stable / plan=定時薬を
+   * 継続する、を返した（3回とも再現）。同じ入力を gpt-4o に渡すと正しく上書きされ、
+   * 逆に本当に安定した症例では正しく stable のままだった。
+   * SOAPは診療の判断そのものが載る欄なので、ここだけは精度を優先する。
+   */
+  soapModel?: string;
 }
 
 export type ChatResult = {
@@ -132,12 +142,14 @@ export class OpenAiLlmProvider implements LlmProvider {
   private readonly model: string;
   private readonly correctionModel: string;
   private readonly documentModel: string;
+  private readonly soapModel: string;
 
   constructor(config: OpenAiLlmConfig) {
     this.apiKey = config.apiKey;
     this.model = config.model ?? 'gpt-4o-mini';
     this.correctionModel = config.correctionModel ?? 'gpt-4o';
     this.documentModel = config.documentModel ?? 'gpt-4o';
+    this.soapModel = config.soapModel ?? 'gpt-4o';
   }
 
   async correctTranscript(transcript: string, glossary?: MedicalGlossary, _consultationId?: string) {
@@ -196,7 +208,8 @@ export class OpenAiLlmProvider implements LlmProvider {
     ]
       .filter(Boolean)
       .join('\n');
-    const result = await this.chatJson(
+    const result = await this.chatJsonWithModel(
+      this.soapModel,
       SOAP_SYSTEM,
       `構造化データ:\n${JSON.stringify(data, null, 2)}\n${styleBlock ? `\n${styleBlock}\n` : ''}\nkeys: subjective, objective, assessment, plan のSOAPをJSONで生成。各値は事実の短句のみ（文字列）。散文禁止。`,
       SOAP_MAX_TOKENS,
