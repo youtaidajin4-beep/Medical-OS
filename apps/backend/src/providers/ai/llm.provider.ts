@@ -14,21 +14,79 @@ const optionalStringArray = z.preprocess(
   z.array(z.string()).optional(),
 );
 
+/**
+ * 診察の会話を、SOAPを書く前に一度ここへ落とす。
+ *
+ * 2026-09-30、谷口先生がアプリとZoomを同じ日に使って比較された。結論は
+ * 「zoomの文字起こしもアプリと大差ない。文字起こしを要約に持ってくる際の精度の違い」。
+ * 文字起こしは同等で、落ちているのはこの構造化の段で合っていた。
+ *
+ * もとは9項目しかなく、しかも全項目が「短い事実句のみ」だった。10分の会話が
+ * 9つの短句に潰れ、そこから先はSOAPを書く側も原文を見ないので、ここでこぼれたものは
+ * 二度と戻らない。先生の「会話したボリュームに対して転記が乏しい」(9/25)、
+ * 「30〜50%くらいの精度」(9/29) はこの構造が出していた数字。
+ *
+ * 足した欄は、実際に落ちたものに1対1で対応している（9/26 先生の10名分の報告より）:
+ *   course           … 近藤さん「自己中止後に血圧が再上昇」が経過ごと消えた
+ *   adherence        … 前川さんの服薬状況を入れる欄が無かった
+ *   inClinicTests    … 小川内さんの院内検査・点滴を入れる欄が無かった
+ *   guidance         … 指導した内容を入れる欄が無かった
+ *   prescriptionDays … 坂井さんの処方日数を入れる欄が無かった
+ *   followUpInterval … 江口さんの再診が1か月→半年に化けた。間隔を持つ欄が無く
+ *                      文章に埋もれたため。欄を分けて、言われた数字だけを置く
+ *   differentials    … 医師が口に出した鑑別（林さんの亜鉛・甲状腺・貧血・咳喘息）
+ *   familyReport     … 江口さんの、本人の話と家族の話の区別
+ *   orderedTests     … この診察で出した検査オーダー（林さんの採血項目）
+ */
 export const StructuredClinicalDataSchema = z.object({
   chiefComplaint: optionalString,
   presentIllness: optionalString,
+  /** 前回受診以降の変化・増悪・改善。「自己中止後に再上昇」のような筋道をそのまま置く */
+  course: optionalString,
   pastHistory: optionalString,
   medications: optionalStringArray,
+  /** 服薬できているか、飲み忘れ・自己中止の有無 */
+  adherence: optionalString,
   allergies: optionalStringArray,
   vitals: optionalString,
   physicalExam: optionalString,
+  /** この診察で院内で実施した検査・処置（採血・点滴・心電図・レントゲン等） */
+  inClinicTests: optionalStringArray,
+  /** この診察で出した検査オーダーと、その項目 */
+  orderedTests: optionalStringArray,
+  /** 医師が口に出した鑑別。確定診断ではない */
+  differentials: optionalStringArray,
   assessment: optionalString,
   plan: optionalString,
+  /** 生活指導・説明した内容 */
+  guidance: optionalString,
+  /** 処方日数。医師が言った数字のみ（例「60日分」）。言われていなければ空 */
+  prescriptionDays: optionalString,
+  /** 再診の間隔。医師が言った表現のまま（例「1週間以内」「1か月後」）。言われていなければ空 */
+  followUpInterval: optionalString,
+  /**
+   * 主訴以外に医師が確認した症状。
+   *
+   * 内科で漢方を出すときは、冷え・肩こり・便秘・睡眠・食欲をひととおり聞いて証をとる。
+   * 林さんの診察ではその5つが全部会話に出ていたのに、置く欄が無く全部落ちていた
+   * （実測 2026-10-01）。Zoomの要約も同じところを落としている。
+   */
+  reviewOfSystems: optionalStringArray,
+  /** 家族・付き添いが話した内容。本人の訴えと混ぜない */
+  familyReport: optionalString,
 });
 
 export type StructuredClinicalDataPayload = z.infer<typeof StructuredClinicalDataSchema>;
 
 export type SoapStyleHints = {
+  /**
+   * 話者ラベル付きの文字起こし。SOAPを書く側にも会話そのものを見せる。
+   *
+   * 構造化データだけを渡していた頃は、SOAPを書くモデルが原文を一度も見ていなかった。
+   * 構造化でこぼれた事実は、SOAPの段で取り戻す手段が無い。
+   * 骨組みは構造化データ、肉付けの出典はこの原文、という二段で使う。
+   */
+  transcript?: string;
   revisionExamples?: string;
   greeting?: string;
   closing?: string;
@@ -59,7 +117,11 @@ export interface LlmProvider {
     assessment: string;
     plan: string;
   }>;
-  generateClinicalNote(data: StructuredClinicalDataPayload, consultationId?: string): Promise<string>;
+  generateClinicalNote(
+    data: StructuredClinicalDataPayload,
+    consultationId?: string,
+    transcript?: string,
+  ): Promise<string>;
   generateDocument(
     type: GeneratedDocumentType,
     system: string,
@@ -131,28 +193,61 @@ export class MockLlmProvider implements LlmProvider {
     const hasPlan = Boolean(data.plan?.trim());
 
     const subjective = hasChief
-      ? [data.chiefComplaint, data.presentIllness].filter(Boolean).join('\n')
+      ? [
+          data.chiefComplaint,
+          data.presentIllness,
+          data.course,
+          ...(data.reviewOfSystems ?? []),
+          data.adherence,
+          data.familyReport,
+        ]
+          .filter(Boolean)
+          .join('\n')
       : floor?.subjective ?? '';
     const objective = hasExam
-      ? [data.vitals, data.physicalExam].filter(Boolean).join('\n')
+      ? [data.vitals, data.physicalExam, ...(data.inClinicTests ?? [])].filter(Boolean).join('\n')
       : floor?.objective ?? '';
 
     let assessment = hasAssessment ? (data.assessment ?? '') : floor?.assessment ?? '';
     let plan = hasPlan ? (data.plan ?? '') : floor?.plan ?? '';
+    if (hasPlan) {
+      plan = [
+        plan,
+        ...(data.orderedTests ?? []),
+        data.guidance,
+        data.prescriptionDays,
+        data.followUpInterval,
+      ]
+        .filter(Boolean)
+        .join('\n');
+    }
     if (visitType === 'CHECKUP' && !hasAssessment) assessment = '';
     if (visitType === 'CHECKUP' && !hasPlan) plan = '';
 
     return { subjective, objective, assessment, plan };
   }
 
-  async generateClinicalNote(data: StructuredClinicalDataPayload, _consultationId?: string) {
+  async generateClinicalNote(
+    data: StructuredClinicalDataPayload,
+    _consultationId?: string,
+    _transcript?: string,
+  ) {
     return [
       data.chiefComplaint && `【主訴】${data.chiefComplaint}`,
       data.presentIllness && `【現病歴】${data.presentIllness}`,
+      data.course && `【経過】${data.course}`,
+      data.reviewOfSystems?.length && `【その他の症状】${data.reviewOfSystems.join('、')}`,
       data.pastHistory && `【既往歴】${data.pastHistory}`,
+      data.adherence && `【服薬状況】${data.adherence}`,
       data.physicalExam && `【所見】${data.physicalExam}`,
+      data.inClinicTests?.length && `【院内で実施】${data.inClinicTests.join('、')}`,
+      data.differentials?.length && `【鑑別】${data.differentials.join('、')}`,
       data.assessment && `【評価】${data.assessment}`,
       data.plan && `【方針】${data.plan}`,
+      data.orderedTests?.length && `【検査オーダー】${data.orderedTests.join('、')}`,
+      data.guidance && `【指導】${data.guidance}`,
+      data.prescriptionDays && `【処方日数】${data.prescriptionDays}`,
+      data.followUpInterval && `【再診】${data.followUpInterval}`,
     ]
       .filter(Boolean)
       .join('\n');

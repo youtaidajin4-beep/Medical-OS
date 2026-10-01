@@ -66,14 +66,27 @@ export function hasClinicalFacts(structured: StructuredClinicalDataPayload): boo
   const values = [
     structured.chiefComplaint,
     structured.presentIllness,
+    structured.course,
     structured.pastHistory,
+    structured.adherence,
     structured.vitals,
     structured.physicalExam,
     structured.assessment,
     structured.plan,
+    structured.guidance,
+    structured.prescriptionDays,
+    structured.followUpInterval,
+    structured.familyReport,
   ];
   if (values.some((v) => typeof v === 'string' && v.trim().length > 0)) return true;
-  const lists = [structured.medications, structured.allergies];
+  const lists = [
+    structured.medications,
+    structured.allergies,
+    structured.inClinicTests,
+    structured.orderedTests,
+    structured.differentials,
+    structured.reviewOfSystems,
+  ];
   return lists.some((list) => Array.isArray(list) && list.some((item) => item.trim().length > 0));
 }
 

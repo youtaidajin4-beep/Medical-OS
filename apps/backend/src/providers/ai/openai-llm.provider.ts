@@ -30,6 +30,19 @@ export interface OpenAiLlmConfig {
   /** 書類生成用モデル。誤字脱字と転記精度を優先して既定は gpt-4o。 */
   documentModel?: string;
   /**
+   * 構造化抽出用モデル。既定は gpt-4o。
+   *
+   * 実測（2026-10-01、9/30の実診療3症例）: 抽出だけ gpt-4o-mini から gpt-4o に替えると、
+   * 会話の事実がSOAPに現れる割合が 50% → 65%（さらに問診欄を足して73%）。
+   * 落ちていたのは年齢・月経・鉄の追加チェック・冷え性・肩こり・便秘といった、
+   * 医師が鑑別や漢方の選択に使っている事実だった。SOAPを書く側に文字起こしを渡しても、
+   * 骨組みに無い事実は拾い直されない。ここが最後の関門になる。
+   *
+   * 値段は1診察あたり約1.0円→約2.0円（抽出＋SOAP、2026-10-01の単価）。
+   * 1日30人で1日あたり約30円。
+   */
+  extractModel?: string;
+  /**
    * SOAP生成用モデル。既定は gpt-4o。
    *
    * 実測（2026-09-21）: gpt-4o-mini は「定型床は差分があれば上書きする」という指示に
@@ -47,35 +60,113 @@ export type ChatResult = {
   outputTokens?: number;
 };
 
+/**
+ * 2つの禁止を混同しない。
+ *
+ *  (1) 言われていないことを書く  … 絶対禁止。カルテに嘘が載る
+ *  (2) 言われたことを長く書く    … 禁止ではない。先生が後で削れる
+ *
+ * もとのプロンプトは両方を同じ強さで禁じていた（「短い事実句のみ」）。
+ * その結果 (2) を避けるために (1) ではないものまで削られ、
+ * 近藤さんの「自己中止後に血圧が再上昇」のような経過が丸ごと落ちた。
+ * ここでは (1) だけを禁じ、(2) は「会話に出たことは落とさない」に反転させる。
+ */
 const EXTRACTION_SYSTEM = `あなたは日本のクリニック向け医療情報抽出アシスタントです。
-文字起こしに明示されている事実のみを抽出してください。
-推測・診断の追加・処方の創作・検査値の捏造は禁止です。
-各フィールドは短い事実句のみ（例: 「発熱38.0℃」「咳3日」「右下肺 wheeze」）。
-「認めます」「疑いです」「考えます」などの説明文・診断作文は書かない。
-不明な項目は省略するか、薬剤名に「（要確認）」を付けてください。
+診察の会話から、カルテに残すべき事実を**漏らさず**拾ってください。
+
+絶対禁止（カルテに嘘が載ります）:
+- 会話に出ていない症状・所見・検査・診断・薬剤・数値を書く
+- 医師が実施していない診察や検査を書く
+- 言われていない日数・間隔・用量を補う（「おそらく1か月後」等の推測を書かない）
+
+必ず拾うもの（会話に出ていれば、短くまとめず事実として残す）:
+- 症状の経過と変化（いつから、何をきっかけに、良くなったか悪くなったか）
+- 服薬の状況（飲めている／飲み忘れ／自己中止とその後どうなったか）
+- 院内で実施した検査・処置（採血・点滴・心電図・レントゲン・処置）
+- 出した検査オーダーと、その項目
+- 医師が口に出した鑑別（「〜も考えられる」「〜は考えにくい」も含む）
+- 説明・生活指導した内容
+- 処方日数・再診間隔は、医師が言った表現のまま（言っていなければ空）
+- 本人の訴えと、家族・付き添いが話した内容は別の欄に分ける
+- 主訴以外に医師が確認した症状（冷え・肩こり・頭痛・便秘・睡眠・食欲など）。
+  漢方を選ぶための問診なので、一言ずつでも全部拾う
+- 薬は、会話で言われた呼び方をそのまま残す。「アレルギーの薬」「咳止め」「漢方」も薬として拾い、
+  飲むタイミング（寝る前など）が言われていれば一緒に残す
+
+書き方:
+- 各項目は事実の列挙。「認めます」「考えます」のような作文はしない
+- ただし経過・指導は、筋道が分かる長さで書いてよい（一文に潰さない）
+- 聞き取れず意味の通らない箇所は、それらしい医療用語に置き換えず省く
+- 薬剤名が確定できないときは「（要確認）」を付ける
 出力は有効なJSONのみとします。`;
 
 const EXTRACTION_SCHEMA = `{
-  "chiefComplaint": "string (optional) — 短い事実のみ",
-  "presentIllness": "string (optional) — 期間・症状の事実列挙",
-  "pastHistory": "string (optional)",
-  "medications": ["string"] (optional),
+  "chiefComplaint": "string (optional) — 今日の主な訴え",
+  "presentIllness": "string (optional) — いつから・どんな症状か。期間と症状を落とさない",
+  "course": "string (optional) — 前回以降の変化。きっかけ・増悪/改善の筋道をそのまま残す",
+  "pastHistory": "string (optional) — 既往・基礎疾患",
+  "medications": ["string"] (optional) — 現在の処方・今日出した薬,
+  "adherence": "string (optional) — 服薬できているか。飲み忘れ・自己中止があればその後どうなったかも",
   "allergies": ["string"] (optional),
-  "vitals": "string (optional) — 例: BP 128/78, 体温38.0℃",
-  "physicalExam": "string (optional) — 所見の短句列挙",
-  "assessment": "string (optional) — 医師が述べた病名/印象の短句のみ。散文・疑い作文禁止",
-  "plan": "string (optional) — 処方名・方針の短句のみ"
+  "vitals": "string (optional) — 会話に出た値のみ。例: BP 128/78, 体温38.0℃",
+  "physicalExam": "string (optional) — 医師が実際に行った診察とその所見。行っていない診察は書かない",
+  "inClinicTests": ["string"] (optional) — 今日院内で実施した検査・処置。例: 採血施行, 点滴施行,
+  "orderedTests": ["string"] (optional) — 出した検査と項目。例: 採血（肝機能・腎機能・甲状腺・貧血）,
+  "differentials": ["string"] (optional) — 医師が口に出した鑑別。否定したものは「〜は考えにくい」と残す,
+  "assessment": "string (optional) — 医師が述べた病名・印象",
+  "plan": "string (optional) — 治療方針・処方の方針",
+  "guidance": "string (optional) — 説明・生活指導した内容",
+  "prescriptionDays": "string (optional) — 言われた処方日数のみ。例: 1週間分。言われていなければ省く",
+  "followUpInterval": "string (optional) — 言われた再診間隔のみ。例: 1週間以内。言われていなければ省く",
+  "reviewOfSystems": ["string"] (optional) — 主訴以外に確認した症状。例: 冷え性あり, 便秘あり, 睡眠障害なし,
+  "familyReport": "string (optional) — 家族・付き添いが話した内容"
 }`;
 
+/**
+ * SOAPを書く側にも、会話そのものを見せる。
+ *
+ * 以前はここに構造化データしか渡していなかった。構造化は9項目の短句なので、
+ * 10分の会話がそこで潰れ、SOAPを書くモデルは潰れた後しか見ていなかった。
+ * 谷口先生の「会話したボリュームに対して転記が乏しい」は、この一点から出ていた。
+ *
+ * 原文を渡すと、今度は「患者が言っただけのこと」を所見に書く危険が増える。
+ * そこを止めるのが「出典」の指定：S/O/A/P のどこに何を書いてよいかを、
+ * 誰が言ったかで分ける。
+ */
 const SOAP_SYSTEM = `あなたは日本のクリニック向けSOAP作成アシスタントです。
-検証済みの構造化診療データと、指定された定型床（テンプレート）のみからSOAPを作成します。
+材料は3つあります。
 
-厳守:
-- 事実の最小抽出のみ。説明文・診断作文は禁止（「認めます」「疑いです」「考えます」「印象です」等を使わない）
-- 各欄は短い事実句（例: 「発熱38.0℃」「咳3日」「右下肺 wheeze」「ムコダイン継続」）。1行1事実を基本とする
-- データにない情報・検査・診断を追加しない
-- 定型床は「変化がないときの下書き」。構造化データに具体事実があれば床を上書きする
-- 通常診察(ROUTINE)で差分がなければ assessment=stable / plan=定時薬を継続する。 を使う
+1. 構造化診療データ … SOAPの骨組み。ここにある事実は必ずSOAPのどこかに出す
+2. 診察の文字起こし … 肉付けの出典。構造化で落ちた事実をここから拾い直す
+3. 定型床（テンプレート） … 変化がないときの下書き
+
+厳守（カルテに嘘が載ります）:
+- 文字起こしに出てこない症状・所見・検査・診断・薬剤・数値を書かない
+- Oには、**医師が実際に行った診察とその所見、院内で実施した検査**だけを書く。
+  患者が話しただけの内容はSに書く。家族の話は「家族より」と明示してSに書く
+- 日数・間隔・用量は、文字起こしに出てきた数字のみ。出てこなければ書かない。
+  「次回は1か月後」は、医師がそう言っていない限り書かない
+- 医師が否定した鑑別は、否定のまま書く（「更年期は考えにくい」）。肯定に反転させない
+
+転記（ここが評価される点です）:
+- 会話で扱われた事実を落とさない。短くまとめるより、拾うことを優先する
+- 経過は筋道ごと残す（「自己中止後に血圧が再上昇」を「血圧上昇」に潰さない）
+- 医師が出した検査オーダー、説明・生活指導した内容、処方日数、再診間隔はPに必ず載せる
+- 医師が口に出した鑑別はAに載せる（確定診断にはしない。「〜も鑑別」と書く）
+- 医師が鑑別の根拠にした患者背景は落とさない。年齢・月経の有無・生活背景などを
+  理由に挙げて鑑別を否定・肯定していたら、その根拠もSかOに残す
+  （例「41歳、月経は継続しており更年期は考えにくい」）
+- 症状の出方（夜間に増悪する、労作時に出る、食後に出る）は症状とセットで残す
+
+書き方:
+- 1行1事実。「認めます」「考えます」のような作文はしない
+- **定型床が渡されていないときは、床の言い回しを自分で書かない。**
+  「体調変わりない」「脈拍異常なし」「貧血・黄疸なし」「心音・呼吸音異常なし」「stable」
+  「定時薬を継続する」は、渡されたときだけ使える。渡されていないのにこれらを書くと、
+  していない診察がカルテに載る。**その欄に書くことが無ければ空文字にしてよい。**
+  空欄は、会話を裏づけとして後工程が埋める。無理に埋めないこと
+- 定型床が渡されたときは、上書きする事実が無い欄に床をそのまま入れる
+- 通常診察(ROUTINE)で床が渡され、かつ差分がなければ assessment=stable / plan=定時薬を継続する。 を使う
 - 健診(CHECKUP)で差分がなければ床の S/O を使い、A/P は根拠がなければ空文字
 - 健診(CHECKUP)では、O に必ず身体所見の行に続けて CXR： と ECG： の行を入れる。
   会話に胸部レントゲン・心電図が出てきたらその内容を、出てこなければ床の文言を使う。
@@ -103,8 +194,11 @@ function normalizeSoapField(value: unknown): string {
 }
 
 const NOTE_SYSTEM = `あなたは日本のクリニック向け診療記録作成アシスタントです。
-構造化データに存在する情報のみを使用し、【主訴】【現病歴】【所見】【評価】【方針】などの見出しを適宜使用してください。
-推測や追加情報は禁止です。`;
+構造化データを骨組みに、文字起こしに出てくる事実で肉付けし、
+【主訴】【現病歴】【経過】【所見】【評価】【方針】【指導】などの見出しを適宜使用してください。
+文字起こしに出てこない症状・所見・検査・診断・薬剤・数値を書くことは禁止です。
+所見は医師が実際に行った診察のみ。患者が話しただけの内容は現病歴に書いてください。
+日数・間隔・用量は、会話に出てきた数字のみを書いてください。`;
 
 /**
  * 文字起こしの校正は「直す行だけ」返させる。
@@ -143,6 +237,7 @@ export class OpenAiLlmProvider implements LlmProvider {
   private readonly correctionModel: string;
   private readonly documentModel: string;
   private readonly soapModel: string;
+  private readonly extractModel: string;
 
   constructor(config: OpenAiLlmConfig) {
     this.apiKey = config.apiKey;
@@ -150,6 +245,7 @@ export class OpenAiLlmProvider implements LlmProvider {
     this.correctionModel = config.correctionModel ?? 'gpt-4o';
     this.documentModel = config.documentModel ?? 'gpt-4o';
     this.soapModel = config.soapModel ?? 'gpt-4o';
+    this.extractModel = config.extractModel ?? 'gpt-4o';
   }
 
   async correctTranscript(transcript: string, glossary?: MedicalGlossary, _consultationId?: string) {
@@ -181,7 +277,8 @@ export class OpenAiLlmProvider implements LlmProvider {
 
   async extractStructured(transcript: string, _consultationId?: string) {
     const clipped = truncateForLlm(transcript);
-    const result = await this.chatJson(
+    const result = await this.chatJsonWithModel(
+      this.extractModel,
       EXTRACTION_SYSTEM,
       `文字起こし:\n${clipped}\n\n次のスキーマに従い構造化データをJSONで抽出:\n${EXTRACTION_SCHEMA}`,
       EXTRACT_MAX_TOKENS,
@@ -208,10 +305,15 @@ export class OpenAiLlmProvider implements LlmProvider {
     ]
       .filter(Boolean)
       .join('\n');
+    // 原文は後ろに置く。前に置くと、構造化データ（骨組み）より原文の末尾の雑談に
+    // 引きずられる。長い診察でも頭から切られないよう truncateForLlm を通す。
+    const transcriptBlock = styleHints?.transcript
+      ? `\n診察の文字起こし（肉付けの出典。ここに無いことは書かない）:\n${truncateForLlm(styleHints.transcript)}\n`
+      : '';
     const result = await this.chatJsonWithModel(
       this.soapModel,
       SOAP_SYSTEM,
-      `構造化データ:\n${JSON.stringify(data, null, 2)}\n${styleBlock ? `\n${styleBlock}\n` : ''}\nkeys: subjective, objective, assessment, plan のSOAPをJSONで生成。各値は事実の短句のみ（文字列）。散文禁止。`,
+      `構造化データ（骨組み。ここにある事実は必ずSOAPに出す）:\n${JSON.stringify(data, null, 2)}\n${styleBlock ? `\n${styleBlock}\n` : ''}${transcriptBlock}\nkeys: subjective, objective, assessment, plan のSOAPをJSONで生成。各値は1行1事実のプレーンテキスト。会話で扱われた事実を落とさないこと。`,
       SOAP_MAX_TOKENS,
     );
     const parsed = JSON.parse(result.content) as Record<string, unknown>;
@@ -287,11 +389,19 @@ ${context.structured ? `構造化診療データ:\n${JSON.stringify(context.stru
     }
   }
 
-  async generateClinicalNote(data: StructuredClinicalDataPayload, _consultationId?: string) {
+  async generateClinicalNote(
+    data: StructuredClinicalDataPayload,
+    _consultationId?: string,
+    transcript?: string,
+  ) {
     const result = await this.chatWithModel(
       this.model,
       NOTE_SYSTEM,
-      `構造化データ:\n${JSON.stringify(data, null, 2)}`,
+      `構造化データ:\n${JSON.stringify(data, null, 2)}${
+        transcript
+          ? `\n\n診察の文字起こし（出典。ここに無いことは書かない）:\n${truncateForLlm(transcript)}`
+          : ''
+      }`,
       false,
       NOTE_MAX_TOKENS,
     );

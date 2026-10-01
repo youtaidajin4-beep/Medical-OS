@@ -19,6 +19,10 @@ import {
   assessSoapEvidence,
   buildMissingEvidenceWarning,
 } from '../../providers/ai/soap-evidence';
+import {
+  buildUngroundedNumberWarnings,
+  findUngroundedNumbers,
+} from '../../providers/ai/soap-number-guard';
 import { rejectInventedExams } from '../medical-knowledge/invented-exam-guard';
 import {
   numberTranscriptLines,
@@ -28,6 +32,7 @@ import {
   resolveSoapVisitType,
   SOAP_TEMPLATE_FLOORS,
 } from '../../providers/ai/soap-templates';
+import { applyRoutineFloor } from '../../providers/ai/soap-floor-gate';
 import {
   deletesImmediately,
   resolveRetentionMinutes,
@@ -383,6 +388,11 @@ export class AiPipelineService {
         .join('\n');
       const visitType = resolveSoapVisitType(consultation.visitType);
       const templateFloor = SOAP_TEMPLATE_FLOORS[visitType];
+      // 通常診察では床をモデルに渡さない。渡すと、材料の足りない欄を会話ではなく床で
+      // 埋める（実測 2026-10-01：食生活の相談だけの症例で O に「心音・呼吸音異常なし」）。
+      // 空で返ってきた欄に、根拠のある床だけを後から入れる（soap-floor-gate.ts）。
+      // 健診は床そのものが先生の指定した書式（CXR・ECGの2行）なので従来どおり渡す
+      const passFloorToModel = visitType === 'CHECKUP';
 
       // 材料が無いときはモデルを呼ばない。呼べば必ず床が埋められて返ってくるため、
       // ここで止めないと「診察していない所見」がカルテに残る
@@ -395,7 +405,7 @@ export class AiPipelineService {
       });
       const notePromise = evidence.usable
         ? this.withProgressHeartbeat(consultationId, 'note_progress', this.llmProvider.name, () =>
-            this.llmProvider.generateClinicalNote(structured, consultationId),
+            this.llmProvider.generateClinicalNote(structured, consultationId, soapSource),
           )
         : Promise.resolve('');
       const generatedSoap = evidence.usable
@@ -405,15 +415,49 @@ export class AiPipelineService {
             this.llmProvider.name,
             () =>
               this.llmProvider.generateSoap(structured, consultationId, {
+                // 構造化でこぼれた事実を、SOAPの段で拾い直せるようにする。
+                // 渡していなかった頃が「転記が乏しい」(9/25)・「30〜50%」(9/29) の正体
+                transcript: soapSource,
                 revisionExamples: soapRevisionExamples || undefined,
                 greeting: physicianRules.fixedPhrases?.greeting,
                 closing: physicianRules.fixedPhrases?.closing,
                 visitType,
-                templateFloor,
+                templateFloor: passFloorToModel ? templateFloor : undefined,
               }),
           )
         : { subjective: '', objective: '', assessment: '', plan: '' };
-      const soap = { ...generatedSoap };
+      // 空いた欄に、会話が裏づける床だけを入れる。
+      // 「脈拍異常なし」は聴診した会話があるときだけ。無ければ入れず、
+      // モデルが勝手に書いていれば取り除く
+      const floorResult = passFloorToModel
+        ? null
+        : applyRoutineFloor(generatedSoap, templateFloor, soapSource);
+      if (floorResult && (floorResult.withheld.length || floorResult.removed.length)) {
+        await logAiExecution(this.prisma, {
+          consultationId,
+          step: 'soap_floor_withheld',
+          provider: this.llmProvider.name,
+          status: 'completed',
+          errorMessage: [
+            floorResult.withheld.length ? `床を入れなかった欄: ${floorResult.withheld.join(',')}` : '',
+            floorResult.removed.length ? `取り除いた床: ${floorResult.removed.join(' / ')}` : '',
+          ]
+            .filter(Boolean)
+            .join(' / '),
+        });
+      }
+      const soap = { ...(floorResult?.soap ?? generatedSoap) };
+      // 原文を渡した分、言われていない数字が紛れ込む余地も増える。
+      // 江口さんの「1か月」が「半年」になった型の事故は、ここで機械的に拾う
+      const inventedNumbers = findUngroundedNumbers(soap, soapSource);
+      if (inventedNumbers.length) {
+        await this.prisma.clinicalWarning.createMany({
+          data: buildUngroundedNumberWarnings(inventedNumbers).map((w) => ({
+            consultationId,
+            ...w,
+          })),
+        });
+      }
       const questionnaire = questionnairePromise ? await questionnairePromise : null;
       if (questionnaire?.ocrText && !soap.subjective.includes('【問診票】')) {
         soap.subjective = `【問診票】\n${questionnaire.ocrText.trim()}\n${soap.subjective}`.trim();
