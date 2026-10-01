@@ -21,6 +21,26 @@ module.exports = {
           DEFAULT: '#f8fafc',
           muted: '#f1f5f9',
         },
+        /**
+         * 診察画面の配色。
+         *
+         * もともと画面ごとに #0c2f2c / #fbfaf6 / #e8c98a を直書きしていて、
+         * tailwind の brand（teal）と2系統が混在していた。診察の流れで使う色をここに集め、
+         * 新しい画面は必ずここから取る。
+         *
+         * 深緑は落ち着きと「医療の紙」の雰囲気、生成りの背景は白より目が疲れない、
+         * 金は「ここを押す」の一点だけに使う。
+         */
+        clinic: {
+          ink: '#0c2f2c',
+          'ink-soft': '#134540',
+          'ink-muted': '#6f8f88',
+          line: '#d7e2dd',
+          paper: '#fbfaf6',
+          tint: '#f2f7f5',
+          gold: '#e8c98a',
+          cream: '#f3efe4',
+        },
       },
       fontFamily: {
         sans: [

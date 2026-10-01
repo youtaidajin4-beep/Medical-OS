@@ -314,6 +314,12 @@ export const api = {
     request<{ id: string; status: string; hasAudio?: boolean }>(`/consultations/${id}/reprocess`, {
       method: 'POST',
     }),
+  /** 同じ診察の続きを録る。前半の音声は残り、止めたときに1本につないで作り直す */
+  resumeRecording: (id: string) =>
+    request<{ id: string; status: string; nextSequence: number }>(
+      `/consultations/${id}/recording/resume`,
+      { method: 'POST' },
+    ),
   resetRecording: (id: string) =>
     request(`/consultations/${id}/recording/reset`, { method: 'POST' }),
   uploadChunk: (consultationId: string, sequenceNumber: number, blob: Blob, checksum?: string) => {
@@ -328,10 +334,16 @@ export const api = {
       body: form,
     });
   },
-  uploadFinalRecording: (consultationId: string, blob: Blob, checksum?: string) => {
+  /** 続きを録ったときは fromSequence にその回の開始番号を渡す（前半のチャンクを残す） */
+  uploadFinalRecording: (
+    consultationId: string,
+    blob: Blob,
+    checksum?: string,
+    fromSequence = 0,
+  ) => {
     const form = new FormData();
     form.append('audio', blob, 'consultation-final.webm');
-    form.append('sequenceNumber', '0');
+    form.append('sequenceNumber', String(fromSequence));
     if (checksum) {
       form.append('checksum', checksum);
     }
@@ -391,9 +403,19 @@ export const api = {
         suggestion: string | null;
       }>
     >(`/consultations/${consultationId}/documents/pending-terms`),
+  /** この医師が過去に出した紹介先。紹介状を1タップで作るための候補 */
+  listReferralRecipients: (consultationId: string) =>
+    request<Array<{ hospital: string; department: string; doctor: string; count: number }>>(
+      `/consultations/${consultationId}/documents/referral-recipients`,
+    ),
   generateAllDocuments: (
     consultationId: string,
-    options?: { referralPattern?: 'simple' | 'complex'; types?: string[] },
+    options?: {
+      referralPattern?: 'simple' | 'complex';
+      types?: string[];
+      /** 画面で選んだ紹介先。チャットで宛先を言わなくても紹介状が出せる */
+      referralRecipient?: { hospital: string; department?: string; doctor?: string };
+    },
   ) =>
     request<{
       documents: Array<{

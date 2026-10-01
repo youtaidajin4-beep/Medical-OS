@@ -79,6 +79,11 @@ export class ConsultationsController {
     return this.consultationsService.reprocess(id, user.sub);
   }
 
+  @Post(':id/recording/resume')
+  async resumeRecording(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.consultationsService.resumeRecording(id, user.sub);
+  }
+
   @Post(':id/recording/reset')
   resetRecording(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.consultationsService.resetForRerecord(id, user.sub);

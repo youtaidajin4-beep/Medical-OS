@@ -12,6 +12,7 @@ import { LLM_PROVIDER } from '../../providers/ai/llm.tokens';
 import { LlmProvider, StructuredClinicalDataPayload } from '../../providers/ai/llm.provider';
 import { SettingsService } from '../settings/settings.service';
 import { buildDocumentPrompt } from './document-prompts';
+import { applyGenericNamesToDocument } from './generic-name';
 import { logAiExecution } from '../ai/ai-execution.helper';
 import {
   BACKEND_DOC_TYPE_MAP,
@@ -19,6 +20,7 @@ import {
   DocumentGenerationContext,
   FRONTEND_DOC_TYPE_MAP,
   GENERATED_DOCUMENT_TYPES,
+  ReferralRecipient,
 } from './document-types';
 import {
   finalizeReferralContent,
@@ -125,6 +127,46 @@ export class DocumentsService {
   }
 
   /**
+   * 紹介状の宛先を、この医師が過去に出した紹介状から拾う。
+   *
+   * 宛先は毎回チャットで言い直す項目のうち、一番打ちにくいところだった
+   * （病院名・診療科・医師名の3つ）。紹介先はクリニックごとに数件へ収束するので、
+   * 一度出した先は選ぶだけで済むようにする。
+   */
+  async listReferralRecipients(physicianId: string, limit = 8) {
+    const docs = await this.prisma.generatedDocument.findMany({
+      where: {
+        type: GeneratedDocumentType.REFERRAL,
+        consultation: { physicianId },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 120,
+      select: { content: true, createdAt: true },
+    });
+
+    const seen = new Map<string, { hospital: string; department: string; doctor: string; count: number; lastUsedAt: Date }>();
+    for (const doc of docs) {
+      const content = (doc.content ?? {}) as Record<string, unknown>;
+      const hospital = String(content.recipientHospital ?? '').trim();
+      if (!hospital) continue;
+      const department = String(content.recipientDepartment ?? '').trim();
+      const doctor = String(content.recipientDoctor ?? '').trim();
+      const key = `${hospital}|${department}|${doctor}`;
+      const existing = seen.get(key);
+      if (existing) {
+        existing.count += 1;
+        continue;
+      }
+      seen.set(key, { hospital, department, doctor, count: 1, lastUsedAt: doc.createdAt });
+    }
+
+    // よく使う順。同数なら新しい順
+    return [...seen.values()]
+      .sort((a, b) => b.count - a.count || b.lastUsedAt.getTime() - a.lastUsedAt.getTime())
+      .slice(0, limit);
+  }
+
+  /**
    * 選んだ書類だけ作る。
    *
    * 以前は押すたびに全種類を作っていた。実際には1回の診療で要るのは1〜2枚で、
@@ -134,11 +176,20 @@ export class DocumentsService {
   async generateAll(
     consultationId: string,
     physicianId: string,
-    options?: { referralPattern?: 'simple' | 'complex'; types?: string[] },
+    options?: {
+      referralPattern?: 'simple' | 'complex';
+      types?: string[];
+      referralRecipient?: ReferralRecipient;
+    },
   ) {
     await this.consultationAccess.assertPhysicianOwns(consultationId, physicianId);
     await this.assertHighRiskKnowledgeApproved(consultationId);
     const ctx = await this.buildContext(consultationId, physicianId, options?.referralPattern);
+    if (options?.referralRecipient?.hospital) {
+      // 画面で選んだ宛先は、チャットで言われた宛先と同じ重みで渡す。
+      // 1タップで紹介状を作れるようにするための唯一の入力
+      ctx.referralRecipient = options.referralRecipient;
+    }
     const start = Date.now();
 
     // 全か無かにしない。
@@ -152,7 +203,7 @@ export class DocumentsService {
       requested.map((type) => this.generateOne(consultationId, type, ctx)),
     );
 
-    const documents: Awaited<ReturnType<typeof this.generateOne>>[] = [];
+    const documents: Awaited<ReturnType<DocumentsService['generateOne']>>[] = [];
     const failed: Array<{ type: string; label: string; reason: string }> = [];
     settled.forEach((result, i) => {
       if (result.status === 'fulfilled') {
@@ -205,12 +256,16 @@ export class DocumentsService {
     const raw = await this.llmProvider.generateDocument(type, system, user);
     // 紹介状も主治医意見書も紙の様式が決まっている。
     // 固定文・患者欄・日付はAIの出力を採用せず、ここで上書きする
-    const content = this.applyPaperTemplate(
-      FRONTEND_DOC_TYPE_MAP[type],
-      raw,
-      referralPatientContextFrom(context),
-      context.clinic,
-      resolveReferralFixedText(context.physicianRules),
+    const content = applyGenericNamesToDocument(
+      // 紹介先の医師が読む紙なので、薬剤名は一般名を主にする（9/28に先生と確認）。
+      // プロンプトの「可能なら併記」では出たり出なかったりするので、生成のあとで機械的に当てる
+      this.applyPaperTemplate(
+        FRONTEND_DOC_TYPE_MAP[type],
+        raw,
+        referralPatientContextFrom(context),
+        context.clinic,
+        resolveReferralFixedText(context.physicianRules),
+      ),
     );
 
     const latest = await this.prisma.generatedDocument.findFirst({

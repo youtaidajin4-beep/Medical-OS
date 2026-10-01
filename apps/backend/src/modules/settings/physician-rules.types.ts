@@ -22,6 +22,11 @@ export type PhysicianRules = {
     referralPurpose?: string;
   };
   medicalGlossary?: MedicalGlossary;
+  /**
+   * 話し言葉を先生の書き方へ言い換える表（「いつもの薬を出す」→「定時薬を継続する」）。
+   * SOAP の A/P にだけ当たる。既定は soap-phrasing.ts の DEFAULT_PHRASE_REWRITES
+   */
+  phraseRewrites?: Array<{ from: string; to: string }>;
 };
 
 export type { MedicalGlossary, MedicalGlossaryReplacement };
@@ -74,6 +79,12 @@ export function parsePhysicianRules(raw: unknown): PhysicianRules {
   const medicalGlossary = parseMedicalGlossary(data.medicalGlossary);
   return {
     referralRules: Array.isArray(data.referralRules) ? data.referralRules : DEFAULT_PHYSICIAN_RULES.referralRules,
+    phraseRewrites: Array.isArray(data.phraseRewrites)
+      ? data.phraseRewrites.filter(
+          (r): r is { from: string; to: string } =>
+            !!r && typeof r === 'object' && typeof r.from === 'string' && typeof r.to === 'string',
+        )
+      : undefined,
     fixedPhrases: {
       ...DEFAULT_PHYSICIAN_RULES.fixedPhrases,
       ...(data.fixedPhrases ?? {}),

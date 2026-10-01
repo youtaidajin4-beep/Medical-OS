@@ -93,13 +93,41 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
     return { files: expiredFiles.length, chunks: expiredChunks.length };
   }
 
-  async uploadFinalRecording(consultationId: string, buffer: Buffer, checksum?: string) {
+  /**
+   * 録音の区切りで、その回に録れた音声を1本にまとめて置き直す。
+   *
+   * `fromSequence` より前のチャンクは残す。これが「続きを録る」の土台になる。
+   * 谷口先生の池田さんの診察（2026-09-28）が、採血のあいだに患者さんが退室して、
+   * その間に別の患者さんを診て、戻ってきてから結果を説明する流れだった。
+   * 1回の診察が2回の録音に分かれるので、2回目を足せないと記録も2つに割れる。
+   *
+   * まとめた音声（`full.*`）は必ず捨てる。足したぶんを含めて組み直す必要があり、
+   * 残っていると前半だけの音声で文字起こしをやり直してしまう。
+   */
+  async uploadFinalRecording(
+    consultationId: string,
+    buffer: Buffer,
+    checksum?: string,
+    fromSequence = 0,
+  ) {
     verifyChecksum(buffer, checksum);
     const chunks = await this.listChunks(consultationId);
     for (const chunk of chunks) {
+      if (chunk.sequenceNumber < fromSequence) continue;
       await this.storage.delete(chunk.storageKey).catch(() => undefined);
       await this.prisma.audioChunk.delete({ where: { id: chunk.id } });
     }
+    await this.discardAssembledAudio(consultationId);
+    return this.uploadChunk(consultationId, fromSequence, buffer, checksum);
+  }
+
+  /**
+   * 組み立て済みの音声を捨てる。
+   *
+   * `assembleAudioFile` は作ったものを使い回すので、チャンクを足しただけでは
+   * 前半だけの音声が返り続ける。足す前にここを通す。
+   */
+  async discardAssembledAudio(consultationId: string) {
     const files = await this.prisma.audioFile.findMany({
       where: { consultationId, deletedAt: null },
     });
@@ -110,7 +138,23 @@ export class RecordingService implements OnModuleInit, OnModuleDestroy {
         data: { deletedAt: new Date(), deleteStatus: 'deleted' },
       });
     }
-    return this.uploadChunk(consultationId, 0, buffer, checksum);
+    return files.length;
+  }
+
+  /**
+   * 次に書き込んでよいチャンク番号。
+   *
+   * `uploadChunk` は同じ番号が既にあると、**新しい音声を捨てて既存を返す**
+   * （通信の再送でチャンクが二重に届くため）。続きを録るときに0から振り直すと、
+   * その性質で2回目の録音がまるごと消える。必ずここで続きの番号を取る。
+   */
+  async nextSequenceNumber(consultationId: string): Promise<number> {
+    const last = await this.prisma.audioChunk.findFirst({
+      where: { consultationId },
+      orderBy: { sequenceNumber: 'desc' },
+      select: { sequenceNumber: true },
+    });
+    return last ? last.sequenceNumber + 1 : 0;
   }
 
   async uploadChunk(

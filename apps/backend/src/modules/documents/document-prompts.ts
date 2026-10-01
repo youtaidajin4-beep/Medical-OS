@@ -48,6 +48,12 @@ function contextBlock(ctx: DocumentGenerationContext): string {
   const subkarte = ctx.physicianSubkarte.trim()
     ? `\n医師サブカルテ（処方・疑い・方針の正・SOAPより優先）:\n${ctx.physicianSubkarte}`
     : `\n医師サブカルテ: （なし）`;
+  // 画面で選んだ紹介先。チャットで宛先を言わなくても紹介状が出せるようにする唯一の入力
+  const pickedRecipient = ctx.referralRecipient?.hospital
+    ? `\n【画面で選ばれた紹介先】医療機関: ${ctx.referralRecipient.hospital}${
+        ctx.referralRecipient.department ? ` / 診療科: ${ctx.referralRecipient.department}` : ''
+      }${ctx.referralRecipient.doctor ? ` / 医師: ${ctx.referralRecipient.doctor}` : ''}`
+    : '';
   const patientDetail = [
     ctx.dateOfBirth ? `生年月日: ${ctx.dateOfBirth.slice(0, 10)}` : '',
     ctx.phone ? `電話: ${ctx.phone}` : '',
@@ -85,7 +91,7 @@ SOAP:
 S: ${ctx.soap.subjective}
 O: ${ctx.soap.objective}
 A: ${ctx.soap.assessment}
-P: ${ctx.soap.plan}${subkarte}${questionnaire}
+P: ${ctx.soap.plan}${subkarte}${pickedRecipient}${questionnaire}
 構造化データ: ${JSON.stringify(ctx.structured, null, 2)}${transcript}${pastVisits}
 ${knowledgeHint}
 ${safety.length ? `安全ルール再掲:\n${safety.map((r) => `- ${r}`).join('\n')}` : ''}
@@ -102,7 +108,7 @@ const PROMPTS: Record<GeneratedDocumentType, { system: string; schema: string }>
 あなたが書くのは、宛先と、医師がチャット（サブカルテ）で述べた次の項目だけです。
 
 あなたが書く項目:
-- recipientHospital / recipientDepartment / recipientDoctor … 紹介先。医師サブカルテの宛先指定を病院名・診療科・医師氏名に分ける（例:「長崎医療センターの循環器内科、田中先生宛てで」→「長崎医療センター」「循環器内科」「田中」）。医師氏名に敬称は付けない。指定が無い項目は空文字
+- recipientHospital / recipientDepartment / recipientDoctor … 紹介先。医師サブカルテの宛先指定を病院名・診療科・医師氏名に分ける（例:「長崎医療センターの循環器内科、田中先生宛てで」→「長崎医療センター」「循環器内科」「田中」）。医師氏名に敬称は付けない。指定が無い項目は空文字。**【画面で選ばれた紹介先】が渡されていて、医師サブカルテに宛先の指定が無いときは、そのまま使う**
 - diagnosis（【傷病名】）… 必ず正式な病名で書く。話し言葉・略語・症状名のままにしない（例:「血圧が高い」→「高血圧症」、「糖尿」→「2型糖尿病」、「心不全っぽい」→「心不全の疑い」、「労作時の胸痛」→ SOAPのAが狭心症を疑っていれば「労作性狭心症の疑い」）。症状しか手がかりが無く病名に寄せられないときだけ、症状名に「の疑い」を付けて残す。複数あれば読点ではなく改行で並べる
 - purpose（【紹介目的】）… 医師が述べた紹介の目的を、**紹介先の先生へ宛てた依頼文**に書き直す。医師の話し言葉をそのまま写さない（「精査をお願いしたい」→「上記疾患の精査・加療をお願い申し上げます。」、「運動負荷心電図と心エコーをお願いします」→「運動負荷心電図および心エコー図検査による精査をお願い申し上げます。」）。文末は「〜をお願い申し上げます。」に揃える。医師が何も述べていなければ空文字（既定文が入る）
 - pastHistory（【既往歴及び家族歴】）… 既往歴**と家族歴の両方**。医師が家族歴に触れたら必ず書く（「お父さんが心筋梗塞」→「家族歴：父\u3000心筋梗塞」）。既往は「2015年\u3000虫垂炎手術」のように年と病名で簡潔に。医師サブカルテを第一に、問診票で補う。今回の傷病名をここへ重ねて書かない。医師も問診票も触れていなければ空文字

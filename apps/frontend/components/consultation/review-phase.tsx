@@ -1,32 +1,35 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
+  AlertTriangle,
   ArrowLeft,
   CheckCircle2,
+  ChevronDown,
   ClipboardCopy,
-  ExternalLink,
+  FileScan,
   History,
-  Printer,
+  Mic,
+  RefreshCw,
   Save,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert } from '@/components/ui/alert';
-import { Textarea } from '@/components/ui/textarea';
-import { Select } from '@/components/ui/select';
 import { Toast, useToast } from '@/components/ui/toast';
+import { Select } from '@/components/ui/select';
 import { DocumentsPanel } from '@/components/documents/documents-panel';
 import {
-  SubkarteChatPanel,
-  type SubkarteAskResult,
-} from '@/components/consultation/subkarte-chat-panel';
+  DocumentLauncher,
+  type Recipient,
+} from '@/components/consultation/document-launcher';
+import {
+  SubkarteCommandBar,
+  type SubkarteResult,
+} from '@/components/consultation/subkarte-command-bar';
 import { PaperCapturePanel } from '@/components/consultation/paper-capture-panel';
 import { KnowledgeTranscriptPanel } from '@/components/consultation/knowledge-transcript-panel';
 import { cn } from '@/lib/utils';
-import type { SoapData } from '@/lib/mock-documents/types';
+import { api } from '@/lib/api-client';
+import type { DocumentTypeId, SoapData } from '@/lib/mock-documents/types';
 import {
   formatRoutineApCombined,
   SOAP_TEMPLATE_TEXT,
@@ -34,6 +37,20 @@ import {
   type SoapFieldKey,
   type VisitType,
 } from '@/lib/soap-visit';
+
+/**
+ * 診察が終わったあとの画面。
+ *
+ * ここは1日に何十回も通る場所なので、迷う要素を全部落とした。
+ *
+ * - **SOAPが主役**。以前は左の一等地を文字起こしが占めていたが、谷口先生は
+ *   「文字起こしを後々じっくり見返すことはない」(2026-09-28) と言われている。畳んだ
+ * - **書類は1タップ**。「確認済みにする → 書類を全部作る → カードで選ぶ → 生成」の4手を、
+ *   書類カードを押すだけにした。紹介状の宛先は過去に出した先から選ぶ
+ * - **サブカルテは画面の下に常にいる**。右下のふきだしに隠れていたが、SOAPを直すのも
+ *   書類を作るのも一番速い入口なので、押さずに打てる位置へ出した
+ * - **操作を一か所に**。下の固定バーに6つ並んでいたボタンは、使う場所の隣へ移した
+ */
 
 type Soap = SoapData;
 type Warning = { id: string; message: string; severity: string };
@@ -54,16 +71,50 @@ const SPEAKER_OPTIONS = [
 ] as const;
 
 const SOAP_FIELDS = [
-  { key: 'subjective', label: 'S', name: '主観的情報（Subjective）' },
-  { key: 'objective', label: 'O', name: '客観的情報（Objective）' },
-  { key: 'assessment', label: 'A', name: '評価（Assessment）' },
-  { key: 'plan', label: 'P', name: '計画（Plan）' },
+  { key: 'subjective', label: 'S', name: '主観的情報' },
+  { key: 'objective', label: 'O', name: '客観的情報' },
+  { key: 'assessment', label: 'A', name: '評価' },
+  { key: 'plan', label: 'P', name: '計画' },
 ] as const;
 
-function warningVariant(severity: string): 'warning' | 'critical' | 'info' {
-  if (severity === 'CRITICAL') return 'critical';
-  if (severity === 'WARNING') return 'warning';
-  return 'info';
+function Section({
+  title,
+  count,
+  icon,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  count?: number;
+  icon?: React.ReactNode;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="no-print overflow-hidden rounded-2xl border border-clinic-line bg-white">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-2 px-3.5 py-3 text-left hover:bg-clinic-tint"
+      >
+        <span className="text-clinic-ink-muted">{icon}</span>
+        <span className="text-[13px] font-semibold text-clinic-ink">{title}</span>
+        {typeof count === 'number' && count > 0 && (
+          <span className="rounded-full bg-clinic-tint px-2 py-0.5 text-[11px] font-semibold text-clinic-ink-muted">
+            {count}
+          </span>
+        )}
+        <ChevronDown
+          className={cn(
+            'ml-auto h-4 w-4 text-clinic-ink-muted transition-transform',
+            open && 'rotate-180',
+          )}
+        />
+      </button>
+      {open && <div className="border-t border-clinic-line px-3.5 py-3">{children}</div>}
+    </div>
+  );
 }
 
 export function ReviewPhase({
@@ -92,12 +143,9 @@ export function ReviewPhase({
   onApprove,
   onCopySoap,
   onCopyNote,
-  onGenerateAll,
   onReprocess,
+  onAppendRecording,
   reprocessing,
-  generatingDocs,
-  documentInput,
-  density = 'full',
   backHref = '/home',
 }: {
   consultationId: string;
@@ -125,10 +173,14 @@ export function ReviewPhase({
   onApprove: () => void;
   onCopySoap: () => void;
   onCopyNote: () => void;
-  onGenerateAll?: () => void;
   /** 残っている録音からSOAPを作り直す。保持期間を過ぎるとサーバー側で断られる */
   onReprocess?: () => void;
+  /** 同じ診察の続きを録る（採血で中断したときなど）。確認済みでは渡らない */
+  onAppendRecording?: () => void;
   reprocessing?: boolean;
+  /** @deprecated 画面はひとつになった。残っている呼び出しのために受けるだけ */
+  density?: 'compact' | 'full';
+  onGenerateAll?: () => void;
   generatingDocs?: boolean;
   documentInput: {
     caseCode: string;
@@ -141,56 +193,18 @@ export function ReviewPhase({
     soap: Soap;
     structured?: Record<string, unknown> | null;
   };
-  density?: 'compact' | 'full';
   backHref?: string;
 }) {
-  const [tab, setTab] = useState<'soap' | 'note' | 'documents'>('soap');
-  const [showRevisions, setShowRevisions] = useState(false);
-  const [showTranscript, setShowTranscript] = useState(density !== 'compact');
-  const [showDocuments, setShowDocuments] = useState(false);
-  const [docsTrigger, setDocsTrigger] = useState(0);
-  const [referralPattern, setReferralPattern] = useState<'simple' | 'complex'>('simple');
-  const [panelTab, setPanelTab] = useState<'soap' | 'docs' | 'paper'>('soap');
-  const [pendingDocPatches, setPendingDocPatches] = useState<
-    Array<{ type: string; content: Record<string, unknown> }> | undefined
-  >();
-  const [selectedSuggestions, setSelectedSuggestions] = useState<Record<string, boolean>>({});
-  const [copiedField, setCopiedField] = useState('');
-  // ボタンで定型文を入れた欄。医師が自分で書き直したら外す。
-  // 「AIが音声から書いた欄」と「定型文を差した欄」を、見た目で区別し続けるため
-  const [templatedFields, setTemplatedFields] = useState<Partial<Record<SoapFieldKey, true>>>({});
   const { toast, show } = useToast();
-  const compact = density === 'compact';
-
-  async function copyField(label: string, text: string) {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedField(label);
-      show(`${label} をコピーしました`, 'success');
-      window.setTimeout(() => setCopiedField(''), 2000);
-    } catch {
-      show('コピーに失敗しました', 'error');
-    }
-  }
-
-  function handleSubkarteResult(result: SubkarteAskResult) {
-    if (result.soap) onSoapChange(result.soap);
-    if (result.note != null) onNoteChange(result.note);
-    if (result.documents?.length) {
-      setPendingDocPatches(
-        result.documents.map((d) => ({
-          type: d.type,
-          content: d.content,
-        })),
-      );
-      if (compact) {
-        setPanelTab('docs');
-        setShowDocuments(true);
-      } else {
-        setTab('documents');
-      }
-    }
-  }
+  const [templatedFields, setTemplatedFields] = useState<Partial<Record<SoapFieldKey, true>>>({});
+  const [copiedField, setCopiedField] = useState('');
+  const [madeTypes, setMadeTypes] = useState<DocumentTypeId[]>([]);
+  const [busyType, setBusyType] = useState<DocumentTypeId | null>(null);
+  const [docsError, setDocsError] = useState('');
+  const [docsRefresh, setDocsRefresh] = useState(0);
+  const [referralPattern, setReferralPattern] = useState<'simple' | 'complex'>('simple');
+  const [selectedSuggestions, setSelectedSuggestions] = useState<Record<string, boolean>>({});
+  const [warningsOpen, setWarningsOpen] = useState(true);
 
   useEffect(() => {
     if (copyMsg) show(copyMsg, 'success');
@@ -212,20 +226,25 @@ export function ReviewPhase({
     );
   }, [glossarySuggestions]);
 
-  function openDocsAndGenerate() {
-    setShowDocuments(true);
-    setPanelTab('docs');
-    setDocsTrigger((n) => n + 1);
-    if (onGenerateAll) void onGenerateAll();
-  }
-
   const visitLabel = visitType === 'CHECKUP' ? '健診' : '通常診察';
   const apCombined =
     visitType === 'ROUTINE' ? formatRoutineApCombined(soap.assessment, soap.plan) : '';
-
-  // 音声から中身が取れなかったとき、サーバーは定型文を入れずに4欄とも空で返す。
-  // 空の箱が並ぶだけだと不具合に見えるので、なぜ空なのかをここで言う。
   const soapIsEmpty = SOAP_FIELDS.every(({ key }) => !soap[key].trim());
+  const criticalCount = useMemo(
+    () => warnings.filter((w) => w.severity === 'CRITICAL').length,
+    [warnings],
+  );
+
+  async function copyField(label: string, text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(label);
+      show(`${label} をコピーしました`, 'success');
+      window.setTimeout(() => setCopiedField(''), 2000);
+    } catch {
+      show('コピーに失敗しました', 'error');
+    }
+  }
 
   /** 定型文を指定の欄へ差す。医師が押したときだけ動く */
   function applyTemplate(fields: SoapFieldKey[]) {
@@ -252,385 +271,340 @@ export function ReviewPhase({
     }
   }
 
-  const primaryAction = !approved ? (
-    <Button className="w-full" icon={<CheckCircle2 />} onClick={onApprove}>
-      確認済みにする
-    </Button>
-  ) : (
-    <div className="flex w-full flex-col gap-2">
-      <Button className="w-full" icon={<ClipboardCopy />} onClick={onCopySoap}>
-        SOAP をコピー → CLINICS
-      </Button>
-      <Button
-        className="w-full"
-        variant="secondary"
-        icon={<Printer />}
-        disabled={generatingDocs}
-        onClick={openDocsAndGenerate}
-      >
-        {generatingDocs ? '書類生成中…' : '書類を全部作る'}
-      </Button>
-    </div>
-  );
+  function handleSubkarteResult(result: SubkarteResult) {
+    if (result.soap) onSoapChange(result.soap);
+    if (result.note != null) onNoteChange(result.note);
+    if (result.documents?.length) {
+      setDocsRefresh((n) => n + 1);
+      show('書類を作りました', 'success');
+    }
+  }
 
-  if (compact) {
-    return (
-      <div className="mx-auto max-w-md space-y-4 pb-28">
-        <Toast toast={toast} />
-
-        <div className="no-print flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="truncate text-xs text-slate-500">
-              {caseName}
-              <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                {visitLabel}
-              </span>
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-lg font-bold tracking-tight text-slate-900">SOAP</h1>
-              {approved ? (
-                <Badge variant="success">
-                  <CheckCircle2 className="h-3 w-3" />
-                  確認済み
-                </Badge>
-              ) : (
-                <Badge variant="warning">下書き</Badge>
-              )}
-            </div>
-          </div>
-          <Link
-            href={backHref}
-            className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-brand-600"
-          >
-            <ArrowLeft className="h-3 w-3" />
-            戻る
-          </Link>
-        </div>
-
-        {warnings.length > 0 && (
-          <Alert variant="warning">
-            要確認 {warnings.length}件 — {warnings[0]?.message}
-            {warnings.length > 1 ? ` 他${warnings.length - 1}件` : ''}
-          </Alert>
-        )}
-
-        <div className="no-print flex gap-1 rounded-lg border border-slate-200 bg-white p-1 text-xs">
-          {(
-            [
-              { id: 'soap' as const, label: 'SOAP' },
-              { id: 'docs' as const, label: '書類' },
-              { id: 'paper' as const, label: '紙資料' },
-            ] as const
-          ).map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => {
-                setPanelTab(item.id);
-                if (item.id === 'docs') setShowDocuments(true);
-              }}
-              className={cn(
-                'flex-1 rounded-md px-2 py-1.5 font-medium transition-colors',
-                panelTab === item.id
-                  ? 'bg-brand-600 text-white'
-                  : 'text-slate-600 hover:bg-slate-50',
-              )}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-
-        {panelTab === 'soap' && (
-          <>
-            <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-3">
-              <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-2">
-                <span className="text-[10px] font-semibold text-slate-400">定型文</span>
-                {templateTargets(visitType).map((target) => (
-                  <button
-                    key={target.label}
-                    type="button"
-                    className="rounded-full border border-slate-200 px-2 py-0.5 text-[11px] text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-                    disabled={approved}
-                    onClick={() => applyTemplate(target.fields)}
-                  >
-                    {target.label}
-                  </button>
-                ))}
-              </div>
-              {SOAP_FIELDS.map(({ key, label, name }) => (
-                <div key={key}>
-                  <label className="mb-1 flex items-center gap-2 text-xs">
-                    <span className="flex h-5 w-5 items-center justify-center rounded bg-brand-600 text-[10px] font-bold text-white">
-                      {label}
-                    </span>
-                    <span className="text-slate-500">{name}</span>
-                    {templatedFields[key] && (
-                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">
-                        定型文
-                      </span>
-                    )}
-                  </label>
-                  <Textarea
-                    value={soap[key]}
-                    onChange={(e) => changeSoapField(key, e.target.value)}
-                    rows={2}
-                    className={cn(templatedFields[key] && 'text-slate-400')}
-                  />
-                </div>
-              ))}
-              {visitType === 'ROUTINE' && apCombined ? (
-                <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                  <p className="font-semibold text-slate-700">カルテ貼付時（A/P 結合）</p>
-                  <p className="mt-1 whitespace-pre-wrap font-mono text-[11px]">{apCombined}</p>
-                </div>
-              ) : null}
-              {visitType === 'CHECKUP' ? (
-                <p className="text-[11px] leading-relaxed text-slate-500">
-                  健診定型: O に身体所見・CXR・ECG を含みます。根拠のない A/P は空のままにしてください。
-                </p>
-              ) : null}
-              <Button variant="secondary" size="sm" icon={<Save />} onClick={onSaveSoap}>
-                SOAP を保存
-              </Button>
-            </div>
-
-            <div className="no-print space-y-2">
-              <button
-                type="button"
-                className="text-xs font-medium text-brand-600"
-                onClick={() => setShowTranscript((v) => !v)}
-              >
-                {showTranscript ? '文字起こしを閉じる' : '文字起こしを表示'}
-              </button>
-              {showTranscript && (
-                <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
-                  <ul className="max-h-48 space-y-2 overflow-y-auto text-sm">
-                    {transcript.map((seg) => (
-                      <li key={seg.id} className="space-y-1 rounded-lg border border-slate-100 p-2">
-                        <Select
-                          value={seg.speaker}
-                          onChange={(e) => onSpeakerChange(seg.id, e.target.value)}
-                        >
-                          {SPEAKER_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </Select>
-                        <Textarea
-                          value={seg.text}
-                          onChange={(e) => onTranscriptTextChange(seg.id, e.target.value)}
-                          rows={2}
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    icon={<Save />}
-                    onClick={onSaveTranscript}
-                    disabled={savingTranscript}
-                  >
-                    {savingTranscript ? '保存中…' : '文字起こしを保存'}
-                  </Button>
-                </div>
-              )}
-              <KnowledgeTranscriptPanel consultationId={consultationId} />
-            </div>
-
-            <div className="no-print space-y-2 rounded-xl border border-slate-200 bg-white p-3">
-              <p className="text-xs font-medium text-slate-600">通常診療記録</p>
-              <Textarea value={note} onChange={(e) => onNoteChange(e.target.value)} rows={4} />
-              <div className="flex flex-wrap gap-2">
-                <Button variant="secondary" size="sm" icon={<Save />} onClick={onSaveNote}>
-                  保存
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  icon={<ClipboardCopy />}
-                  disabled={!approved}
-                  onClick={onCopyNote}
-                >
-                  コピー
-                </Button>
-              </div>
-            </div>
-          </>
-        )}
-
-        {panelTab === 'docs' && (
-          <DocumentsPanel
-            consultationId={consultationId}
-            documentInput={documentInput}
-            approved={approved}
-            autoGenerate={false}
-            compact
-            referralPattern={referralPattern}
-            onReferralPatternChange={setReferralPattern}
-            openTrigger={docsTrigger}
-            pendingDocPatches={pendingDocPatches}
-            onPendingDocPatchesApplied={() => setPendingDocPatches(undefined)}
-          />
-        )}
-
-        {panelTab === 'paper' && (
-          <PaperCapturePanel consultationId={consultationId} onApplied={onSoapChange} />
-        )}
-
-        <div className="no-print fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 backdrop-blur">
-          <div className="mx-auto max-w-md space-y-2 p-3 pr-28">
-            {panelTab === 'soap' ? primaryAction : null}
-          </div>
-        </div>
-
-        <SubkarteChatPanel consultationId={consultationId} onResult={handleSubkarteResult} />
-      </div>
-    );
+  /** 書類カードを押したときだけ、その書類を作る */
+  async function handleGenerateDocument(type: DocumentTypeId, recipient?: Recipient) {
+    setBusyType(type);
+    setDocsError('');
+    try {
+      const { failed } = await api.generateAllDocuments(consultationId, {
+        referralPattern,
+        types: [type],
+        referralRecipient: recipient?.hospital ? recipient : undefined,
+      });
+      setDocsRefresh((n) => n + 1);
+      if (failed?.length) {
+        setDocsError(`作成できませんでした：${failed.map((f) => f.reason).join(' / ')}`);
+      } else {
+        show('書類ができました', 'success');
+      }
+    } catch (e) {
+      setDocsError(e instanceof Error ? e.message : '書類の生成に失敗しました');
+    } finally {
+      setBusyType(null);
+    }
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5 pb-28">
+    <div className="mx-auto max-w-6xl px-4 pb-4 min-[480px]:px-6">
       <Toast toast={toast} />
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-[#d7e2dd] bg-[#fbfaf6] px-4 py-3 shadow-sm min-[480px]:px-5">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0c2f2c] text-[#e8c98a]">
-            {caseName.slice(0, 1)}
-          </div>
-          <div className="min-w-0">
-            <p className="truncate font-semibold text-[#0c2f2c]">{caseName}</p>
-            <p className="text-xs text-[#6f8f88]">{visitLabel}</p>
-            <p className="text-xs text-slate-500">
-              {approved ? '確認済み' : '下書き — 確認後にコピー・印刷できます'}
+      {/* 患者と状態、そしてこの画面で一番したいこと */}
+      <header className="no-print sticky top-0 z-20 -mx-4 mb-4 border-b border-clinic-line bg-clinic-paper/95 px-4 py-3 backdrop-blur min-[480px]:-mx-6 min-[480px]:px-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href={backHref}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-clinic-line bg-white text-clinic-ink hover:bg-clinic-tint"
+            aria-label="戻る"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[15px] font-semibold text-clinic-ink">{caseName}</p>
+            <p className="flex items-center gap-1.5 text-[11px] text-clinic-ink-muted">
+              {visitLabel}
+              <span className="text-clinic-line">·</span>
+              <span className={cn(approved ? 'text-emerald-700' : 'text-amber-700')}>
+                {approved ? '確認済み' : '下書き'}
+              </span>
             </p>
           </div>
+
+          {onAppendRecording && (
+            <button
+              type="button"
+              onClick={onAppendRecording}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-clinic-line bg-white px-3 py-2 text-[12px] font-semibold text-clinic-ink hover:bg-clinic-tint"
+              title="採血などで中断したとき、同じ診察の続きを録ります"
+            >
+              <Mic className="h-3.5 w-3.5" />
+              続きを録る
+            </button>
+          )}
+
+          {approved ? (
+            <button
+              type="button"
+              onClick={onCopySoap}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-clinic-ink px-3.5 py-2 text-[12px] font-semibold text-clinic-cream hover:bg-clinic-ink-soft"
+            >
+              <ClipboardCopy className="h-3.5 w-3.5" />
+              カルテへコピー
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onApprove}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-clinic-ink px-3.5 py-2 text-[12px] font-semibold text-clinic-cream hover:bg-clinic-ink-soft"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              確認済みにする
+            </button>
+          )}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex rounded-full bg-[#e8eee9] p-1 text-xs font-semibold">
-            {(
-              [
-                { id: 'soap' as const, label: 'SOAP' },
-                { id: 'note' as const, label: '記録' },
-                { id: 'documents' as const, label: '書類' },
-              ] as const
-            ).map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setTab(item.id)}
-                className={cn(
-                  'rounded-full px-4 py-2 transition',
-                  tab === item.id ? 'bg-[#0c2f2c] text-white shadow-sm' : 'text-slate-600',
-                )}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-          <Link href={backHref} className="text-xs font-medium text-[#0f766e] hover:underline">
-            戻る
-          </Link>
-        </div>
-      </div>
+      </header>
 
       {warnings.length > 0 && (
-        <div className="no-print rounded-[1.5rem] border border-amber-200 bg-[#fbf6ea] p-4">
-          <p className="mb-2 text-[11px] font-bold tracking-wide text-[#8a6d32]">
-            要確認 {warnings.length}件
-          </p>
-          <ul className="space-y-1.5">
-            {warnings.map((w) => (
-              <li key={w.id} className="flex items-start gap-2 text-sm text-slate-700">
-                <Badge variant={warningVariant(w.severity)}>{w.severity}</Badge>
-                <span>{w.message}</span>
-              </li>
-            ))}
-          </ul>
+        <div
+          className={cn(
+            'no-print mb-4 overflow-hidden rounded-2xl border',
+            criticalCount ? 'border-rose-200 bg-rose-50' : 'border-amber-200 bg-amber-50/70',
+          )}
+        >
+          <button
+            type="button"
+            onClick={() => setWarningsOpen((v) => !v)}
+            className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left"
+          >
+            <AlertTriangle
+              className={cn('h-4 w-4', criticalCount ? 'text-rose-600' : 'text-amber-600')}
+            />
+            <span
+              className={cn(
+                'text-[13px] font-semibold',
+                criticalCount ? 'text-rose-900' : 'text-amber-900',
+              )}
+            >
+              要確認 {warnings.length}件
+            </span>
+            <ChevronDown
+              className={cn(
+                'ml-auto h-4 w-4 transition-transform',
+                criticalCount ? 'text-rose-500' : 'text-amber-500',
+                warningsOpen && 'rotate-180',
+              )}
+            />
+          </button>
+          {warningsOpen && (
+            <ul className="space-y-1.5 px-3.5 pb-3">
+              {warnings.map((w) => (
+                <li
+                  key={w.id}
+                  className={cn(
+                    'text-[13px] leading-relaxed',
+                    w.severity === 'CRITICAL' ? 'text-rose-900' : 'text-amber-900',
+                  )}
+                >
+                  {w.message}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 
-      {tab === 'documents' ? (
-        <DocumentsPanel
-          consultationId={consultationId}
-          documentInput={documentInput}
-          approved={approved}
-          onBack={() => setTab('soap')}
-          autoGenerate={false}
-          pendingDocPatches={pendingDocPatches}
-          onPendingDocPatchesApplied={() => setPendingDocPatches(undefined)}
-        />
-      ) : tab === 'note' ? (
-        <div className="space-y-3 rounded-[1.75rem] border border-[#d7e2dd] bg-[#fbfaf6] p-4 min-[480px]:p-6">
-          <p className="text-[11px] font-semibold tracking-[0.22em] text-[#6f8f88]">CLINICAL NOTE</p>
-          <Textarea value={note} onChange={(e) => onNoteChange(e.target.value)} rows={14} className="bg-white" />
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" icon={<Save />} onClick={onSaveNote}>
-              診療記録を保存
-            </Button>
-            <Button variant="ghost" icon={<ClipboardCopy />} disabled={!approved} onClick={onCopyNote}>
-              コピー
-            </Button>
+      <div className="grid gap-5 min-[900px]:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] min-[900px]:items-start">
+        {/* 左：SOAP が主役 */}
+        <div className="min-w-0 space-y-3">
+          {soapIsEmpty && (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-[13px] leading-relaxed text-rose-900">
+              <p className="font-semibold">音声からSOAPを作成できませんでした</p>
+              <p className="mt-1">
+                診療の内容を取り出せなかったため、<strong>あえて空欄にしています</strong>。
+                定型文を自動で入れると、診察で確認していない所見がカルテに残るためです。
+              </p>
+              {onReprocess && !approved && (
+                <button
+                  type="button"
+                  className="mt-3 rounded-full bg-rose-700 px-4 py-1.5 text-[12px] font-semibold text-white hover:bg-rose-800 disabled:opacity-50"
+                  disabled={reprocessing}
+                  onClick={onReprocess}
+                >
+                  {reprocessing ? '作り直しています…' : '同じ録音でもう一度SOAPを作る'}
+                </button>
+              )}
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] font-semibold tracking-[0.2em] text-clinic-ink-muted">
+              SOAP
+            </span>
+            <span className="text-[11px] text-clinic-ink-muted">定型文</span>
+            {templateTargets(visitType).map((target) => (
+              <button
+                key={target.label}
+                type="button"
+                className="rounded-full border border-clinic-line bg-white px-2.5 py-1 text-[11px] font-medium text-clinic-ink hover:border-clinic-ink disabled:opacity-40"
+                disabled={approved}
+                onClick={() => applyTemplate(target.fields)}
+              >
+                {target.label}
+              </button>
+            ))}
+            {onReprocess && !approved && !soapIsEmpty && (
+              <button
+                type="button"
+                className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-clinic-ink-muted hover:text-clinic-ink disabled:opacity-40"
+                disabled={reprocessing}
+                onClick={onReprocess}
+              >
+                <RefreshCw className={cn('h-3 w-3', reprocessing && 'animate-spin')} />
+                {reprocessing ? '作り直し中…' : '作り直す'}
+              </button>
+            )}
           </div>
-        </div>
-      ) : (
-        <div className="grid gap-5 min-[860px]:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] min-[860px]:items-start">
-          <div className="space-y-4">
-            <div className="rounded-[1.75rem] border border-[#d7e2dd] bg-[#fbfaf6] p-4 shadow-sm min-[480px]:p-6">
-              <p className="mb-4 text-[11px] font-semibold tracking-[0.22em] text-[#6f8f88]">TRANSCRIPT</p>
-              <ul className="max-h-[58dvh] space-y-3 overflow-y-auto pr-1">
+
+          {SOAP_FIELDS.map(({ key, label, name }) => (
+            <div key={key} className="rounded-2xl border border-clinic-line bg-white p-3.5">
+              <div className="mb-2 flex items-center gap-2">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-clinic-ink text-[13px] font-bold text-clinic-gold">
+                  {label}
+                </span>
+                <span className="text-[11px] font-semibold text-clinic-ink-muted">{name}</span>
+                {templatedFields[key] && (
+                  <span className="rounded-full bg-clinic-tint px-2 py-0.5 text-[10px] font-semibold text-clinic-ink-muted">
+                    定型文
+                  </span>
+                )}
+                <button
+                  type="button"
+                  className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-clinic-ink-muted hover:bg-clinic-tint disabled:opacity-40"
+                  disabled={!approved}
+                  onClick={() => void copyField(label, soap[key])}
+                >
+                  <ClipboardCopy className="h-3 w-3" />
+                  {copiedField === label ? 'コピー済み' : 'コピー'}
+                </button>
+              </div>
+              <textarea
+                rows={3}
+                value={soap[key]}
+                onChange={(e) => changeSoapField(key, e.target.value)}
+                className={cn(
+                  'w-full resize-y rounded-xl bg-clinic-tint px-3 py-2.5 text-[13px] leading-relaxed text-clinic-ink outline-none focus:ring-2 focus:ring-clinic-ink/15',
+                  templatedFields[key] && 'text-clinic-ink-muted',
+                )}
+              />
+            </div>
+          ))}
+
+          {visitType === 'ROUTINE' && apCombined ? (
+            <div className="rounded-2xl border border-dashed border-clinic-line bg-white px-3.5 py-2.5">
+              <p className="text-[10px] font-semibold tracking-wide text-clinic-ink-muted">
+                カルテ貼付時（A/P 結合）
+              </p>
+              <p className="mt-1 whitespace-pre-wrap font-mono text-[12px] text-clinic-ink">
+                {apCombined}
+              </p>
+            </div>
+          ) : null}
+          {visitType === 'CHECKUP' ? (
+            <p className="text-[11px] leading-relaxed text-clinic-ink-muted">
+              健診定型: O に身体所見・CXR・ECG を含みます。根拠のない A/P は空のままにしてください。
+            </p>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={onSaveSoap}
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-2xl border border-clinic-line bg-white py-3 text-[13px] font-semibold text-clinic-ink hover:bg-clinic-tint"
+          >
+            <Save className="h-4 w-4" />
+            SOAP を保存
+          </button>
+
+          {/* 使う頻度の低いものは畳んでおく */}
+          <div className="space-y-2 pt-1">
+            <Section title="通常診療記録" icon={<ClipboardCopy className="h-4 w-4" />}>
+              <textarea
+                value={note}
+                onChange={(e) => onNoteChange(e.target.value)}
+                rows={10}
+                className="w-full resize-y rounded-xl bg-clinic-tint px-3 py-2.5 text-[13px] leading-relaxed text-clinic-ink outline-none focus:ring-2 focus:ring-clinic-ink/15"
+              />
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={onSaveNote}
+                  className="rounded-xl border border-clinic-line px-3 py-1.5 text-[12px] font-semibold text-clinic-ink hover:bg-clinic-tint"
+                >
+                  保存
+                </button>
+                <button
+                  type="button"
+                  disabled={!approved}
+                  onClick={onCopyNote}
+                  className="rounded-xl px-3 py-1.5 text-[12px] font-semibold text-clinic-ink-muted hover:bg-clinic-tint disabled:opacity-40"
+                >
+                  コピー
+                </button>
+              </div>
+            </Section>
+
+            <Section
+              title="文字起こし"
+              count={transcript.length}
+              icon={<Mic className="h-4 w-4" />}
+            >
+              <ul className="max-h-[50vh] space-y-2 overflow-y-auto pr-1">
                 {transcript.map((seg) => (
-                  <li key={seg.id} className={cn('flex', seg.speaker === 'PATIENT' ? 'justify-end' : 'justify-start')}>
-                    <div
-                      className={cn(
-                        'w-full max-w-[92%] space-y-2 rounded-2xl px-3 py-3',
-                        seg.speaker === 'PHYSICIAN'
-                          ? 'rounded-tl-md bg-[#0c2f2c] text-[#f3efe4]'
-                          : 'rounded-tr-md bg-white text-slate-800 ring-1 ring-[#e4ebe7]',
-                      )}
+                  <li
+                    key={seg.id}
+                    className={cn(
+                      'space-y-1.5 rounded-xl p-2.5',
+                      seg.speaker === 'PHYSICIAN' ? 'bg-clinic-ink/5' : 'bg-clinic-tint',
+                    )}
+                  >
+                    <Select
+                      value={seg.speaker}
+                      onChange={(e) => onSpeakerChange(seg.id, e.target.value)}
+                      className="w-24 text-[11px]"
                     >
-                      <Select
-                        value={seg.speaker}
-                        onChange={(e) => onSpeakerChange(seg.id, e.target.value)}
-                        className="w-28"
-                      >
-                        {SPEAKER_OPTIONS.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </Select>
-                      <Textarea
-                        value={seg.text}
-                        onChange={(e) => onTranscriptTextChange(seg.id, e.target.value)}
-                        rows={2}
-                        className={cn(
-                          'border-0 text-sm shadow-none',
-                          seg.speaker === 'PHYSICIAN' ? 'bg-white/10 text-[#f3efe4]' : 'bg-[#f7faf8]',
-                        )}
-                      />
-                    </div>
+                      {SPEAKER_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </Select>
+                    <textarea
+                      value={seg.text}
+                      onChange={(e) => onTranscriptTextChange(seg.id, e.target.value)}
+                      rows={2}
+                      className="w-full resize-y rounded-lg bg-white px-2.5 py-2 text-[13px] leading-relaxed text-clinic-ink outline-none"
+                    />
                   </li>
                 ))}
               </ul>
-              <Button
-                variant="secondary"
-                icon={<Save />}
-                className="mt-3"
+              <button
+                type="button"
                 onClick={onSaveTranscript}
                 disabled={savingTranscript}
+                className="mt-2 rounded-xl border border-clinic-line px-3 py-1.5 text-[12px] font-semibold text-clinic-ink hover:bg-clinic-tint disabled:opacity-50"
               >
                 {savingTranscript ? '保存中…' : '文字起こしを保存'}
-              </Button>
+              </button>
+
               {glossarySuggestions && glossarySuggestions.length > 0 && (
-                <div className="mt-4 space-y-3 rounded-2xl border border-[#d7e2dd] bg-white p-4">
-                  <p className="text-sm font-medium text-slate-800">検出された修正を語彙に追加しますか？</p>
+                <div className="mt-3 space-y-2 rounded-xl border border-clinic-line bg-clinic-paper p-3">
+                  <p className="text-[12px] font-semibold text-clinic-ink">
+                    直した語を医院の辞書に入れますか
+                  </p>
                   {glossarySuggestions.map((item) => {
                     const key = `${item.wrong}→${item.correct}`;
                     return (
-                      <label key={key} className="flex items-center gap-2 text-sm text-slate-700">
+                      <label
+                        key={key}
+                        className="flex items-center gap-2 text-[12px] text-clinic-ink"
+                      >
                         <input
                           type="checkbox"
                           checked={selectedSuggestions[key] ?? false}
@@ -646,7 +620,9 @@ export function ReviewPhase({
                     );
                   })}
                   <div className="flex gap-2">
-                    <Button
+                    <button
+                      type="button"
+                      className="rounded-xl bg-clinic-ink px-3 py-1.5 text-[12px] font-semibold text-clinic-cream"
                       onClick={() => {
                         const selected = glossarySuggestions.filter(
                           (item) => selectedSuggestions[`${item.wrong}→${item.correct}`],
@@ -654,255 +630,75 @@ export function ReviewPhase({
                         onAddGlossarySuggestions?.(selected);
                       }}
                     >
-                      選択した修正を語彙に追加
-                    </Button>
-                    <Button variant="ghost" onClick={onDismissGlossarySuggestions}>
+                      辞書に入れる
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-xl px-3 py-1.5 text-[12px] font-semibold text-clinic-ink-muted"
+                      onClick={onDismissGlossarySuggestions}
+                    >
                       後で
-                    </Button>
+                    </button>
                   </div>
                 </div>
               )}
-            </div>
-            <KnowledgeTranscriptPanel consultationId={consultationId} />
-            <PaperCapturePanel consultationId={consultationId} onApplied={onSoapChange} />
-          </div>
+            </Section>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[11px] font-semibold tracking-[0.22em] text-[#6f8f88]">SOAP</p>
-              <Button
-                size="sm"
-                variant="secondary"
-                className="rounded-full"
-                icon={<ClipboardCopy />}
-                disabled={!approved}
-                onClick={onCopySoap}
-              >
-                {copiedField === 'SOAP' ? 'コピー済み' : 'SOAP をコピー'}
-              </Button>
-            </div>
-            {soapIsEmpty && (
-              <div className="rounded-[1.5rem] border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
-                <p className="font-semibold">音声からSOAPを作成できませんでした</p>
-                <p className="mt-1 leading-relaxed">
-                  診療の内容を取り出せなかったため、<strong>あえて空欄にしています</strong>。
-                  ここに定型文を自動で入れると、診察で確認していない所見がカルテに残ってしまうためです。
-                  上の「要確認」に理由が出ています。
-                </p>
-                <p className="mt-2 leading-relaxed">
-                  定型文でよければ、下の「定型文を入れる」から差してください。
-                  <strong>先生が押して入れたもの</strong>として記録されます。
-                </p>
-                {onReprocess && !approved && (
-                  <button
-                    type="button"
-                    className="mt-3 rounded-full bg-rose-700 px-4 py-1.5 text-xs font-semibold text-white hover:bg-rose-800 disabled:opacity-50"
-                    disabled={reprocessing}
-                    onClick={onReprocess}
-                  >
-                    {reprocessing ? '作り直しています…' : '同じ録音でもう一度SOAPを作る'}
-                  </button>
-                )}
-              </div>
-            )}
+            <Section title="紙の資料を取り込む" icon={<FileScan className="h-4 w-4" />}>
+              <PaperCapturePanel consultationId={consultationId} onApplied={onSoapChange} />
+            </Section>
 
-            <div className="flex flex-wrap items-center gap-2 rounded-[1.5rem] border border-dashed border-[#d7e2dd] bg-white px-4 py-3">
-              <span className="text-[11px] font-semibold tracking-wide text-[#6f8f88]">
-                定型文を入れる（{visitLabel}）
-              </span>
-              {templateTargets(visitType).map((target) => (
-                <button
-                  key={target.label}
-                  type="button"
-                  className="rounded-full border border-[#d7e2dd] px-3 py-1 text-xs font-medium text-slate-700 hover:bg-[#f2f7f5] disabled:opacity-40"
-                  disabled={approved}
-                  onClick={() => applyTemplate(target.fields)}
-                >
-                  {target.label}
-                </button>
-              ))}
-              {/* 「処理は通ったが中身が使えない」ときの逃げ道。録音が残っている間だけ通る */}
-              {onReprocess && !approved && !soapIsEmpty && (
-                <button
-                  type="button"
-                  className="ml-auto text-xs font-medium text-[#0f766e] hover:underline disabled:opacity-40"
-                  disabled={reprocessing}
-                  onClick={onReprocess}
-                >
-                  {reprocessing ? '作り直しています…' : '同じ録音でSOAPを作り直す'}
-                </button>
-              )}
-            </div>
-            {SOAP_FIELDS.map(({ key, label, name }) => (
-              <div key={key} className="overflow-hidden rounded-[1.5rem] border border-[#d7e2dd] bg-white p-4 shadow-sm">
-                <div className="mb-2 flex items-center gap-2">
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#0c2f2c] text-sm font-bold text-[#e8c98a]">
-                    {label}
-                  </span>
-                  <span className="text-xs font-semibold tracking-wide text-[#6f8f88]">{name}</span>
-                  {templatedFields[key] && (
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
-                      定型文
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    className="ml-auto inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium text-slate-500 hover:bg-slate-100"
-                    disabled={!approved}
-                    onClick={() => void copyField(label, soap[key])}
-                  >
-                    <ClipboardCopy className="h-3.5 w-3.5" />
-                    {copiedField === label ? 'コピー済み' : 'コピー'}
-                  </button>
-                </div>
-                <Textarea
-                  rows={3}
-                  value={soap[key]}
-                  onChange={(e) => changeSoapField(key, e.target.value)}
-                  className={cn(
-                    'border-0 bg-[#f7faf8] text-sm leading-relaxed shadow-none',
-                    // 定型文のままの欄はグレーで出す。音声から書かれた欄と見分けがつくように
-                    templatedFields[key] && 'text-slate-400',
-                  )}
-                />
-              </div>
-            ))}
-            {visitType === 'ROUTINE' && apCombined ? (
-              <div className="rounded-[1.5rem] border border-dashed border-[#d7e2dd] bg-[#f7faf8] px-4 py-3 text-sm text-slate-600">
-                <p className="text-[11px] font-semibold tracking-wide text-[#6f8f88]">
-                  カルテ貼付時（A/P 結合）
-                </p>
-                <p className="mt-1 whitespace-pre-wrap font-mono text-xs text-[#0c2f2c]">{apCombined}</p>
-              </div>
-            ) : null}
-            {visitType === 'CHECKUP' ? (
-              <p className="text-xs leading-relaxed text-[#6f8f88]">
-                健診定型: O に身体所見・CXR・ECG を含みます。根拠のない A/P は空のままにしてください。
-              </p>
-            ) : null}
-            <Button variant="secondary" className="w-full rounded-2xl" icon={<Save />} onClick={onSaveSoap}>
-              SOAP を保存
-            </Button>
-            <Button
-              className="h-12 w-full rounded-2xl bg-[#0c2f2c] hover:bg-[#134540]"
-              icon={<Printer />}
-              disabled={!approved || generatingDocs}
-              onClick={() => {
-                setTab('documents');
-                if (onGenerateAll) void onGenerateAll();
-              }}
-            >
-              {generatingDocs ? '書類生成中…' : '書類をすべて作る'}
-            </Button>
-          </div>
-        </div>
-      )}
-      {revisions.length > 0 && tab !== 'documents' && (
-        <Card className="no-print">
-          <CardHeader>
-            <button
-              type="button"
-              className="flex w-full items-center justify-between text-left"
-              onClick={() => setShowRevisions((v) => !v)}
-            >
-              <CardTitle className="flex items-center gap-2 text-base">
-                <History className="h-4 w-4 text-brand-600" />
-                編集履歴
-                <Badge>{revisions.length}</Badge>
-              </CardTitle>
-              <span className="text-sm font-medium text-brand-600">
-                {showRevisions ? '閉じる' : '表示'}
-              </span>
-            </button>
-          </CardHeader>
-          {showRevisions && (
-            <CardContent className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-400">
-                    <th className="py-2 pr-4 font-medium">種別</th>
-                    <th className="py-2 pr-4 font-medium">項目</th>
-                    <th className="py-2 pr-4 font-medium">変更前</th>
-                    <th className="py-2 pr-4 font-medium">変更後</th>
-                    <th className="py-2 font-medium">日時</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <Section title="医療ナレッジ" icon={<History className="h-4 w-4" />}>
+              <KnowledgeTranscriptPanel consultationId={consultationId} />
+            </Section>
+
+            {revisions.length > 0 && (
+              <Section title="編集履歴" count={revisions.length} icon={<History className="h-4 w-4" />}>
+                <ul className="space-y-2">
                   {revisions.map((r) => (
-                    <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="py-2.5 pr-4">
-                        <Badge>{r.documentType}</Badge>
-                      </td>
-                      <td className="py-2.5 pr-4 font-medium text-slate-700">{r.fieldName}</td>
-                      <td className="max-w-[8rem] truncate py-2.5 pr-4 text-slate-400 line-through">
-                        {r.beforeValue}
-                      </td>
-                      <td className="max-w-[8rem] truncate py-2.5 pr-4 text-slate-700">
-                        {r.afterValue}
-                      </td>
-                      <td className="whitespace-nowrap py-2.5 text-xs text-slate-500">
+                    <li key={r.id} className="rounded-xl bg-clinic-tint px-3 py-2 text-[12px]">
+                      <p className="font-semibold text-clinic-ink">{r.fieldName}</p>
+                      <p className="mt-0.5 text-clinic-ink-muted line-through">{r.beforeValue}</p>
+                      <p className="text-clinic-ink">{r.afterValue}</p>
+                      <p className="mt-1 text-[10px] text-clinic-ink-muted">
                         {new Date(r.changedAt).toLocaleString('ja-JP')}
-                      </td>
-                    </tr>
+                      </p>
+                    </li>
                   ))}
-                </tbody>
-              </table>
-            </CardContent>
-          )}
-        </Card>
-      )}
-
-      {tab !== 'documents' && (
-        <div className="no-print sticky bottom-4 z-20">
-          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white/95 p-4 shadow-card-hover backdrop-blur">
-            {!approved && (
-              <Button icon={<CheckCircle2 />} onClick={onApprove}>
-                確認済みにする
-              </Button>
-            )}
-            <Button
-              variant="secondary"
-              icon={<ClipboardCopy />}
-              disabled={!approved}
-              onClick={onCopySoap}
-            >
-              SOAP をコピー
-            </Button>
-            <Button
-              variant="secondary"
-              icon={<ClipboardCopy />}
-              disabled={!approved}
-              onClick={onCopyNote}
-            >
-              通常診療記録をコピー
-            </Button>
-            <Button variant="ghost" icon={<Printer />} onClick={() => setTab('documents')}>
-              書類を作成・印刷
-            </Button>
-            {onGenerateAll && (
-              <Button
-                variant="secondary"
-                icon={<Printer />}
-                disabled={!approved || generatingDocs}
-                onClick={onGenerateAll}
-              >
-                {generatingDocs ? '生成中…' : '全書類を生成'}
-              </Button>
-            )}
-            {!approved && (
-              <Link
-                href="/settings"
-                className="ml-auto inline-flex items-center gap-1 text-sm text-slate-500 hover:text-brand-600"
-              >
-                MEDLEY へのコピー手順
-                <ExternalLink className="h-3 w-3" />
-              </Link>
+                </ul>
+              </Section>
             )}
           </div>
         </div>
-      )}
 
-      <SubkarteChatPanel consultationId={consultationId} onResult={handleSubkarteResult} />
+        {/* 右：書類は1タップ */}
+        <div className="min-w-0 space-y-3 min-[900px]:sticky min-[900px]:top-24">
+          <DocumentLauncher
+            consultationId={consultationId}
+            disabled={!approved}
+            disabledReason={!approved ? '先に「確認済みにする」' : undefined}
+            madeTypes={madeTypes}
+            busyType={busyType}
+            onGenerate={(type, recipient) => void handleGenerateDocument(type, recipient)}
+          />
+          {docsError && (
+            <p className="rounded-xl bg-rose-50 px-3 py-2 text-[12px] text-rose-800">{docsError}</p>
+          )}
+          <DocumentsPanel
+            key={docsRefresh}
+            consultationId={consultationId}
+            documentInput={{ caseCode: '', patientName: caseName, soap }}
+            approved={approved}
+            controlled
+            showTypes={madeTypes}
+            onDocsLoaded={setMadeTypes}
+            referralPattern={referralPattern}
+            onReferralPatternChange={setReferralPattern}
+          />
+        </div>
+      </div>
+
+      <SubkarteCommandBar consultationId={consultationId} onResult={handleSubkarteResult} />
     </div>
   );
 }

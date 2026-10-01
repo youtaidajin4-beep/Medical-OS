@@ -56,6 +56,13 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
   const localBlobs = useRef<Blob[]>([]);
   const recorderMimeType = useRef('audio/webm');
   const sequence = useRef(0);
+  /**
+   * この回の録音が始まるチャンク番号。
+   *
+   * 「続きを録る」で0から振り直すと、`uploadChunk` が「同じ番号は再送」とみなして
+   * 新しい音声を捨ててしまう（サーバー側の二重送信対策）。続きの番号から始める。
+   */
+  const appendFrom = useRef(0);
   const inFlightUploads = useRef<Promise<void>[]>([]);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
   const retryTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -128,7 +135,8 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
     const finalBlob = new Blob(blobs, { type: recorderMimeType.current });
     if (finalBlob.size === 0) return;
     const checksum = await sha256Hex(finalBlob);
-    await api.uploadFinalRecording(consultationId, finalBlob, checksum);
+    // 続きを録ったときは、この回の開始番号を渡す。0 のまま送ると前半の音声が消える
+    await api.uploadFinalRecording(consultationId, finalBlob, checksum, appendFrom.current);
   }, [consultationId, seconds]);
 
   const stopMeter = useCallback(() => {
@@ -176,7 +184,7 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
 
   stopRef.current = stop;
 
-  const start = useCallback(async () => {
+  const start = useCallback(async (options?: { appendFromSequence?: number }) => {
     // ブラウザ任せの getUserMedia({ audio: true }) は、エコーキャンセル・ノイズ抑制・
     // 自動ゲインが全部オンになり、診察室で離れて座る患者の声をノイズとして削る。
     // 診察室向けの制約（3つともオフ＋マイクの明示指定）で開き直す。
@@ -219,7 +227,9 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
     const recorder = mimeType ? new MediaRecorder(target, { mimeType }) : new MediaRecorder(target);
     mediaRecorder.current = recorder;
     localBlobs.current = [];
-    sequence.current = 0;
+    const from = options?.appendFromSequence ?? 0;
+    appendFrom.current = from;
+    sequence.current = from;
     setLimitReached(false);
 
     recorder.ondataavailable = (e) => {
@@ -231,7 +241,12 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
     };
 
     recorder.start(CHUNK_MS);
-    await api.startRecording(consultationId);
+    // 続きを録るときは、サーバー側で既に RECORDING へ戻してある。
+    // ここで startRecording を呼ぶと startedAt が今に戻り、前半の録音時間が消える
+    if (!options?.appendFromSequence) {
+      await api.startRecording(consultationId);
+      setSeconds(0);
+    }
     setState('recording');
     timer.current = setInterval(() => {
       setSeconds((s) => {
@@ -251,6 +266,18 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
     setState('paused');
     if (timer.current) clearInterval(timer.current);
   }, []);
+
+  /**
+   * 同じ診察の続きを録る。
+   *
+   * 池田さんの診察（2026-09-28）のように、採血で患者さんが退室して別の患者さんを診てから
+   * 戻ってくる流れでは、画面を離れるので一時停止では続けられない。
+   * サーバーに続きの番号をもらい、そこから録り足す。
+   */
+  const startAppend = useCallback(async () => {
+    const { nextSequence } = await api.resumeRecording(consultationId);
+    await start({ appendFromSequence: nextSequence });
+  }, [consultationId, start]);
 
   const resume = useCallback(() => {
     mediaRecorder.current?.resume();
@@ -289,6 +316,7 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
     micVerdict,
     micLabel,
     start,
+    startAppend,
     pause,
     resume,
     stop,

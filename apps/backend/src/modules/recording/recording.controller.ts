@@ -67,10 +67,13 @@ export class RecordingController {
     if (!file?.buffer?.length) {
       throw new BadRequestException('Audio file is empty or missing');
     }
+    // sequenceNumber は「この回の録音の開始番号」。続きを録ったときは前半のチャンクを
+    // 残したまま、この番号から上だけを1本に置き換える
     return this.recordingService.uploadFinalRecording(
       consultationId,
       file.buffer,
       dto.checksum,
+      dto.sequenceNumber,
     );
   }
 

@@ -9,10 +9,28 @@ class UpdateDocumentDto {
   content!: Record<string, unknown>;
 }
 
+class ReferralRecipientDto {
+  @IsString()
+  hospital!: string;
+
+  @IsOptional()
+  @IsString()
+  department?: string;
+
+  @IsOptional()
+  @IsString()
+  doctor?: string;
+}
+
 class GenerateAllDto {
   @IsOptional()
   @IsIn(['simple', 'complex'])
   referralPattern?: 'simple' | 'complex';
+
+  /** 画面で選んだ紹介先。チャットで宛先を言わずに紹介状を作れるようにするための入力 */
+  @IsOptional()
+  @IsObject()
+  referralRecipient?: ReferralRecipientDto;
 
   /** 画面で選ばれた書類だけ作る。省略したときは全種類 */
   @IsOptional()
@@ -37,6 +55,12 @@ export class DocumentsController {
     return this.documentsService.listUnresolvedHighRiskTerms(consultationId);
   }
 
+  /** この医師が過去に出した紹介先。1タップで紹介状を作るための候補 */
+  @Get('referral-recipients')
+  referralRecipients(@CurrentUser() user: AuthUser) {
+    return this.documentsService.listReferralRecipients(user.sub);
+  }
+
   @Post('generate-all')
   generateAll(
     @Param('consultationId') consultationId: string,
@@ -46,6 +70,7 @@ export class DocumentsController {
     return this.documentsService.generateAll(consultationId, user.sub, {
       referralPattern: dto?.referralPattern ?? 'simple',
       types: dto?.types,
+      referralRecipient: dto?.referralRecipient,
     });
   }
 

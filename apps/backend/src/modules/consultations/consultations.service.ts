@@ -318,6 +318,73 @@ export class ConsultationsService {
     return { ...updated, hasAudio: true };
   }
 
+  /**
+   * 同じ診察の続きを録る。
+   *
+   * 2026-09-28、谷口先生の池田さんの診察。診察のあと採血で患者さんが退室し、
+   * そのあいだに別の患者さんを診て、戻ってきてから結果と方針を説明された。
+   * 1回の診察が2回の録音に分かれるので、終了するしかないと記録も2つに割れる。
+   * 画面の一時停止ボタンでは、別の患者さんの画面へ移った時点で続けられない。
+   *
+   * 前半の音声は残したまま、新しい番号から録り足す。止めたときに、
+   * 前半と後半を1本につないで文字起こしからやり直すので、SOAPは診察全体のものになる。
+   */
+  async resumeRecording(id: string, physicianId: string) {
+    await this.consultationAccess.assertPhysicianOwns(id, physicianId);
+    const consultation = await this.prisma.consultation.findFirst({ where: { id, physicianId } });
+    if (!consultation) throw new NotFoundException('Consultation not found');
+    if (
+      consultation.status === ConsultationStatus.APPROVED ||
+      consultation.status === ConsultationStatus.COMPLETED
+    ) {
+      throw new BadRequestException(
+        '確認済みの診療には追加できません。続きを録る場合は新規診療を開始してください。',
+      );
+    }
+    if (consultation.status === ConsultationStatus.PROCESSING) {
+      throw new BadRequestException('処理中です。終わってから「続きを録る」を押してください。');
+    }
+    const hasAudio = await this.recordingService.hasAudio(id);
+    if (!hasAudio) {
+      throw new BadRequestException(
+        '前半の録音が見つかりません（保持期間を過ぎた可能性があります）。新規診療として録音してください。',
+      );
+    }
+
+    // 前半だけでまとめた音声が残っていると、足したぶんが文字起こしに乗らない
+    await this.recordingService.discardAssembledAudio(id);
+    const nextSequence = await this.recordingService.nextSequenceNumber(id);
+
+    // 録音していなかった時間（他の患者さんを診ていた時間）を録音時間に数えない。
+    // endedAt - startedAt をそのまま録音の長さとして使っているので、空白を足したままだと
+    // 「20分録ったのに文字が少なすぎる」と判定され、SOAPが空欄で返る（soap-evidence.ts）
+    const gapMs =
+      consultation.endedAt && consultation.startedAt
+        ? Date.now() - consultation.endedAt.getTime()
+        : 0;
+    const shiftedStartedAt =
+      consultation.startedAt && gapMs > 0
+        ? new Date(consultation.startedAt.getTime() + gapMs)
+        : consultation.startedAt;
+
+    const updated = await this.prisma.consultation.update({
+      where: { id },
+      data: {
+        status: ConsultationStatus.RECORDING,
+        startedAt: shiftedStartedAt,
+        endedAt: null,
+      },
+    });
+    await logAiExecution(this.prisma, {
+      consultationId: id,
+      step: 'recording_resumed',
+      provider: 'app',
+      status: 'completed',
+      errorMessage: `nextSequence=${nextSequence} / 中断=${Math.round(gapMs / 1000)}秒`,
+    });
+    return { ...updated, nextSequence };
+  }
+
   async resetForRerecord(id: string, physicianId: string) {
     await this.consultationAccess.assertPhysicianOwns(id, physicianId);
     await this.recordingService.resetAudioForRerecord(id);

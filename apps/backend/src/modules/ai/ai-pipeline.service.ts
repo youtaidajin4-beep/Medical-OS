@@ -33,6 +33,7 @@ import {
   SOAP_TEMPLATE_FLOORS,
 } from '../../providers/ai/soap-templates';
 import { applyRoutineFloor } from '../../providers/ai/soap-floor-gate';
+import { applyPhrasingToSoap } from '../../providers/ai/soap-phrasing';
 import {
   deletesImmediately,
   resolveRetentionMinutes,
@@ -446,7 +447,9 @@ export class AiPipelineService {
             .join(' / '),
         });
       }
-      const soap = { ...(floorResult?.soap ?? generatedSoap) };
+      // 「いつもの薬を出す」を「定時薬を継続する」へ。先生の書き方に寄せる機械的な置換で、
+      // 設定画面の表に足せる（2026-09-26 の直す順の4番目）
+      const soap = applyPhrasingToSoap(floorResult?.soap ?? generatedSoap, physicianRules);
       // 原文を渡した分、言われていない数字が紛れ込む余地も増える。
       // 江口さんの「1か月」が「半年」になった型の事故は、ここで機械的に拾う
       const inventedNumbers = findUngroundedNumbers(soap, soapSource);
@@ -491,12 +494,36 @@ export class AiPipelineService {
         ...this.getLlmUsage(),
       });
 
+      // 「続きを録る」で2回目を通すと、前半のSOAPが既にある。版を上げて積む。
+      // 消してしまうと、先生が前半で直した内容が履歴ごと消える
+      const [lastSoap, lastNote] = await Promise.all([
+        this.prisma.soapDocument.findFirst({
+          where: { consultationId },
+          orderBy: { version: 'desc' },
+          select: { version: true },
+        }),
+        this.prisma.clinicalNote.findFirst({
+          where: { consultationId },
+          orderBy: { version: 'desc' },
+          select: { version: true },
+        }),
+      ]);
       await this.prisma.$transaction([
         this.prisma.soapDocument.create({
-          data: { consultationId, ...soap, version: 1, isAiGenerated: true },
+          data: {
+            consultationId,
+            ...soap,
+            version: (lastSoap?.version ?? 0) + 1,
+            isAiGenerated: true,
+          },
         }),
         this.prisma.clinicalNote.create({
-          data: { consultationId, content: clinicalNote, version: 1, isAiGenerated: true },
+          data: {
+            consultationId,
+            content: clinicalNote,
+            version: (lastNote?.version ?? 0) + 1,
+            isAiGenerated: true,
+          },
         }),
         this.prisma.consultation.update({
           where: { id: consultationId },

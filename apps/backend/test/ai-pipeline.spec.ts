@@ -14,8 +14,9 @@ describe('AiPipelineService integration shape', () => {
     aIExecution: { create: jest.fn() },
     structuredClinicalData: { upsert: jest.fn() },
     clinicalWarning: { deleteMany: jest.fn(), createMany: jest.fn() },
-    soapDocument: { create: jest.fn() },
-    clinicalNote: { create: jest.fn() },
+    // 「続きを録る」で2回目を通すと版を上げて積むので、直前の版を読む
+    soapDocument: { create: jest.fn(), findFirst: jest.fn().mockResolvedValue(null) },
+    clinicalNote: { create: jest.fn(), findFirst: jest.fn().mockResolvedValue(null) },
     revisionHistory: { findMany: jest.fn().mockResolvedValue([]) },
     consultationAttachment: { findFirst: jest.fn().mockResolvedValue(null) },
     consultation: {

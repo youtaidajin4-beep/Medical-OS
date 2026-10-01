@@ -266,6 +266,13 @@ export function knowledgePackCorrectionTerms(): {
   };
 }
 
+/** 商品名→一般名の対応表。書類で一般名を主に書くために使う */
+export function knowledgePackBrandGeneric(): Array<{ brand: string; generic: string }> {
+  return (data.medication_brand_generic ?? [])
+    .filter((row) => row.brand_name && row.generic_name)
+    .map((row) => ({ brand: row.brand_name, generic: row.generic_name }));
+}
+
 export function knowledgePackMeta(): { name?: string; version?: string } {
   return { name: data.name, version: data.version };
 }

@@ -124,8 +124,12 @@ const JPY_PER_USD = 155;
 let costUsd = 0;
 let callCount = 0;
 
-/** 抽出に使うモデル。EVAL_EXTRACT_MODEL=gpt-4o で上げて比べる */
-const EXTRACT_MODEL = process.env.EVAL_EXTRACT_MODEL ?? 'gpt-4o-mini';
+/**
+ * 抽出に使うモデル。既定は**本番と同じ** gpt-4o。
+ * EVAL_EXTRACT_MODEL=gpt-4o-mini で下げて比べられる（転記率と値段の差を見るため）。
+ * ここが本番とずれていると、測った数字が出荷物の数字でなくなる。
+ */
+const EXTRACT_MODEL = process.env.EVAL_EXTRACT_MODEL ?? 'gpt-4o';
 
 async function chat(model, system, user, maxTokens) {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {

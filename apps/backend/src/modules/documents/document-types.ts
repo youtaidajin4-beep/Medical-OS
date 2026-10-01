@@ -3,6 +3,12 @@ import { StructuredClinicalDataPayload } from '../../providers/ai/llm.provider';
 import { PhysicianRules } from '../settings/physician-rules.types';
 import { ClinicProfile } from './clinic';
 
+export type ReferralRecipient = {
+  hospital: string;
+  department?: string;
+  doctor?: string;
+};
+
 export type DocumentGenerationContext = {
   consultationId: string;
   caseCode: string;
@@ -29,6 +35,13 @@ export type DocumentGenerationContext = {
   clinic: ClinicProfile;
   revisionExamples: string;
   referralPattern?: 'simple' | 'complex';
+  /**
+   * 画面で選んだ紹介先。
+   *
+   * 宛先はチャットで言う唯一の必須項目だった。過去に出した宛先から選べるようにして、
+   * 紹介状を1タップで作れるようにする。チャットで宛先が述べられていればそちらが優先。
+   */
+  referralRecipient?: ReferralRecipient;
   /** 医師サブカルテ（チャットの user 発話）。書類生成時は SOAP より優先。 */
   physicianSubkarte: string;
   /** 本日の日付（和暦）。発行日・記入日に使用。 */

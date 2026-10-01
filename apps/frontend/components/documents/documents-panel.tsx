@@ -81,6 +81,17 @@ const API_TYPE_TO_KEY: Record<string, keyof GeneratedDocuments> = {
   'info-combined': 'infoCombined',
 };
 
+/** APIの書類種別を、画面のカードの単位へ寄せる（意見書①②は1枚のカード） */
+function toPanelTypes(apiTypes: string[]): DocumentTypeId[] {
+  const out = new Set<DocumentTypeId>();
+  for (const t of apiTypes) {
+    if (t === 'referral') out.add('referral');
+    else if (t === 'certificate') out.add('certificate');
+    else if (t === 'care-opinion-1' || t === 'care-opinion-2') out.add('care-opinion-set');
+  }
+  return [...out];
+}
+
 function emptyGenerated(): GeneratedDocuments {
   return {
     referral: {
@@ -147,6 +158,9 @@ export function DocumentsPanel({
   openTrigger,
   pendingDocPatches,
   onPendingDocPatchesApplied,
+  controlled = false,
+  showTypes,
+  onDocsLoaded,
 }: {
   consultationId: string;
   documentInput: {
@@ -171,6 +185,17 @@ export function DocumentsPanel({
   /** チャットからの即時書類パッチ */
   pendingDocPatches?: Array<{ type: string; content: Record<string, unknown> }>;
   onPendingDocPatchesApplied?: () => void;
+  /**
+   * 書類を選ぶ・作るの操作を親（DocumentLauncher）が持つモード。
+   *
+   * 「選ぶ → 作る」の2段をやめて1タップにしたので、この画面は出来たものを見せて
+   * 印刷するところだけを受け持つ。
+   */
+  controlled?: boolean;
+  /** controlled のとき、表示する書類 */
+  showTypes?: DocumentTypeId[];
+  /** いま存在する書類の種類。作成済みの表示に使う */
+  onDocsLoaded?: (types: DocumentTypeId[]) => void;
 }) {
   const [selected, setSelected] = useState<DocumentTypeId[]>(DEFAULT_SELECTED);
   const [docs, setDocs] = useState<GeneratedDocuments | null>(null);
@@ -187,9 +212,11 @@ export function DocumentsPanel({
       if (apiDocs.length > 0) {
         setDocs(apiDocsToGenerated(apiDocs));
         setHasApiDocs(true);
+        onDocsLoaded?.(toPanelTypes(apiDocs.map((d) => d.type)));
       } else {
         setDocs(null);
         setHasApiDocs(false);
+        onDocsLoaded?.([]);
       }
     } catch {
       setDocs(null);
@@ -198,6 +225,7 @@ export function DocumentsPanel({
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [consultationId]);
 
   useEffect(() => {
@@ -350,6 +378,57 @@ export function DocumentsPanel({
       <div className="flex items-center justify-center gap-2 py-12 text-slate-500">
         <Loader2 className="h-5 w-5 animate-spin" />
         書類を読み込み中…
+      </div>
+    );
+  }
+
+  const visible = controlled ? (showTypes ?? []) : selected;
+
+  if (controlled) {
+    return (
+      <div className="space-y-3">
+        <PendingTermsNotice consultationId={consultationId} onResolved={() => setError('')} />
+        {error && (
+          <Alert variant="error" className="no-print">
+            {error}
+          </Alert>
+        )}
+        {visible.length === 0 ? (
+          <div className="no-print rounded-2xl border border-dashed border-clinic-line bg-white px-5 py-8 text-center">
+            <ClipboardList className="mx-auto h-7 w-7 text-clinic-ink-muted" />
+            <p className="mt-2 text-[13px] text-clinic-ink-muted">
+              上のカードを押すと、その書類だけを作ります。
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="no-print flex flex-wrap items-center gap-2">
+              <Button size="sm" icon={<Printer />} disabled={!approved} onClick={handlePrint}>
+                印刷（{visible.length}件）
+              </Button>
+              <Button size="sm" variant="ghost" icon={<RotateCcw />} onClick={handleReset}>
+                生成内容に戻す
+              </Button>
+              {onReferralPatternChange && visible.includes('referral') && (
+                <label className="ml-auto inline-flex items-center gap-1.5 text-[11px] text-clinic-ink-muted">
+                  <input
+                    type="checkbox"
+                    checked={referralPattern === 'complex'}
+                    onChange={(e) =>
+                      onReferralPatternChange(e.target.checked ? 'complex' : 'simple')
+                    }
+                  />
+                  長期経過をA4一枚に要約
+                </label>
+              )}
+            </div>
+            <div className="doc-print-root doc-print-area min-w-0 overflow-x-auto rounded-2xl border border-clinic-line bg-clinic-tint p-3">
+              {visible.map((id) => (
+                <div key={id}>{renderDoc(id)}</div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     );
   }

@@ -344,6 +344,29 @@ export function ConsultationWorkflow({
     }
   }
 
+  /**
+   * 同じ診察の続きを録る。
+   *
+   * 2026-09-28、谷口先生の池田さんの診察。採血のあいだに患者さんが退室し、そのあいだに
+   * 別の患者さんを診て、戻ってきてから結果を説明された。画面の一時停止では、別の患者さんの
+   * 画面へ移った時点で続けられない。前半を残したまま録り足し、止めたときに全体で作り直す。
+   */
+  async function handleAppendRecording() {
+    setErrorBusy(true);
+    try {
+      await recording.startAppend();
+      setErrorMessage('');
+      setPhase('recording');
+    } catch (error) {
+      setCopyMsg(
+        error instanceof Error ? error.message : '続きの録音を開始できませんでした',
+      );
+      setTimeout(() => setCopyMsg(''), 5000);
+    } finally {
+      setErrorBusy(false);
+    }
+  }
+
   async function handleGenerateAll() {
     setGeneratingDocs(true);
     try {
@@ -437,6 +460,7 @@ export function ConsultationWorkflow({
       onCopyNote={handleCopyNote}
       onGenerateAll={handleGenerateAll}
       onReprocess={handleReprocess}
+      onAppendRecording={approved ? undefined : handleAppendRecording}
       reprocessing={errorBusy}
       generatingDocs={generatingDocs}
       documentInput={{ ...documentInput, soap }}
