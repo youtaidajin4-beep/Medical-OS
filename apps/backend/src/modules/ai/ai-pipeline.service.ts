@@ -342,8 +342,27 @@ export class AiPipelineService {
         segments.map((seg, i) => ({ id: seg.id, text: segmentTexts[i] ?? seg.text })),
       );
 
+      // SOAPを書くモデルへ渡す「要確認」。**聞き取りが不確かな医療の語**だけにする。
+      // 数値・単位・否定の書き換え（「5ミリ→5mg」「ではない→なし」）は不確かさではなく表記の正規化で、
+      // 入れると、SOAPに「なし」「カルボシステイン」のような言われていない言い換えを誘う
+      // （SOAPは言われたままの商品名で書く、が先生との取り決め）
+      const SOAP_FLAG_TYPES = new Set([
+        'diagnosis',
+        'symptom',
+        'finding',
+        'medication',
+        'laboratory_test',
+        'imaging',
+        'procedure',
+      ]);
       const reviewFlags = knowledgeResult.entities
-        .filter((e) => e.needsReview && e.normalizedValue)
+        .filter(
+          (e) =>
+            e.needsReview &&
+            e.normalizedValue &&
+            e.normalizedValue !== e.rawValue &&
+            SOAP_FLAG_TYPES.has(e.entityType),
+        )
         .slice(0, 12)
         .map((e) => `[要確認:${e.entityType}:${e.rawValue}→${e.normalizedValue}]`);
 

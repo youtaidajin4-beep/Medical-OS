@@ -23,6 +23,30 @@ export type IndexedTerm = {
  * In-memory RAG index for medical terms.
  * Official master codes are never invented — sourceCode stays null for seed data.
  */
+/**
+ * 2文字以下のひらがな・カタカナだけの表記は、普通の日本語に当たりすぎる。
+ *
+ * 標準の辞書の「話し言葉」の別名に、「どう→銅」「ない→無い」「もの→Mono」「さん→散」「える→L」
+ * 「おー→O」「あり→有り」があった。診察の会話ではどれも毎回出る語で、実診察12件の記録では
+ * 「ない→無い」が199回、「どう→銅」が64回、「もの→Mono」が26回、「さん→散」が21回、
+ * 「要確認」に積まれていた。しかも、その要確認の一部はSOAPを書くモデルへ渡す文脈にも混ざっていた。
+ *
+ * 見ない：標準（specialty・national）の辞書にある、2文字以下のかなだけの表記。
+ * ただし、医療の語として実際に使う少数（痰・下痢・麻痺・咳）は許可リストで残す。
+ * 先生・医院が自分で登録した語（physician・clinic・patient）は、そのまま効かせる。
+ */
+const SHORT_KANA = /^[\u3040-\u309f\u30a0-\u30ffー]{1,2}$/;
+// 「たん」は許可しない：「来たんです」「思ったんですが」の中の「たん」に当たる（実診察で62回）。
+// STTは「痰」を漢字で出すので、ひらがなの「たん」を拾う必要がほとんど無い
+const SHORT_KANA_ALLOWLIST = new Set(['げり', 'まひ', 'せき', 'かぜ', 'クレ']);
+
+export function isAmbiguousShortSurface(surface: string, hits: IndexedTerm[]): boolean {
+  if (!SHORT_KANA.test(surface)) return false;
+  if (SHORT_KANA_ALLOWLIST.has(surface)) return false;
+  // 先生・医院・患者が登録した語は、その人の意図なので見る
+  return hits.every((h) => h.layer === 'specialty' || h.layer === 'national');
+}
+
 export class KnowledgeIndex {
   private byKey = new Map<string, IndexedTerm[]>();
   private aliasToCanonical = new Map<string, string>();
@@ -138,7 +162,7 @@ export class KnowledgeIndex {
         const overlap = occupied.slice(idx, end).some(Boolean);
         if (!overlap) {
           const hits = this.lookup(surface);
-          if (hits.length) {
+          if (hits.length && !isAmbiguousShortSurface(surface, hits)) {
             results.push({ surface, start: idx, end, hits });
             for (let i = idx; i < end; i++) occupied[i] = true;
           }
