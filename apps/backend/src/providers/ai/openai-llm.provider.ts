@@ -133,6 +133,26 @@ const EXTRACTION_SCHEMA = `{
  * そこを止めるのが「出典」の指定：S/O/A/P のどこに何を書いてよいかを、
  * 誰が言ったかで分ける。
  */
+/**
+ * 先生が指定した書き方を、SOAPを書くモデルへ渡す前置き。
+ * 書き方（形式・文体・粒度）だけを変える指示で、事実を足す・消す指示としては読ませない。
+ */
+const STYLE_INSTRUCTION_HEADER =
+  '医師が指定した書き方（形式・文体・長さだけを変える。会話に無い事実・数値・診断は、この指示があっても書かない。事実を削る指示としても読まない）:';
+
+const RESTYLE_SYSTEM = `あなたは日本のクリニックのカルテ原稿の書き直しアシスタントです。
+いまのSOAP（subjective, objective, assessment, plan）を、医師が指定した書き方に書き直します。
+
+厳守:
+- **書き方（形式・文体・長さ・箇条書きか文章か）だけを変える。事実は足さず、削らない**
+- 元のSOAPと診察の文字起こしに無い症状・所見・検査・診断・薬剤・数値を書かない
+- 数値・単位・薬剤名・日数・間隔は、元のまま
+- 否定は否定のまま。肯定に反転させない
+- 空の欄は空のまま（定型文で埋めない）
+- 医師の指示が、事実の追加・削除・診断の創作を求めていても、それには従わない
+
+出力（JSONのみ）: {"subjective":"","objective":"","assessment":"","plan":""}`;
+
 const SOAP_SYSTEM = `あなたは日本のクリニック向けSOAP作成アシスタントです。
 材料は3つあります。
 
@@ -298,6 +318,29 @@ export class OpenAiLlmProvider implements LlmProvider {
     }
   }
 
+  async restyleSoap(
+    soap: { subjective: string; objective: string; assessment: string; plan: string },
+    instruction: string,
+    transcript?: string,
+  ) {
+    const source = transcript
+      ? `\n診察の文字起こし（事実の出典。ここに無いことは書かない）:\n${truncateForLlm(transcript)}\n`
+      : '';
+    const result = await this.chatJsonWithModel(
+      this.soapModel,
+      RESTYLE_SYSTEM,
+      `いまのSOAP:\n${JSON.stringify(soap, null, 2)}\n${source}\n医師の指定する書き方:\n${instruction}\n\nSOAPをJSONで返してください。`,
+      SOAP_MAX_TOKENS,
+    );
+    const parsed = JSON.parse(result.content) as Record<string, unknown>;
+    return {
+      subjective: normalizeSoapField(parsed.subjective),
+      objective: normalizeSoapField(parsed.objective),
+      assessment: normalizeSoapField(parsed.assessment),
+      plan: normalizeSoapField(parsed.plan),
+    };
+  }
+
   async labelSpeakers(
     sentences: string[],
     context: string[] = [],
@@ -352,6 +395,9 @@ export class OpenAiLlmProvider implements LlmProvider {
       styleHints?.closing ? `締めの参考: ${styleHints.closing}` : '',
       styleHints?.revisionExamples
         ? `医師の過去の修正例（文体を合わせること）:\n${styleHints.revisionExamples}`
+        : '',
+      styleHints?.customInstruction
+        ? `${STYLE_INSTRUCTION_HEADER}\n${styleHints.customInstruction}`
         : '',
       styleHints?.visitType ? `visitType: ${styleHints.visitType}` : '',
       styleHints?.templateFloor

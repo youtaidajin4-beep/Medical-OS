@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Post, Put, UseGuards } from '@nestjs/common';
-import { IsArray, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsObject, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { SettingsService } from './settings.service';
 import { JwtAuthGuard, AuthUser } from '../../common/guards/jwt-auth.guard';
@@ -64,6 +64,17 @@ class MedicalGlossaryDto {
   customReplacements?: MedicalGlossaryReplacementDto[];
 }
 
+class SummaryStyleDto {
+  @IsString()
+  @MaxLength(600)
+  instruction!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  presetId?: string;
+}
+
 class PhysicianRulesDto {
   @IsArray()
   @ValidateNested({ each: true })
@@ -80,6 +91,12 @@ class PhysicianRulesDto {
   @ValidateNested()
   @Type(() => MedicalGlossaryDto)
   medicalGlossary?: MedicalGlossaryDto;
+
+  @IsOptional()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => SummaryStyleDto)
+  summaryStyle?: SummaryStyleDto;
 }
 
 class AddReplacementsDto {

@@ -16,6 +16,7 @@ import {
   Mic,
   MoreHorizontal,
   RefreshCw,
+  Sparkles,
   X,
 } from 'lucide-react';
 import { Toast, useToast } from '@/components/ui/toast';
@@ -33,6 +34,12 @@ import { PaperCapturePanel } from '@/components/consultation/paper-capture-panel
 import { KnowledgeTranscriptPanel } from '@/components/consultation/knowledge-transcript-panel';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api-client';
+import {
+  CUSTOM_PRESET_ID,
+  findPreset,
+  presetIdFor,
+  SUMMARY_PRESETS,
+} from '@/lib/summary-style';
 import type { DocumentTypeId, SoapData } from '@/lib/mock-documents/types';
 import {
   defaultCopyStyle,
@@ -264,6 +271,69 @@ export function ReviewPhase({
       // 読めなければ既定のまま
     }
   }, []);
+
+  // 書き方（形式・文体・長さ）。見本を選ぶか、自分の言葉で指示する
+  const [styleOpen, setStyleOpen] = useState(false);
+  const [styleChoice, setStyleChoice] = useState('standard');
+  const [styleText, setStyleText] = useState('');
+  const [styling, setStyling] = useState(false);
+  const [styleMsg, setStyleMsg] = useState('');
+
+  useEffect(() => {
+    void api
+      .getPhysicianRules()
+      .then((rules) => {
+        const saved = rules.summaryStyle;
+        if (!saved?.instruction) return;
+        setStyleText(saved.instruction);
+        setStyleChoice(presetIdFor(saved.instruction, saved.presetId));
+      })
+      .catch(() => undefined);
+  }, []);
+
+  function choosePreset(id: string) {
+    setStyleChoice(id);
+    setStyleMsg('');
+    const preset = findPreset(id);
+    if (preset) setStyleText(preset.instruction);
+  }
+
+  async function restyle() {
+    // 標準は「何も足さない」見本で指示が空。書き直しには、標準の書き方を言葉にして渡す
+    const text =
+      styleChoice === 'standard' || !styleText.trim()
+        ? '1行1事実の、簡潔な体言止めで書く。'
+        : styleText.trim();
+    setStyling(true);
+    setStyleMsg('');
+    try {
+      const res = await api.restyleSoap(consultationId, text);
+      onSoapChange(res.soap);
+      setStyleMsg('書き直しました。保存・コピーすると確定します');
+    } catch (e) {
+      setStyleMsg(e instanceof Error ? e.message : '書き直せませんでした');
+    } finally {
+      setStyling(false);
+    }
+  }
+
+  async function saveDefaultStyle() {
+    try {
+      const rules = await api.getPhysicianRules();
+      const instruction = styleText.trim();
+      await api.updatePhysicianRules({
+        ...rules,
+        summaryStyle: instruction ? { instruction, presetId: styleChoice } : undefined,
+      });
+      setStyleMsg(
+        instruction
+          ? '次の診察から、この書き方で原稿を作ります'
+          : '標準の書き方に戻しました（次の診察から）',
+      );
+    } catch (e) {
+      setStyleMsg(e instanceof Error ? e.message : '保存できませんでした');
+    }
+  }
 
   function chooseCopyStyle(style: CopyStyle) {
     setCopyStyle(style);
@@ -602,10 +672,27 @@ export function ReviewPhase({
           <span className="text-[11px] font-semibold tracking-[0.2em] text-clinic-ink-muted">
             カルテ原稿
           </span>
+          <button
+            type="button"
+            onClick={() => setStyleOpen((v) => !v)}
+            aria-expanded={styleOpen}
+            className={cn(
+              'ml-auto inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition-colors',
+              styleOpen
+                ? 'border-clinic-ink bg-clinic-ink text-clinic-cream'
+                : 'border-clinic-line bg-white text-clinic-ink hover:border-clinic-ink/40',
+            )}
+          >
+            <Sparkles className="h-3 w-3" />
+            書き方
+            <span className="font-normal opacity-75">
+              {findPreset(styleChoice)?.label ?? '自分の指示'}
+            </span>
+          </button>
           <div
             role="group"
             aria-label="貼り付け形式"
-            className="ml-auto inline-flex rounded-lg bg-clinic-tint p-0.5 text-[11px] font-semibold"
+            className="inline-flex rounded-lg bg-clinic-tint p-0.5 text-[11px] font-semibold"
           >
             {(
               [
@@ -630,6 +717,74 @@ export function ReviewPhase({
             ))}
           </div>
         </div>
+
+        {/* 書き方：見本を選ぶか、自分の言葉で指示する。事実は変えず、形式・文体・長さだけを変える */}
+        {styleOpen && (
+          <div className="space-y-3 border-b border-clinic-line bg-clinic-paper/70 px-5 py-4">
+            <div className="flex flex-wrap gap-1.5">
+              {SUMMARY_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => choosePreset(preset.id)}
+                  title={preset.hint}
+                  className={cn(
+                    'rounded-full border px-3 py-1 text-[12px] font-semibold transition-colors',
+                    styleChoice === preset.id
+                      ? 'border-clinic-ink bg-clinic-ink text-clinic-cream'
+                      : 'border-clinic-line bg-white text-clinic-ink hover:border-clinic-ink/40',
+                  )}
+                >
+                  {preset.label}
+                </button>
+              ))}
+              <span
+                className={cn(
+                  'rounded-full border px-3 py-1 text-[12px] font-semibold',
+                  styleChoice === CUSTOM_PRESET_ID
+                    ? 'border-clinic-ink bg-clinic-ink text-clinic-cream'
+                    : 'border-dashed border-clinic-line text-clinic-ink-muted',
+                )}
+              >
+                自分の指示
+              </span>
+            </div>
+            <textarea
+              value={styleText}
+              onChange={(e) => {
+                setStyleText(e.target.value);
+                setStyleChoice(presetIdFor(e.target.value));
+                setStyleMsg('');
+              }}
+              rows={3}
+              maxLength={600}
+              placeholder="例：Sは患者の言葉に近く、Pは番号をつけて書く。Aは診断名だけにする。"
+              className="w-full resize-y rounded-xl border border-clinic-line bg-white px-3 py-2 text-[13px] leading-relaxed text-clinic-ink outline-none focus:ring-2 focus:ring-clinic-ink/10"
+            />
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void restyle()}
+                disabled={styling || soapIsEmpty}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-clinic-ink px-3.5 py-2 text-[12px] font-semibold text-clinic-cream hover:bg-clinic-ink-soft disabled:opacity-50"
+              >
+                <Sparkles className={cn('h-3.5 w-3.5', styling && 'animate-pulse')} />
+                {styling ? '書き直しています…' : 'この書き方で書き直す'}
+              </button>
+              <button
+                type="button"
+                onClick={() => void saveDefaultStyle()}
+                className="rounded-xl border border-clinic-line bg-white px-3 py-2 text-[12px] font-semibold text-clinic-ink hover:bg-clinic-tint"
+              >
+                いつもこの書き方にする
+              </button>
+              {styleMsg && <span className="text-[12px] text-clinic-ink-muted">{styleMsg}</span>}
+            </div>
+            <p className="text-[11px] leading-relaxed text-clinic-ink-muted">
+              書き方（形式・文体・長さ）だけを変えます。会話に無いことは足さず、あることは削りません。
+            </p>
+          </div>
+        )}
 
         {SOAP_FIELDS.map(({ key, label, name }) => (
           <section

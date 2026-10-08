@@ -421,6 +421,12 @@ export const api = {
     }),
   updateNote: (id: string, content: string) =>
     request(`/consultations/${id}/clinical-note`, { method: 'PATCH', body: JSON.stringify({ content }) }),
+  /** いまのSOAPを、指定の書き方で書き直した案を返す（保存はしない） */
+  restyleSoap: (id: string, instruction: string) =>
+    request<{ soap: { subjective: string; objective: string; assessment: string; plan: string } }>(
+      `/consultations/${id}/soap/restyle`,
+      { method: 'POST', body: JSON.stringify({ instruction }) },
+    ),
   approve: (id: string) => request(`/consultations/${id}/approve`, { method: 'POST' }),
   copied: (id: string) => request(`/consultations/${id}/copied`, { method: 'POST' }),
   getDocuments: (consultationId: string) =>
@@ -493,6 +499,8 @@ export const api = {
         diagnoses: string[];
         customReplacements: Array<{ wrong: string; correct: string }>;
       };
+      /** カルテ原稿の書き方の指定。事実は変えず、形式・文体・長さだけを変える */
+      summaryStyle?: { instruction: string; presetId?: string };
     }>('/settings/physician-rules'),
   updatePhysicianRules: (rules: {
     referralRules: Array<{ trigger: string; mustInclude: string[] }>;
@@ -508,6 +516,7 @@ export const api = {
       diagnoses: string[];
       customReplacements: Array<{ wrong: string; correct: string }>;
     };
+    summaryStyle?: { instruction: string; presetId?: string };
   }) =>
     request('/settings/physician-rules', {
       method: 'PUT',

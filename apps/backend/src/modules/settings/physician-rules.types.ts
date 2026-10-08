@@ -27,7 +27,22 @@ export type PhysicianRules = {
    * SOAP の A/P にだけ当たる。既定は soap-phrasing.ts の DEFAULT_PHRASE_REWRITES
    */
   phraseRewrites?: Array<{ from: string; to: string }>;
+  /**
+   * カルテ原稿の書き方（形式・文体・粒度）の指定。先生ごとに違う。
+   * 書き方だけを変える指示で、事実の追加・削除は許さない（SOAPを書くモデルへ、そう伝えて渡す）。
+   */
+  summaryStyle?: SummaryStyle;
 };
+
+export type SummaryStyle = {
+  /** 先生が書いた、または選んだ書き方の指示（自然な日本語） */
+  instruction: string;
+  /** 選んだ見本の名前（画面の選択状態を戻すために持つ） */
+  presetId?: string;
+};
+
+/** 指示の長さの上限。長すぎるとモデルが事実のほうを軽く扱う */
+export const MAX_SUMMARY_INSTRUCTION_CHARS = 600;
 
 export type { MedicalGlossary, MedicalGlossaryReplacement };
 
@@ -90,6 +105,21 @@ export function parsePhysicianRules(raw: unknown): PhysicianRules {
       ...(data.fixedPhrases ?? {}),
     },
     ...(medicalGlossary ? { medicalGlossary } : {}),
+    ...(parseSummaryStyle(data.summaryStyle) ? { summaryStyle: parseSummaryStyle(data.summaryStyle) } : {}),
+  };
+}
+
+export function parseSummaryStyle(raw: unknown): SummaryStyle | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const data = raw as Partial<SummaryStyle>;
+  const instruction =
+    typeof data.instruction === 'string'
+      ? data.instruction.trim().slice(0, MAX_SUMMARY_INSTRUCTION_CHARS)
+      : '';
+  if (!instruction) return undefined;
+  return {
+    instruction,
+    ...(typeof data.presetId === 'string' && data.presetId ? { presetId: data.presetId.slice(0, 40) } : {}),
   };
 }
 

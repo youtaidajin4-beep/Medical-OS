@@ -88,6 +88,8 @@ export type SoapStyleHints = {
    */
   transcript?: string;
   revisionExamples?: string;
+  /** 先生が指定した書き方（形式・文体・粒度）。事実は変えない */
+  customInstruction?: string;
   greeting?: string;
   closing?: string;
   visitType?: 'ROUTINE' | 'CHECKUP';
@@ -127,6 +129,15 @@ export interface LlmProvider {
     system: string,
     user: string,
   ): Promise<Record<string, unknown>>;
+  /**
+   * いまのSOAPを、指定された書き方に書き直す。事実は足さず、削らない。
+   * transcript は、書き直しの根拠（会話に無いことを書かないための出典）。
+   */
+  restyleSoap?(
+    soap: { subjective: string; objective: string; assessment: string; plan: string },
+    instruction: string,
+    transcript?: string,
+  ): Promise<{ subjective: string; objective: string; assessment: string; plan: string }>;
   /**
    * 診察室の会話の文ごとに、医師・患者・その他を判別する（リアルタイム書き起こし用）。
    *

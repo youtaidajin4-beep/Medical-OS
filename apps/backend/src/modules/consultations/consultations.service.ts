@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { ConsultationStatus, DocumentType, VisitType } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -12,6 +12,9 @@ import {
   PIPELINE_STALE_MESSAGE,
 } from '../ai/pipeline-progress';
 import { logAiExecution } from '../ai/ai-execution.helper';
+import { LLM_PROVIDER } from '../../providers/ai/llm.tokens';
+import { LlmProvider } from '../../providers/ai/llm.provider';
+import { MAX_SUMMARY_INSTRUCTION_CHARS } from '../settings/physician-rules.types';
 
 @Injectable()
 export class ConsultationsService {
@@ -23,6 +26,7 @@ export class ConsultationsService {
     private readonly aiPipeline: AiPipelineService,
     private readonly consultationAccess: ConsultationAccessService,
     private readonly recordingService: RecordingService,
+    @Inject(LLM_PROVIDER) private readonly llm: LlmProvider,
   ) {}
 
   async create(
@@ -243,6 +247,49 @@ export class ConsultationsService {
         startedAt: new Date(),
       },
     });
+  }
+
+  /**
+   * いまのSOAPを、指定された書き方で書き直した案を返す（保存はしない）。
+   *
+   * 診察の文字起こしを作り直さないので、数秒で返る。先生が画面で見て、気に入れば原稿へ反映する。
+   * 事実は足さず削らない（モデルへの指示と、文字起こしを出典として渡すことで守らせる）。
+   */
+  async restyleSoap(id: string, physicianId: string, instruction: string) {
+    await this.consultationAccess.assertPhysicianOwns(id, physicianId);
+    const text = instruction.trim().slice(0, MAX_SUMMARY_INSTRUCTION_CHARS);
+    if (!text) throw new BadRequestException('書き方の指示を入れてください');
+    if (!this.llm.restyleSoap) {
+      throw new BadRequestException('この環境では、書き方を指定した書き直しは使えません');
+    }
+    const latest = await this.prisma.soapDocument.findFirst({
+      where: { consultationId: id },
+      orderBy: { version: 'desc' },
+    });
+    if (!latest) throw new BadRequestException('書き直すSOAPがまだありません');
+    const segments = await this.prisma.transcriptSegment.findMany({
+      where: { consultationId: id, isFinal: true },
+      orderBy: { sequenceNumber: 'asc' },
+      select: { text: true, speaker: true },
+    });
+    const label: Record<string, string> = {
+      PHYSICIAN: '医師',
+      PATIENT: '患者',
+      OTHER: 'その他',
+      UNKNOWN: '不明',
+    };
+    const transcript = segments.map((s) => `${label[s.speaker] ?? '不明'}: ${s.text}`).join('\n');
+    const soap = await this.llm.restyleSoap(
+      {
+        subjective: latest.subjective,
+        objective: latest.objective,
+        assessment: latest.assessment,
+        plan: latest.plan,
+      },
+      text,
+      transcript || undefined,
+    );
+    return { soap };
   }
 
   async stopRecording(id: string, physicianId: string, options?: { fromLive?: boolean }) {

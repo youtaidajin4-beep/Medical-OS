@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ClipboardCopy, LogOut, Settings2, UserCircle2 } from 'lucide-react';
+import { ClipboardCopy, LogOut, Settings2, Sparkles, UserCircle2 } from 'lucide-react';
 import { api, clearToken, getToken } from '@/lib/api-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,8 @@ import { Alert } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { isWeakPassword, WEAK_PASSWORD_MESSAGE } from '@/lib/password-policy';
+import { CUSTOM_PRESET_ID, presetIdFor, SUMMARY_PRESETS } from '@/lib/summary-style';
+import { cn } from '@/lib/utils';
 
 const COPY_STEPS = [
   'メニュー「患者」で基本情報を登録する（その場開始でも可）',
@@ -49,6 +51,7 @@ function SettingsPageContent() {
       diagnoses: string[];
       customReplacements: Array<{ wrong: string; correct: string }>;
     };
+    summaryStyle?: { instruction: string; presetId?: string };
   }>({
     referralRules: [{ trigger: '脳梗塞疑い', mustInclude: ['紹介理由', '依頼事項', '経過'] }],
     fixedPhrases: {
@@ -202,6 +205,78 @@ function SettingsPageContent() {
       )}
 
       {saveMsg && <Alert variant="success">{saveMsg}</Alert>}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Sparkles className="h-4 w-4 text-brand-600" />
+            カルテ原稿の書き方
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-slate-600">
+            診察のたびに作るカルテ原稿（SOAP）の、形式・文体・長さを選びます。見本を選ぶか、ご自身の言葉で指示を書けます。
+            書き方だけが変わり、会話に無いことは足さず、あることは削りません。診察後の画面からも、その場で書き直せます。
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {SUMMARY_PRESETS.map((preset) => {
+              const selected =
+                presetIdFor(rules.summaryStyle?.instruction ?? '', rules.summaryStyle?.presetId) === preset.id;
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() =>
+                    setRules({
+                      ...rules,
+                      summaryStyle: preset.instruction
+                        ? { instruction: preset.instruction, presetId: preset.id }
+                        : undefined,
+                    })
+                  }
+                  className={cn(
+                    'rounded-xl border px-3.5 py-2 text-left text-sm transition',
+                    selected
+                      ? 'border-slate-900 bg-slate-900 text-white'
+                      : 'border-slate-200 bg-white text-slate-700 hover:border-slate-400',
+                  )}
+                >
+                  <span className="block font-semibold">{preset.label}</span>
+                  <span className="mt-0.5 block text-[11px] opacity-75">{preset.hint}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+              指示{' '}
+              <span className="font-normal text-slate-400">
+                （見本を選ぶと入ります。直しても構いません。
+                {presetIdFor(rules.summaryStyle?.instruction ?? '', rules.summaryStyle?.presetId) ===
+                CUSTOM_PRESET_ID
+                  ? '現在は自分の指示です'
+                  : ''}
+                ）
+              </span>
+            </label>
+            <Textarea
+              rows={4}
+              maxLength={600}
+              value={rules.summaryStyle?.instruction ?? ''}
+              placeholder="例：Sは患者の言葉に近く、Pは番号をつけて書く。Aは診断名だけにする。"
+              onChange={(e) =>
+                setRules({
+                  ...rules,
+                  summaryStyle: e.target.value.trim()
+                    ? { instruction: e.target.value, presetId: presetIdFor(e.target.value) }
+                    : undefined,
+                })
+              }
+            />
+          </div>
+          <Button onClick={saveRules}>書き方を保存</Button>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

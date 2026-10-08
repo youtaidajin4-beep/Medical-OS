@@ -459,6 +459,7 @@ export class AiPipelineService {
                 // 渡していなかった頃が「転記が乏しい」(9/25)・「30〜50%」(9/29) の正体
                 transcript: soapSource,
                 revisionExamples: soapRevisionExamples || undefined,
+                customInstruction: physicianRules.summaryStyle?.instruction,
                 greeting: physicianRules.fixedPhrases?.greeting,
                 closing: physicianRules.fixedPhrases?.closing,
                 visitType,
