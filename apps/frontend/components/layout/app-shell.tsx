@@ -119,7 +119,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-[#eef3f0]">
       <DemoBanner />
       <AiStatusBanner />
-      <div className="mx-auto flex max-w-7xl">
+      <div className="flex">
         <aside className="no-print sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-[#d7e2dd] bg-[#0c2f2c] p-4 md:flex">
           <div className="mb-8 px-1 pt-1">
             <BrandLogo inverted />
@@ -170,7 +170,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          <main className="p-4 md:p-8">
+          <main className="p-4 md:px-8 md:py-6 min-[1280px]:px-10">
             <div className="animate-fade-in">{children}</div>
           </main>
         </div>

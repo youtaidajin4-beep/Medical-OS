@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { createPortal } from 'react-dom';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -15,6 +16,7 @@ import {
   Mic,
   MoreHorizontal,
   RefreshCw,
+  X,
 } from 'lucide-react';
 import { Toast, useToast } from '@/components/ui/toast';
 import { Select } from '@/components/ui/select';
@@ -33,8 +35,10 @@ import { cn } from '@/lib/utils';
 import { api } from '@/lib/api-client';
 import type { DocumentTypeId, SoapData } from '@/lib/mock-documents/types';
 import {
+  defaultCopyStyle,
   formatSoapForChartCopy,
   SOAP_TEMPLATE_TEXT,
+  type CopyStyle,
   templateTargets,
   type SoapFieldKey,
   type VisitType,
@@ -212,7 +216,7 @@ export function ReviewPhase({
   onAddGlossarySuggestions?: (selected: Array<{ wrong: string; correct: string }>) => void;
   onDismissGlossarySuggestions?: () => void;
   onApprove: () => void;
-  onCopySoap: () => void | Promise<void>;
+  onCopySoap: (style?: CopyStyle) => void | Promise<void>;
   onCopyNote: () => void;
   /** 残っている録音からSOAPを作り直す。保持期間を過ぎるとサーバー側で断られる */
   onReprocess?: () => void;
@@ -246,6 +250,34 @@ export function ReviewPhase({
   const [referralPattern, setReferralPattern] = useState<'simple' | 'complex'>('simple');
   const [selectedSuggestions, setSelectedSuggestions] = useState<Record<string, boolean>>({});
   const [tab, setTab] = useState<'source' | 'docs' | 'more'>('source');
+  /** 原文・書類・その他を出す横のパネル。普段は閉じて、カルテ原稿だけを見せる */
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const [copyStyle, setCopyStyle] = useState<CopyStyle>(defaultCopyStyle(visitType));
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('soapCopyStyle');
+      if (saved === 'ap-combined' || saved === 'separate') setCopyStyle(saved);
+    } catch {
+      // 読めなければ既定のまま
+    }
+  }, []);
+
+  function chooseCopyStyle(style: CopyStyle) {
+    setCopyStyle(style);
+    try {
+      localStorage.setItem('soapCopyStyle', style);
+    } catch {
+      // 保存できなくても、この画面では効く
+    }
+  }
+
+  function openDrawer(next: 'source' | 'docs' | 'more') {
+    setTab(next);
+    setDrawerOpen(true);
+  }
   const [warningsOpen, setWarningsOpen] = useState(true);
   const [copying, setCopying] = useState(false);
   const [modKey, setModKey] = useState('Ctrl');
@@ -258,7 +290,7 @@ export function ReviewPhase({
     if (copying) return;
     setCopying(true);
     try {
-      await onCopySoap();
+      await onCopySoap(copyStyle);
     } finally {
       setCopying(false);
     }
@@ -298,7 +330,7 @@ export function ReviewPhase({
   }, [glossarySuggestions]);
 
   const visitLabel = visitType === 'CHECKUP' ? '健診' : '通常診察';
-  const pasteText = formatSoapForChartCopy(soap, visitType);
+  const pasteText = formatSoapForChartCopy(soap, visitType, copyStyle);
   const soapIsEmpty = SOAP_FIELDS.every(({ key }) => !soap[key].trim());
   const criticalCount = useMemo(
     () => warnings.filter((w) => w.severity === 'CRITICAL').length,
@@ -387,12 +419,12 @@ export function ReviewPhase({
       : 'bg-amber-100 text-amber-800';
 
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-28 min-[480px]:px-6">
+    <div className="mx-auto max-w-3xl px-4 pb-28 min-[480px]:px-6">
       <Toast toast={toast} />
 
-      {/* 患者と状態、そしてこの画面で一番したいこと（電子カルテへコピー） */}
-      <header className="no-print sticky top-0 z-20 -mx-4 mb-4 border-b border-clinic-line bg-clinic-paper/90 px-4 py-3 backdrop-blur min-[480px]:-mx-6 min-[480px]:px-6">
-        <div className="flex items-center gap-3">
+      {/* 患者・状態・この画面でする一番のこと（電子カルテへコピー） */}
+      <header className="no-print sticky top-0 z-20 -mx-4 mb-5 border-b border-clinic-line bg-clinic-paper/90 px-4 py-3 backdrop-blur min-[480px]:-mx-6 min-[480px]:px-6">
+        <div className="flex items-center gap-2.5">
           <Link
             href={backHref}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-clinic-line bg-white text-clinic-ink hover:bg-clinic-tint"
@@ -418,11 +450,32 @@ export function ReviewPhase({
             </p>
           </div>
 
+          <button
+            type="button"
+            onClick={() => openDrawer('source')}
+            className="hidden h-10 shrink-0 items-center gap-1.5 rounded-xl border border-clinic-line bg-white px-3 text-[12px] font-semibold text-clinic-ink hover:bg-clinic-tint min-[560px]:inline-flex"
+          >
+            <Mic className="h-3.5 w-3.5" />
+            原文
+          </button>
+          <button
+            type="button"
+            onClick={() => openDrawer('docs')}
+            className="hidden h-10 shrink-0 items-center gap-1.5 rounded-xl border border-clinic-line bg-white px-3 text-[12px] font-semibold text-clinic-ink hover:bg-clinic-tint min-[560px]:inline-flex"
+          >
+            <FileText className="h-3.5 w-3.5" />
+            書類
+            {madeTypes.length > 0 && (
+              <span className="rounded-full bg-clinic-tint px-1.5 text-[10px]">
+                {madeTypes.length}
+              </span>
+            )}
+          </button>
           {onAppendRecording && (
             <button
               type="button"
               onClick={onAppendRecording}
-              className="hidden shrink-0 items-center gap-1.5 rounded-xl border border-clinic-line bg-white px-3 py-2.5 text-[12px] font-semibold text-clinic-ink hover:bg-clinic-tint min-[640px]:inline-flex"
+              className="hidden h-10 shrink-0 items-center gap-1.5 rounded-xl border border-clinic-line bg-white px-3 text-[12px] font-semibold text-clinic-ink hover:bg-clinic-tint min-[760px]:inline-flex"
               title="採血などで中断したとき、同じ診察の続きを録ります"
             >
               <Mic className="h-3.5 w-3.5" />
@@ -466,39 +519,32 @@ export function ReviewPhase({
         )}
       </header>
 
+      {/* 要確認は1行にたたむ。開くと中身が出る（赤い大きな箱で原稿を押し下げない） */}
       {warnings.length > 0 && (
-        <div
-          className={cn(
-            'no-print mb-4 overflow-hidden rounded-2xl border',
-            criticalCount ? 'border-rose-200 bg-rose-50' : 'border-amber-200 bg-amber-50/70',
-          )}
-        >
+        <div className="no-print mb-4">
           <button
             type="button"
             onClick={() => setWarningsOpen((v) => !v)}
-            className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left"
+            className={cn(
+              'inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-[12px] font-semibold',
+              criticalCount
+                ? 'border-rose-200 bg-rose-50 text-rose-900'
+                : 'border-amber-200 bg-amber-50 text-amber-900',
+            )}
           >
-            <AlertTriangle
-              className={cn('h-4 w-4', criticalCount ? 'text-rose-600' : 'text-amber-600')}
-            />
-            <span
-              className={cn(
-                'text-[13px] font-semibold',
-                criticalCount ? 'text-rose-900' : 'text-amber-900',
-              )}
-            >
-              貼る前に確認 {warnings.length}件
-            </span>
+            <AlertTriangle className="h-3.5 w-3.5" />
+            貼る前に確認 {warnings.length}件
             <ChevronDown
-              className={cn(
-                'ml-auto h-4 w-4 transition-transform',
-                criticalCount ? 'text-rose-500' : 'text-amber-500',
-                warningsOpen && 'rotate-180',
-              )}
+              className={cn('h-3.5 w-3.5 transition-transform', warningsOpen && 'rotate-180')}
             />
           </button>
           {warningsOpen && (
-            <ul className="space-y-1.5 px-3.5 pb-3">
+            <ul
+              className={cn(
+                'mt-2 space-y-1.5 rounded-2xl border px-4 py-3',
+                criticalCount ? 'border-rose-200 bg-rose-50' : 'border-amber-200 bg-amber-50/70',
+              )}
+            >
               {warnings.map((w) => (
                 <li
                   key={w.id}
@@ -515,78 +561,86 @@ export function ReviewPhase({
         </div>
       )}
 
-      <div className="grid gap-5 min-[900px]:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] min-[900px]:items-start">
-        {/* 左：電子カルテへ貼る原稿（SOAP）が主役 */}
-        <div className="min-w-0 space-y-3">
-          {soapIsEmpty && (
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-[13px] leading-relaxed text-rose-900">
-              <p className="font-semibold">音声からSOAPを作成できませんでした</p>
-              <p className="mt-1">
-                診療の内容を取り出せなかったため、<strong>あえて空欄にしています</strong>。
-                定型文を自動で入れると、診察で確認していない所見がカルテに残るためです。
-              </p>
-              {onReprocess && !approved && (
-                <button
-                  type="button"
-                  className="mt-3 rounded-full bg-rose-700 px-4 py-1.5 text-[12px] font-semibold text-white hover:bg-rose-800 disabled:opacity-50"
-                  disabled={reprocessing}
-                  onClick={onReprocess}
-                >
-                  {reprocessing ? '作り直しています…' : '同じ録音でもう一度SOAPを作る'}
-                </button>
-              )}
-            </div>
-          )}
-
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] font-semibold tracking-[0.2em] text-clinic-ink-muted">
-              カルテ原稿
-            </span>
-            <span className="ml-2 text-[11px] text-clinic-ink-muted">定型文</span>
-            {templateTargets(visitType).map((target) => (
+      {/* SOAPを作れなかったときは、4つの空欄を見せるより、何をすればよいかを見せる */}
+      {soapIsEmpty && (
+        <div className="mb-5 rounded-3xl border border-clinic-line bg-white p-6 text-center shadow-card">
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+            <AlertTriangle className="h-6 w-6" />
+          </span>
+          <p className="mt-3 text-[15px] font-semibold text-clinic-ink">
+            音声からカルテ原稿を作れませんでした
+          </p>
+          <p className="mx-auto mt-1.5 max-w-md text-[13px] leading-relaxed text-clinic-ink-muted">
+            診察の内容を取り出せなかったため、<strong>あえて空欄にしています</strong>
+            。定型文を自動で入れると、診察で確認していない所見が残るためです。マイクに声が届いていたかを確認して、同じ録音から作り直すか、録り直してください。
+          </p>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            {onReprocess && !approved && (
               <button
-                key={target.label}
                 type="button"
-                className="rounded-full border border-clinic-line bg-white px-2.5 py-1 text-[11px] font-medium text-clinic-ink hover:border-clinic-ink disabled:opacity-40"
-                disabled={copied}
-                onClick={() => applyTemplate(target.fields)}
+                className="rounded-full bg-clinic-ink px-4 py-2 text-[12px] font-semibold text-clinic-cream hover:bg-clinic-ink-soft disabled:opacity-50"
+                disabled={reprocessing}
+                onClick={onReprocess}
               >
-                {target.label}
+                {reprocessing ? '作り直しています…' : '同じ録音でもう一度作る'}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => openDrawer('source')}
+              className="rounded-full border border-clinic-line bg-white px-4 py-2 text-[12px] font-semibold text-clinic-ink hover:bg-clinic-tint"
+            >
+              原文を見る
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* カルテ原稿：1枚の紙として、S・O・A・P を上から並べる */}
+      <article className="overflow-hidden rounded-3xl border border-clinic-line bg-white shadow-card">
+        <div className="flex flex-wrap items-center gap-2 border-b border-clinic-line px-5 py-3">
+          <span className="text-[11px] font-semibold tracking-[0.2em] text-clinic-ink-muted">
+            カルテ原稿
+          </span>
+          <div
+            role="group"
+            aria-label="貼り付け形式"
+            className="ml-auto inline-flex rounded-lg bg-clinic-tint p-0.5 text-[11px] font-semibold"
+          >
+            {(
+              [
+                ['ap-combined', 'S / O / A+P'],
+                ['separate', 'S / O / A / P'],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={copyStyle === value}
+                onClick={() => chooseCopyStyle(value)}
+                className={cn(
+                  'rounded-md px-2.5 py-1 transition-colors',
+                  copyStyle === value
+                    ? 'bg-white text-clinic-ink shadow-sm'
+                    : 'text-clinic-ink-muted hover:text-clinic-ink',
+                )}
+              >
+                {label}
               </button>
             ))}
-            <div className="ml-auto flex items-center gap-3">
-              {soapDirty && (
-                <button
-                  type="button"
-                  onClick={onSaveSoap}
-                  className="text-[11px] font-semibold text-clinic-ink underline decoration-clinic-line underline-offset-2 hover:decoration-clinic-ink"
-                >
-                  保存
-                </button>
-              )}
-              {onReprocess && !approved && !soapIsEmpty && (
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1 text-[11px] font-medium text-clinic-ink-muted hover:text-clinic-ink disabled:opacity-40"
-                  disabled={reprocessing}
-                  onClick={onReprocess}
-                >
-                  <RefreshCw className={cn('h-3 w-3', reprocessing && 'animate-spin')} />
-                  {reprocessing ? '作り直し中…' : '作り直す'}
-                </button>
-              )}
-            </div>
           </div>
+        </div>
 
-          {SOAP_FIELDS.map(({ key, label, name }) => (
-            <div
-              key={key}
-              className="rounded-2xl border border-clinic-line bg-white p-3.5 shadow-card transition-shadow focus-within:shadow-card-hover"
-            >
-              <div className="mb-2 flex items-center gap-2">
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-clinic-ink text-[13px] font-bold text-clinic-gold">
-                  {label}
-                </span>
+        {SOAP_FIELDS.map(({ key, label, name }) => (
+          <section
+            key={key}
+            className="group grid grid-cols-[2rem_minmax(0,1fr)] gap-3 border-b border-clinic-line px-5 py-3.5 last:border-b-0"
+          >
+            <span className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-clinic-ink text-[13px] font-bold text-clinic-gold">
+              {label}
+            </span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
                 <span className="text-[11px] font-semibold text-clinic-ink-muted">{name}</span>
                 {templatedFields[key] && (
                   <span className="rounded-full bg-clinic-tint px-2 py-0.5 text-[10px] font-semibold text-clinic-ink-muted">
@@ -600,7 +654,7 @@ export function ReviewPhase({
                 )}
                 <button
                   type="button"
-                  className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-clinic-ink-muted hover:bg-clinic-tint hover:text-clinic-ink"
+                  className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-clinic-ink-muted opacity-60 transition-opacity hover:bg-clinic-tint hover:text-clinic-ink group-hover:opacity-100 focus:opacity-100"
                   onClick={() => void copyField(label, soap[key])}
                 >
                   {copiedField === label ? (
@@ -615,36 +669,83 @@ export function ReviewPhase({
                 value={soap[key]}
                 onChange={(v) => changeSoapField(key, v)}
                 className={cn(
-                  'w-full resize-none overflow-hidden rounded-xl bg-clinic-tint px-3 py-2.5 text-[13px] leading-relaxed text-clinic-ink outline-none focus:ring-2 focus:ring-clinic-ink/15',
+                  '-mx-2 mt-1 block w-[calc(100%+1rem)] resize-none overflow-hidden rounded-xl bg-transparent px-2 py-1.5 text-[14px] leading-relaxed text-clinic-ink outline-none transition-colors hover:bg-clinic-tint/60 focus:bg-clinic-tint focus:ring-2 focus:ring-clinic-ink/10',
                   templatedFields[key] && 'text-clinic-ink-muted',
                 )}
               />
             </div>
+          </section>
+        ))}
+
+        <div className="flex flex-wrap items-center gap-1.5 border-t border-clinic-line bg-clinic-paper/60 px-5 py-2.5">
+          <span className="text-[11px] text-clinic-ink-muted">定型文</span>
+          {templateTargets(visitType).map((target) => (
+            <button
+              key={target.label}
+              type="button"
+              className="rounded-full border border-clinic-line bg-white px-2.5 py-1 text-[11px] font-medium text-clinic-ink hover:border-clinic-ink disabled:opacity-40"
+              disabled={copied}
+              onClick={() => applyTemplate(target.fields)}
+            >
+              {target.label}
+            </button>
           ))}
-
-          {visitType === 'CHECKUP' ? (
-            <p className="text-[11px] leading-relaxed text-clinic-ink-muted">
-              健診定型: O に身体所見・CXR・ECG を含みます。根拠のない A/P は空のままにしてください。
-            </p>
-          ) : null}
-
-          {/* 「電子カルテへコピー」で、実際に貼られる文字。貼る前に目で確かめられる */}
-          <div className="rounded-2xl border border-dashed border-clinic-line bg-white/70 px-3.5 py-3">
-            <p className="text-[10px] font-semibold tracking-[0.18em] text-clinic-ink-muted">
-              貼り付けられる内容
-            </p>
-            <pre className="mt-1.5 whitespace-pre-wrap font-sans text-[12px] leading-relaxed text-clinic-ink">
-              {pasteText || '（まだ内容がありません）'}
-            </pre>
+          <div className="ml-auto flex items-center gap-3">
+            {soapDirty && (
+              <button
+                type="button"
+                onClick={onSaveSoap}
+                className="text-[11px] font-semibold text-clinic-ink underline decoration-clinic-line underline-offset-2 hover:decoration-clinic-ink"
+              >
+                保存
+              </button>
+            )}
+            {onReprocess && !approved && !soapIsEmpty && (
+              <button
+                type="button"
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-clinic-ink-muted hover:text-clinic-ink disabled:opacity-40"
+                disabled={reprocessing}
+                onClick={onReprocess}
+              >
+                <RefreshCw className={cn('h-3 w-3', reprocessing && 'animate-spin')} />
+                {reprocessing ? '作り直し中…' : '作り直す'}
+              </button>
+            )}
           </div>
         </div>
+      </article>
 
-        {/* 右：原文・書類・その他（使う頻度の順） */}
-        <div className="min-w-0 space-y-3 min-[900px]:sticky min-[900px]:top-24">
-          <div
-            role="tablist"
-            className="no-print flex gap-1 rounded-2xl border border-clinic-line bg-white p-1"
-          >
+      {visitType === 'CHECKUP' ? (
+        <p className="mt-3 text-[11px] leading-relaxed text-clinic-ink-muted">
+          健診定型: O に身体所見・CXR・ECG を含みます。根拠のない A/P は空のままにしてください。
+        </p>
+      ) : null}
+
+      {/* 貼る前に、実際に貼られる文字を確かめる */}
+      <details className="no-print group/preview mt-4 rounded-2xl border border-dashed border-clinic-line bg-white/70 px-4 py-2.5">
+        <summary className="cursor-pointer list-none text-[11px] font-semibold tracking-[0.18em] text-clinic-ink-muted">
+          貼り付けられる内容
+          <span className="ml-2 font-normal tracking-normal text-clinic-ink-muted/70">
+            （開いて確認）
+          </span>
+        </summary>
+        <pre className="mt-2 whitespace-pre-wrap font-sans text-[12px] leading-relaxed text-clinic-ink">
+          {pasteText || '（まだ内容がありません）'}
+        </pre>
+      </details>
+
+      {/* 横のパネル：原文・書類・その他。使うときだけ開く */}
+      {mounted &&
+        createPortal(
+      <aside
+        className={cn(
+          'no-print fixed inset-y-0 right-0 z-40 flex w-full max-w-[460px] flex-col border-l border-clinic-line bg-clinic-paper shadow-[-24px_0_48px_-24px_rgba(12,47,44,0.35)] transition-transform duration-200 [transition-property:transform,visibility]',
+          drawerOpen ? 'translate-x-0' : 'invisible pointer-events-none translate-x-full',
+        )}
+        aria-hidden={!drawerOpen}
+      >
+        <div className="flex items-center gap-2 border-b border-clinic-line px-4 py-3">
+          <div role="tablist" className="flex flex-1 gap-1 rounded-2xl bg-clinic-tint p-1">
             {tabs.map(({ id, label, icon: Icon, count }) => (
               <button
                 key={id}
@@ -656,7 +757,7 @@ export function ReviewPhase({
                   'flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-2 py-2 text-[12px] font-semibold transition-colors',
                   tab === id
                     ? 'bg-clinic-ink text-clinic-cream'
-                    : 'text-clinic-ink-muted hover:bg-clinic-tint hover:text-clinic-ink',
+                    : 'text-clinic-ink-muted hover:bg-white hover:text-clinic-ink',
                 )}
               >
                 <Icon className="h-3.5 w-3.5" />
@@ -665,7 +766,7 @@ export function ReviewPhase({
                   <span
                     className={cn(
                       'rounded-full px-1.5 text-[10px]',
-                      tab === id ? 'bg-white/15' : 'bg-clinic-tint',
+                      tab === id ? 'bg-white/15' : 'bg-white',
                     )}
                   >
                     {count}
@@ -674,11 +775,21 @@ export function ReviewPhase({
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(false)}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-clinic-ink-muted hover:bg-clinic-tint hover:text-clinic-ink"
+            aria-label="閉じる"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
 
-          {/* 原文（診察で言ったことと、SOAPを見比べる） */}
+        <div className="flex-1 space-y-3 overflow-y-auto p-4">
+          {/* 原文（診察で言ったことと、原稿を見比べる） */}
           <div className={cn('space-y-3', tab !== 'source' && 'hidden')}>
             <div className="rounded-2xl border border-clinic-line bg-white p-3">
-              <ul className="max-h-[56vh] space-y-2 overflow-y-auto pr-1">
+              <ul className="max-h-[64vh] space-y-2 overflow-y-auto pr-1">
                 {transcript.length === 0 && (
                   <li className="px-1 py-6 text-center text-[12px] text-clinic-ink-muted">
                     文字起こしはまだありません
@@ -852,7 +963,9 @@ export function ReviewPhase({
             )}
           </div>
         </div>
-      </div>
+      </aside>,
+        document.body,
+      )}
 
       <SubkarteCommandBar consultationId={consultationId} onResult={handleSubkarteResult} />
     </div>

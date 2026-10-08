@@ -10,7 +10,7 @@ import { RecordingPhase } from '@/components/consultation/recording-phase';
 import { ProcessingPhase } from '@/components/consultation/processing-phase';
 import { ErrorPhase } from '@/components/consultation/error-phase';
 import { ReviewPhase } from '@/components/consultation/review-phase';
-import { formatSoapForChartCopy, type VisitType } from '@/lib/soap-visit';
+import { formatSoapForChartCopy, type CopyStyle, type VisitType } from '@/lib/soap-visit';
 
 type Soap = { subjective: string; objective: string; assessment: string; plan: string };
 type Warning = { id: string; message: string; severity: string };
@@ -275,8 +275,8 @@ export function ConsultationWorkflow({
    *
    * 以前は「確認済みにする」を押さないとコピーできず、直した分の保存も別のボタンだった。
    */
-  async function handleCopySoap() {
-    const text = formatSoapForChartCopy(soap, visitType);
+  async function handleCopySoap(style?: CopyStyle) {
+    const text = formatSoapForChartCopy(soap, visitType, style);
     try {
       await navigator.clipboard.writeText(text);
     } catch {

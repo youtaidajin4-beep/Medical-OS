@@ -54,11 +54,24 @@ export function formatRoutineApCombined(assessment: string, plan: string): strin
   return `A/P：${aPart}${p}`;
 }
 
+/**
+ * 電子カルテへ貼るときの形。
+ *
+ * - `ap-combined`：S / O / A/P（AとPを1行にまとめる）。通常診察の既定。CLINICSの診察録はこの並びで貼っている
+ * - `separate`：S / O / A / P を別の行に。AとPを別の欄へ入れる医院向け。健診の既定
+ */
+export type CopyStyle = 'ap-combined' | 'separate';
+
+export function defaultCopyStyle(visitType: VisitType): CopyStyle {
+  return visitType === 'ROUTINE' ? 'ap-combined' : 'separate';
+}
+
 export function formatSoapForChartCopy(
   soap: { subjective: string; objective: string; assessment: string; plan: string },
   visitType: VisitType = 'ROUTINE',
+  style: CopyStyle = defaultCopyStyle(visitType),
 ): string {
-  if (visitType === 'ROUTINE') {
+  if (style === 'ap-combined') {
     const ap = formatRoutineApCombined(soap.assessment, soap.plan);
     return [`S：${soap.subjective}`, `O：${soap.objective}`, ap].filter(Boolean).join('\n');
   }
