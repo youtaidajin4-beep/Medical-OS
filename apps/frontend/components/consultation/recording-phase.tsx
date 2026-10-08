@@ -137,49 +137,99 @@ function WaveBars({
 }
 
 /**
- * 診察中に流れる書き起こし。
+ * 診察中に流れる書き起こし（右の白い欄）。
  *
- * 声の切れ目ごとに1行ずつ足される（話し終えて数秒後に文字になる）。診察のあとに録音全体から
- * 作り直すので、ここは「いま、聞き取れているか」を見るための下書き。語の取り違えがあっても
- * 最終の原稿では直る。見てほしいのは、**患者さんの声まで文字になっているか**。
+ * 声の切れ目ごとに1行ずつ足される（話し終えて数秒後に文字になる）。左が音声、右が文字。
+ * ここで見てほしいのは、**患者さんの声まで文字になっているか**。語の取り違えは、
+ * 診察後の画面で直せる。診察を終えたとき、この文字からカルテ原稿を作る。
  */
-function LiveTranscript({ lines, recording }: { lines: LiveLine[]; recording: boolean }) {
+const SPEAKER_CHIP: Record<string, { label: string; className: string }> = {
+  physician: { label: '医師', className: 'bg-[#0c2f2c] text-[#e8c98a]' },
+  patient: { label: '患者', className: 'bg-[#e8c98a]/40 text-[#5a4410]' },
+  other: { label: 'その他', className: 'bg-slate-200 text-slate-600' },
+};
+
+function LiveTranscriptPanel({ lines, recording }: { lines: LiveLine[]; recording: boolean }) {
   const endRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     endRef.current?.scrollIntoView?.({ block: 'end', behavior: 'smooth' });
   }, [lines]);
+  const chars = lines.reduce((n, l) => n + l.text.length, 0);
 
   return (
-    <div className="mt-3 w-full rounded-2xl border border-white/10 bg-black/15">
-      <div className="flex items-center gap-2 border-b border-white/10 px-4 py-2 text-[11px] font-semibold tracking-[0.18em] text-[#9fc0b9]">
+    <section
+      aria-label="リアルタイム書き起こし"
+      className="flex min-h-[22rem] flex-col overflow-hidden rounded-[2rem] border border-clinic-line bg-white shadow-card min-[1024px]:h-[calc(100dvh-8.5rem)] min-[1024px]:min-h-[30rem]"
+    >
+      <div className="flex items-center gap-2.5 border-b border-clinic-line px-6 py-4">
         <span
           className={cn(
-            'h-1.5 w-1.5 rounded-full',
-            recording ? 'animate-pulse bg-emerald-400' : 'bg-amber-300',
+            'h-2 w-2 rounded-full',
+            recording ? 'animate-pulse bg-emerald-500' : 'bg-amber-400',
           )}
         />
-        リアルタイム書き起こし
+        <h2 className="text-[13px] font-semibold tracking-[0.12em] text-clinic-ink">
+          リアルタイム書き起こし
+        </h2>
+        <span className="ml-auto text-[11px] text-clinic-ink-muted">
+          {recording ? '聞き取り中' : '一時停止中'}
+          {chars > 0 ? ` · ${chars}字` : ''}
+        </span>
       </div>
-      <div className="max-h-52 overflow-y-auto px-4 py-3 text-[13px] leading-relaxed text-[#e9f1ee]">
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
         {lines.length === 0 ? (
-          <p className="py-3 text-center text-xs text-[#9fc0b9]">
-            話し始めると、ここに文字が流れます（話し終えて数秒後に出ます）
-          </p>
+          <div className="flex h-full min-h-[10rem] flex-col items-center justify-center text-center">
+            <p className="text-sm text-clinic-ink-muted">話し始めると、ここに文字が流れます</p>
+            <p className="mt-1 text-xs text-clinic-ink-muted/70">話し終えて数秒後に出ます</p>
+          </div>
         ) : (
-          <ul className="space-y-1.5">
+          <ul className="space-y-3.5">
             {lines.map((line, i) => (
               <li
                 key={line.id}
-                className={cn(i < lines.length - 3 && 'opacity-60', line.pending && 'animate-pulse')}
+                className={cn(
+                  'text-[15px] leading-relaxed text-clinic-ink',
+                  i < lines.length - 4 && 'opacity-70',
+                )}
               >
-                {line.pending ? <span className="text-[#9fc0b9]">聞き取り中…</span> : line.text}
+                {line.pending ? (
+                  <span className="animate-pulse text-sm text-clinic-ink-muted">聞き取り中…</span>
+                ) : line.parts && line.parts.length > 0 ? (
+                  <ul className="space-y-1.5">
+                    {line.parts.map((part, k) => {
+                      const chip = SPEAKER_CHIP[part.speaker];
+                      return (
+                        <li key={k} className="flex items-baseline gap-2.5">
+                          {chip ? (
+                            <span
+                              className={cn(
+                                'inline-flex w-9 shrink-0 justify-center rounded-md px-1 py-0.5 text-[10px] font-semibold',
+                                chip.className,
+                              )}
+                            >
+                              {chip.label}
+                            </span>
+                          ) : (
+                            <span className="w-9 shrink-0" />
+                          )}
+                          <span>{part.text}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  line.text
+                )}
               </li>
             ))}
           </ul>
         )}
         <div ref={endRef} />
       </div>
-    </div>
+      <p className="border-t border-clinic-line bg-clinic-paper/70 px-6 py-3 text-[11px] leading-relaxed text-clinic-ink-muted">
+        診察を終えると、この文字からカルテ原稿を作ります。語の取り違えは、診察後の画面で直せます。
+      </p>
+    </section>
   );
 }
 
@@ -241,10 +291,18 @@ export function RecordingPhase({
     liveVerdict === 'ok' ? '声が拾えています' : liveVerdict === 'faint' ? '声が小さめです' : '音が入っていません';
 
   return (
+    <div
+      className={cn(
+        'mx-auto',
+        live
+          ? 'grid max-w-6xl gap-5 min-[1024px]:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] min-[1024px]:items-start'
+          : 'max-w-xl',
+      )}
+    >
     <section
       className={cn(
         'flex flex-col items-center justify-center rounded-[2rem] px-6 py-10 text-[#f3efe4] shadow-[0_40px_80px_-40px_rgba(12,47,44,0.8)]',
-        compact ? 'min-h-[62dvh]' : 'min-h-[72dvh]',
+        live ? 'min-[1024px]:h-[calc(100dvh-8.5rem)] min-[1024px]:min-h-[30rem]' : compact ? 'min-h-[62dvh]' : 'min-h-[72dvh]',
         'bg-[radial-gradient(circle_at_50%_20%,#1a5c55,transparent_55%),linear-gradient(180deg,#0c2f2c,#071c1a)]',
       )}
     >
@@ -304,7 +362,6 @@ export function RecordingPhase({
             </div>
           </div>
         )}
-        {live && <LiveTranscript lines={liveLines} recording={state === 'recording'} />}
         {live && liveVerdict !== 'ok' && (
           <Alert variant="error" className="mt-3 w-full">
             {micVerdictMessage(liveVerdict)}
@@ -493,5 +550,7 @@ export function RecordingPhase({
         </div>
       </div>
     </section>
+    {live && <LiveTranscriptPanel lines={liveLines} recording={state === 'recording'} />}
+    </div>
   );
 }
