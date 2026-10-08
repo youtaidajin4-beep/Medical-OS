@@ -150,6 +150,7 @@ export function SubkarteCommandBar({
 
   return (
     <div
+      data-subkarte-bar
       className={cn(
         'no-print sticky bottom-0 z-30 -mx-4 border-t border-clinic-line bg-clinic-paper/95 px-4 pb-3 pt-2 backdrop-blur min-[480px]:-mx-6 min-[480px]:px-6',
         className,

@@ -374,8 +374,23 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify({ segments }),
     }),
+  /**
+   * SOAPの保存。送るのは4欄だけ。
+   *
+   * 画面の SOAP は、サーバーから受けた行（id・consultationId・version・approved など）をそのまま
+   * 持っている。それを丸ごと送ると、サーバーは「許していない項目がある」として 400 で断る
+   * （main.ts の forbidNonWhitelisted）。直した内容が保存されず、編集履歴も溜まらなかった。
+   */
   updateSoap: (id: string, soap: { subjective: string; objective: string; assessment: string; plan: string }) =>
-    request(`/consultations/${id}/soap`, { method: 'PATCH', body: JSON.stringify(soap) }),
+    request(`/consultations/${id}/soap`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        subjective: soap.subjective,
+        objective: soap.objective,
+        assessment: soap.assessment,
+        plan: soap.plan,
+      }),
+    }),
   updateNote: (id: string, content: string) =>
     request(`/consultations/${id}/clinical-note`, { method: 'PATCH', body: JSON.stringify({ content }) }),
   approve: (id: string) => request(`/consultations/${id}/approve`, { method: 'POST' }),

@@ -62,6 +62,15 @@ export function ConsultationWorkflow({
     }>
   >([]);
   const [approved, setApproved] = useState(false);
+  /** 電子カルテへコピーした後か（コピーすると診察は「完了」になる） */
+  const [copied, setCopied] = useState(false);
+  /** サーバーに保存済みのSOAP。画面の編集との差で「未保存」を出し、コピー時に先に保存する */
+  const [savedSoap, setSavedSoap] = useState<Soap>({
+    subjective: '',
+    objective: '',
+    assessment: '',
+    plan: '',
+  });
   const [consentGiven, setConsentGiven] = useState(false);
   const [generatingDocs, setGeneratingDocs] = useState(false);
   const [savingTranscript, setSavingTranscript] = useState(false);
@@ -177,6 +186,7 @@ export function ConsultationWorkflow({
         }
         if (data.soapDocuments?.[0]) {
           setSoap(data.soapDocuments[0]);
+          setSavedSoap(data.soapDocuments[0]);
           setDocumentInput((prev) => ({ ...prev, soap: data.soapDocuments![0]! }));
         }
         if (data.clinicalNotes?.[0]) setNote(data.clinicalNotes[0].content);
@@ -185,6 +195,7 @@ export function ConsultationWorkflow({
         if (data.revisions) setRevisions(data.revisions);
         setPhase('review');
         setApproved(data.status === 'APPROVED' || data.status === 'COMPLETED');
+        setCopied(data.status === 'COMPLETED');
         return;
       }
 
@@ -235,23 +246,80 @@ export function ConsultationWorkflow({
     setApproved(true);
   }
 
+  /** 通知を出して、少しして消す（同じ文面をもう一度出しても、また出る） */
+  function flashMsg(message: string) {
+    setCopyMsg(message);
+    setTimeout(() => setCopyMsg(''), 3500);
+  }
+
+  const soapDirty = (['subjective', 'objective', 'assessment', 'plan'] as const).some(
+    (key) => soap[key] !== savedSoap[key],
+  );
+
+  /**
+   * 「電子カルテへコピー」。診察後の画面で一番よく押す操作を、1回にまとめた。
+   *
+   * 1. クリップボードへ書く（ブラウザは、押した直後でないと書かせてくれないので一番先）
+   * 2. 画面で直した分が未保存なら保存する（保存せずに確認すると、直す前の文章が確認済みになる）
+   * 3. まだなら確認済みにする
+   * 4. コピーした記録を付ける（診察ログに「コピー済み」が出る）
+   *
+   * 以前は「確認済みにする」を押さないとコピーできず、直した分の保存も別のボタンだった。
+   */
   async function handleCopySoap() {
-    if (!approved) return;
     const text = formatSoapForChartCopy(soap, visitType);
-    await navigator.clipboard.writeText(text);
-    await api.copied(id);
-    setCopyMsg('SOAP をコピーしました — CLINICS に貼り付けてください');
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      flashMsg('コピーできませんでした。ブラウザのクリップボードの許可を確認してください');
+      return;
+    }
+    try {
+      // 保存すると、サーバーでは確認済みが外れて「確認中」に戻る。直したときは確認し直す
+      const needsApprove = !approved || soapDirty;
+      if (soapDirty) {
+        await api.updateSoap(id, soap);
+        setSavedSoap(soap);
+        setDocumentInput((prev) => ({ ...prev, soap }));
+      }
+      if (needsApprove) {
+        await api.approve(id);
+        setApproved(true);
+      }
+      await api.copied(id);
+      setCopied(true);
+      flashMsg('カルテへコピーしました — CLINICS に貼り付けてください');
+    } catch (error) {
+      flashMsg(
+        error instanceof Error
+          ? `コピーはできましたが、記録に失敗しました：${error.message}`
+          : 'コピーはできましたが、記録に失敗しました',
+      );
+    }
   }
 
   async function handleCopyNote() {
-    if (!approved) return;
-    await navigator.clipboard.writeText(note);
-    await api.copied(id);
-    setCopyMsg('通常診療記録をコピーしました — CLINICS に貼り付けてください');
+    try {
+      await navigator.clipboard.writeText(note);
+    } catch {
+      flashMsg('コピーできませんでした。ブラウザのクリップボードの許可を確認してください');
+      return;
+    }
+    if (approved) await api.copied(id);
+    flashMsg('通常診療記録をコピーしました — CLINICS に貼り付けてください');
   }
 
   async function saveSoap() {
-    await api.updateSoap(id, soap);
+    try {
+      await api.updateSoap(id, soap);
+    } catch (error) {
+      // 保存に失敗したのに何も出ないと、直した内容が残ったと思い込む
+      flashMsg(
+        error instanceof Error ? `SOAP を保存できませんでした：${error.message}` : 'SOAP を保存できませんでした',
+      );
+      return;
+    }
+    setSavedSoap(soap);
     setSaveMsg('SOAP を保存しました');
     setDocumentInput((prev) => ({ ...prev, soap }));
     await loadConsultation();
@@ -442,6 +510,8 @@ export function ConsultationWorkflow({
       transcript={transcript}
       revisions={revisions}
       approved={approved}
+      copied={copied}
+      soapDirty={soapDirty}
       copyMsg={copyMsg}
       saveMsg={saveMsg}
       onSoapChange={setSoap}
