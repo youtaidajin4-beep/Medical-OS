@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   AlertTriangle,
@@ -78,6 +78,39 @@ const SOAP_FIELDS = [
   { key: 'assessment', label: 'A', name: '評価' },
   { key: 'plan', label: 'P', name: '計画' },
 ] as const;
+
+/**
+ * 中身に合わせて高さが伸びる入力欄。
+ *
+ * 3行で固定すると、長いSOAPは途中で切れて、先生が下まで読み切らないままコピーしてしまう。
+ * 全文が見える高さにしておく。
+ */
+function AutoTextarea({
+  value,
+  onChange,
+  className,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  className?: string;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight + 2}px`;
+  }, [value]);
+  return (
+    <textarea
+      ref={ref}
+      rows={2}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={className}
+    />
+  );
+}
 
 function Section({
   title,
@@ -578,12 +611,11 @@ export function ReviewPhase({
                   {copiedField === label ? 'コピー済み' : 'この欄だけコピー'}
                 </button>
               </div>
-              <textarea
-                rows={3}
+              <AutoTextarea
                 value={soap[key]}
-                onChange={(e) => changeSoapField(key, e.target.value)}
+                onChange={(v) => changeSoapField(key, v)}
                 className={cn(
-                  'w-full resize-y rounded-xl bg-clinic-tint px-3 py-2.5 text-[13px] leading-relaxed text-clinic-ink outline-none focus:ring-2 focus:ring-clinic-ink/15',
+                  'w-full resize-none overflow-hidden rounded-xl bg-clinic-tint px-3 py-2.5 text-[13px] leading-relaxed text-clinic-ink outline-none focus:ring-2 focus:ring-clinic-ink/15',
                   templatedFields[key] && 'text-clinic-ink-muted',
                 )}
               />
@@ -621,7 +653,7 @@ export function ReviewPhase({
                 aria-selected={tab === id}
                 onClick={() => setTab(id)}
                 className={cn(
-                  'flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-[12px] font-semibold transition-colors',
+                  'flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-2 py-2 text-[12px] font-semibold transition-colors',
                   tab === id
                     ? 'bg-clinic-ink text-clinic-cream'
                     : 'text-clinic-ink-muted hover:bg-clinic-tint hover:text-clinic-ink',

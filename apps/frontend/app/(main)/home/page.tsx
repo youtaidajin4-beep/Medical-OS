@@ -178,6 +178,12 @@ export default function HomePage() {
       if (questionnaireFile) {
         await api.uploadAttachment(consultation.id, questionnaireFile, 'questionnaire');
       }
+      // ここで確認した同意を、録音画面へ引き継ぐ（同じ確認を2回させない）
+      try {
+        sessionStorage.setItem(`consent:${consultation.id}`, '1');
+      } catch {
+        // 引き継げなくても、録音画面で改めて確認するだけ
+      }
       router.push(`/consultation/${consultation.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : '診療を開始できませんでした');

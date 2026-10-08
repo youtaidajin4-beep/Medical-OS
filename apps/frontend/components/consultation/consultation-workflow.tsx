@@ -219,6 +219,15 @@ export function ConsultationWorkflow({
     }
   }, [id, router]);
 
+  // 診療ホームで確認した患者の同意は、録音画面へ引き継ぐ
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(`consent:${id}`) === '1') setConsentGiven(true);
+    } catch {
+      // 読めなければ、録音画面で確認してもらう
+    }
+  }, [id]);
+
   useEffect(() => {
     if (!getToken()) {
       router.replace('/login');

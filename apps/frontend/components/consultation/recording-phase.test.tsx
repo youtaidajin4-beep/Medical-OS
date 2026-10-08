@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { RecordingPhase, type MicCheck } from './recording-phase';
 
 jest.mock('@/lib/api-client', () => ({
@@ -88,3 +88,31 @@ describe('RecordingPhase のマイク確認', () => {
     expect(screen.queryByText('録音前にマイクを確認する')).not.toBeInTheDocument();
   });
 });
+
+describe('RecordingPhase の操作', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('録音中は「診察を終了して要約」と入力の波形が出る', () => {
+    render(<RecordingPhase {...baseProps} state="recording" liveLevel={0.4} liveVerdict="ok" />);
+    expect(screen.getByRole('button', { name: /診察を終了して要約/ })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '入力の波形' })).toBeInTheDocument();
+    expect(screen.getByText(/声が拾えています/)).toBeInTheDocument();
+  });
+
+  it('Ctrl+Enter で、録音中なら診察を終了する', () => {
+    render(<RecordingPhase {...baseProps} state="recording" liveLevel={0.4} />);
+    fireEvent.keyDown(window, { key: 'Enter', ctrlKey: true });
+    expect(baseProps.onStop).toHaveBeenCalledTimes(1);
+  });
+
+  it('Ctrl+Enter で、同意済みなら録音を始める。同意がなければ始めない', () => {
+    const { rerender } = render(<RecordingPhase {...baseProps} state="idle" consentGiven={false} />);
+    fireEvent.keyDown(window, { key: 'Enter', ctrlKey: true });
+    expect(baseProps.onStart).not.toHaveBeenCalled();
+
+    rerender(<RecordingPhase {...baseProps} state="idle" consentGiven />);
+    fireEvent.keyDown(window, { key: 'Enter', metaKey: true });
+    expect(baseProps.onStart).toHaveBeenCalledTimes(1);
+  });
+});
+
