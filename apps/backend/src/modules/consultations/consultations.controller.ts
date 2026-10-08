@@ -7,7 +7,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsBoolean, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
 import { VisitType } from '@prisma/client';
 import { ConsultationsService } from './consultations.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -26,6 +26,16 @@ class CreateConsultationDto {
   @IsOptional()
   @IsEnum(VisitType)
   visitType?: VisitType;
+}
+
+class StopRecordingDto {
+  /**
+   * 診察中に文字にした分（リアルタイム書き起こし）が全部そろっている。
+   * true なら、録音全体の文字起こしを待たずに、その文字からSOAPを作る。
+   */
+  @IsOptional()
+  @IsBoolean()
+  fromLive?: boolean;
 }
 
 class UpdateSoapDto {
@@ -70,8 +80,14 @@ export class ConsultationsController {
   }
 
   @Post(':id/recording/stop')
-  stopRecording(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return this.consultationsService.stopRecording(id, user.sub);
+  stopRecording(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Body() dto: StopRecordingDto,
+  ) {
+    return this.consultationsService.stopRecording(id, user.sub, {
+      fromLive: dto?.fromLive === true,
+    });
   }
 
   @Post(':id/reprocess')

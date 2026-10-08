@@ -19,6 +19,7 @@ import {
   type MicVerdict,
 } from '@/lib/audio-input';
 import { createLevelMeter, type LevelMeter } from '@/lib/level-meter';
+import { startLiveTap, type LiveSegment, type LiveTap } from '@/lib/live-pcm';
 import {
   boostedLevel,
   createBoostedStream,
@@ -28,6 +29,21 @@ import {
 } from '@/lib/audio-gain';
 
 type RecordingState = 'idle' | 'recording' | 'paused' | 'stopped';
+
+/** 診察中に流れる書き起こしの1行。pending は、音声を送って文字になるのを待っている行 */
+export type LiveLine = {
+  id: string;
+  startMs: number;
+  text: string;
+  pending: boolean;
+  /** 文ごとの話者（判別できたとき）。画面で「医師」「患者」を付ける */
+  parts?: Array<{ speaker: 'physician' | 'patient' | 'other' | 'unknown'; text: string }>;
+};
+
+/** この文字数に満たないときは、診察中の文字だけでSOAPを作らず、従来どおり録音全体から作る */
+const MIN_LIVE_CHARS = 30;
+/** 診察を終えるとき、最後の区間が文字になるのを待つ上限 */
+const LIVE_SETTLE_MS = 6000;
 const MAX_RECORDING_SECONDS = 60 * 60;
 const CHUNK_MS = 3000;
 
@@ -50,6 +66,13 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
   /** 直近2秒の判定。silent のまま録り続けると、あとで白紙のSOAPが出てくる */
   const [micVerdict, setMicVerdict] = useState<MicVerdict>('ok');
   const [micLabel, setMicLabel] = useState<string | null>(null);
+  const [liveLines, setLiveLines] = useState<LiveLine[]>([]);
+  const liveTap = useRef<LiveTap | null>(null);
+  /** 診察中の文字の送受信の集計。全部そろっているかの判断に使う */
+  const liveStats = useRef({ failed: 0, chars: 0 });
+  const liveInflight = useRef<Promise<void>[]>([]);
+  const secondsRef = useRef(0);
+  secondsRef.current = seconds;
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const meter = useRef<LevelMeter | null>(null);
   const meterPoll = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -129,6 +152,46 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
     [consultationId, refreshPendingCount],
   );
 
+  /**
+   * 声の切れ目ごとの音声を送って、文字になった行を画面へ足す。
+   *
+   * これは「流れて見える下書き」。失敗しても録音には影響しないし、診察後の文字起こしは
+   * 録音全体から作り直す。だから失敗はその行を静かに消すだけにする。
+   */
+  const sendLiveSegment = useCallback(
+    (segment: LiveSegment) => {
+      const id = `live-${Math.round(segment.startMs)}`;
+      setLiveLines((prev) =>
+        [...prev.filter((l) => l.id !== id), { id, startMs: segment.startMs, text: '', pending: true }].sort(
+          (a, b) => a.startMs - b.startMs,
+        ),
+      );
+      const task = api
+        .liveTranscribe(consultationId, segment.wav, segment.startMs, segment.endMs)
+        .then((res) => {
+          if (res.segment) liveStats.current.chars += res.segment.text.length;
+          setLiveLines((prev) =>
+            prev.flatMap((l) =>
+              l.id !== id
+                ? [l]
+                : res.segment
+                  ? [{ ...l, text: res.segment.text, parts: res.segment.parts, pending: false }]
+                  : [],
+            ),
+          );
+        })
+        .catch(() => {
+          liveStats.current.failed += 1;
+          setLiveLines((prev) => prev.filter((l) => l.id !== id));
+        });
+      liveInflight.current.push(task);
+      void task.finally(() => {
+        liveInflight.current = liveInflight.current.filter((p) => p !== task);
+      });
+    },
+    [consultationId],
+  );
+
   const uploadFinalBlob = useCallback(async () => {
     const blobs = localBlobs.current;
     if (!blobs.length) return;
@@ -156,6 +219,9 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
         return;
       }
       recorder.onstop = async () => {
+        // 残っている声を最後の区間として送って、止める
+        liveTap.current?.stop();
+        liveTap.current = null;
         if (timer.current) clearInterval(timer.current);
         stopMeter();
         recorder.stream.getTracks().forEach((t) => t.stop());
@@ -165,14 +231,27 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
         rawStream.current?.getTracks().forEach((t) => t.stop());
         rawStream.current = null;
         setState('stopped');
+        // 診察中の文字が全部そろうのを、少しだけ待つ（最後の区間は、止めた直後に送られる）
+        const settled = await Promise.race([
+          Promise.allSettled(liveInflight.current).then(() => true),
+          new Promise<boolean>((r) => setTimeout(() => r(false), LIVE_SETTLE_MS)),
+        ]);
+        const fromLive =
+          settled && liveStats.current.failed === 0 && liveStats.current.chars >= MIN_LIVE_CHARS;
         await Promise.allSettled(inFlightUploads.current);
         await flushPendingChunks(true);
-        try {
-          await uploadFinalBlob();
-        } catch {
-          // final blob upload failed; pipeline may still use chunks
+        if (fromLive) {
+          // 診察中の文字からSOAPを作る。録音の保存は、待たずに裏で行う
+          void uploadFinalBlob().catch(() => undefined);
+          await api.stopRecording(consultationId, { fromLive: true });
+        } else {
+          try {
+            await uploadFinalBlob();
+          } catch {
+            // final blob upload failed; pipeline may still use chunks
+          }
+          await api.stopRecording(consultationId);
         }
-        await api.stopRecording(consultationId);
         resolve();
       };
       if (recorder.state !== 'inactive') {
@@ -241,6 +320,15 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
     };
 
     recorder.start(CHUNK_MS);
+    // 録音とは別に、声の切れ目で区切った音声を送って、診察中に文字を流す
+    liveTap.current?.stop();
+    if (!options?.appendFromSequence) {
+      setLiveLines([]);
+      liveStats.current = { failed: 0, chars: 0 };
+    }
+    liveTap.current = startLiveTap(target, sendLiveSegment, {
+      offsetMs: options?.appendFromSequence ? secondsRef.current * 1000 : 0,
+    });
     // 続きを録るときは、サーバー側で既に RECORDING へ戻してある。
     // ここで startRecording を呼ぶと startedAt が今に戻り、前半の録音時間が消える
     if (!options?.appendFromSequence) {
@@ -259,9 +347,10 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
       });
     }, 1000);
     await flushPendingChunks(true);
-  }, [consultationId, deviceId, stopMeter, uploadChunk, flushPendingChunks]);
+  }, [consultationId, deviceId, stopMeter, uploadChunk, flushPendingChunks, sendLiveSegment]);
 
   const pause = useCallback(() => {
+    liveTap.current?.pause();
     mediaRecorder.current?.pause();
     setState('paused');
     if (timer.current) clearInterval(timer.current);
@@ -280,6 +369,7 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
   }, [consultationId, start]);
 
   const resume = useCallback(() => {
+    liveTap.current?.resume();
     mediaRecorder.current?.resume();
     setState('recording');
     timer.current = setInterval(() => {
@@ -303,6 +393,8 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
       if (timer.current) clearInterval(timer.current);
       if (retryTimer.current) clearInterval(retryTimer.current);
       stopMeter();
+      liveTap.current?.stop();
+      liveTap.current = null;
       mediaRecorder.current?.stream.getTracks().forEach((t) => t.stop());
     };
   }, [flushPendingChunks, refreshPendingCount, stopMeter]);
@@ -315,6 +407,7 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
     level,
     micVerdict,
     micLabel,
+    liveLines,
     start,
     startAppend,
     pause,

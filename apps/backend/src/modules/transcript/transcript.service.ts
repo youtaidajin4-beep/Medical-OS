@@ -6,6 +6,7 @@ import { STT_PROVIDER } from '../../providers/ai/stt.tokens';
 import { TranscriptNormalizer } from '../ai/transcript-normalizer';
 import { extractReplacementCandidates } from '../../providers/ai/transcript-diff.util';
 import { stripLoopedSegments } from '../../providers/ai/transcript-hallucination';
+import { mergeLiveRows } from '../ai/live-text';
 import { MedicalGlossaryReplacement } from '../../providers/ai/medical-glossary.types';
 import {
   formatSpeakerPrefixedTranscript,
@@ -110,6 +111,51 @@ export class TranscriptService {
       quality: {
         droppedLoopSegments: dropped.length,
         diarizationSpeakers,
+      },
+    };
+  }
+
+  /**
+   * 診察中に溜めた文（リアルタイム書き起こし）から、診察記録の文字起こしを作る。
+   *
+   * 録音全体の文字起こしを待たずに、SOAPの作成へ進めるための経路。同じ話者の文が続いたところは
+   * 1つの発話にまとめる。溜めた文（isFinal=false）は消さずに残す：診察の続きを録ったとき、
+   * 前半も含めて作り直せるように。
+   */
+  async finalizeFromLive(consultationId: string) {
+    const live = await this.prisma.transcriptSegment.findMany({
+      where: { consultationId, isFinal: false },
+      orderBy: { sequenceNumber: 'asc' },
+    });
+
+    const turns = mergeLiveRows(live);
+    const { kept, dropped } = stripLoopedSegments(turns);
+    const rows = kept.map((turn, i) => ({
+      consultationId,
+      sequenceNumber: i,
+      rawText: turn.text,
+      text: turn.text,
+      normalizedText: turn.text,
+      speaker: turn.speaker,
+      isFinal: true,
+      startMs: turn.startMs ?? i * 5000,
+      endMs: turn.endMs ?? (i + 1) * 5000,
+    }));
+
+    await this.prisma.$transaction([
+      this.prisma.transcriptSegment.deleteMany({ where: { consultationId, isFinal: true } }),
+      this.prisma.transcriptSegment.createMany({ data: rows }),
+    ]);
+
+    const labeled = new Set(
+      kept.map((t) => t.speaker).filter((s) => s !== SpeakerLabel.UNKNOWN),
+    ).size;
+    return {
+      segments: await this.getSegments(consultationId, { final: true }),
+      quality: {
+        droppedLoopSegments: dropped.length,
+        // 話者を判別できた種類の数。1つ以下なら「聞き分けられなかった」と医師へ伝わる
+        diarizationSpeakers: labeled,
       },
     };
   }

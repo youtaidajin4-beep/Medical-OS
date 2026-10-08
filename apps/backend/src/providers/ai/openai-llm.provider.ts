@@ -230,6 +230,29 @@ const TRANSCRIPT_CORRECTION_SYSTEM = `あなたは日本の内科クリニック
 
 出力（JSONのみ）: {"corrections":[{"line": 行番号, "text": "修正後の本文全体"}]}`;
 
+/**
+ * 文ごとの話者の判別。内容は変えず、ラベルだけを返させる。
+ *
+ * 診察室で1本のマイクに入った会話は、音のうえでは「誰が話したか」を分けられない
+ * （10/5・10/6の実診察は、患者の訴えが医師、医師の返事が患者に付いていた）。
+ * 会話の内容（質問・診察の指示・説明は医師、症状の訴え・返事は患者）からなら、短い文でも判別できる。
+ */
+const SPEAKER_LABEL_SYSTEM = `あなたは診察室の会話の文字起こしを整理するアシスタントです。
+対象の文それぞれが、誰の発言かを分類してください。
+
+- "D": 医師。質問、診察の指示（口を開けてください、背中を見ます）、検査・処方・方針の説明、病状の説明
+- "P": 患者。症状の訴え、質問への返事、生活や服薬の状況、医師への質問
+- "O": 医師でも患者でもない人。家族・付き添い・看護師・受付
+- "?": 内容からは判断できない
+
+ルール:
+- 文の内容は変えない。ラベルだけを返す
+- 「はい」「そうですね」のような相づちは、直前の流れから「誰が答えたか」を考える。医師の質問への返事は患者、患者の話への相づちは医師
+- 迷ったら "?"
+- ラベルの数は、対象の文の数と必ず同じにする
+
+出力（JSONのみ）: {"labels":["D","P",...]}`;
+
 export class OpenAiLlmProvider implements LlmProvider {
   readonly name = 'openai';
   private readonly apiKey: string;
@@ -272,6 +295,38 @@ export class OpenAiLlmProvider implements LlmProvider {
     } catch {
       // 校正できなくても診療は続く。辞書による補正は既に当たっている
       return '';
+    }
+  }
+
+  async labelSpeakers(
+    sentences: string[],
+    context: string[] = [],
+  ): Promise<Array<'physician' | 'patient' | 'other' | 'unknown'>> {
+    const unknown = sentences.map(() => 'unknown' as const);
+    if (sentences.length === 0) return [];
+    const numbered = sentences.map((sentence, i) => `${i + 1}: ${sentence}`).join('\n');
+    const flow = context.length ? `直前の流れ:\n${context.join('\n')}\n\n` : '';
+    try {
+      const result = await this.chatJsonWithModel(
+        this.model,
+        SPEAKER_LABEL_SYSTEM,
+        `${flow}対象の文（「番号: 本文」）:\n${numbered}`,
+        160,
+      );
+      const parsed = JSON.parse(result.content) as { labels?: unknown };
+      if (!Array.isArray(parsed.labels) || parsed.labels.length !== sentences.length) return unknown;
+      return parsed.labels.map((label) =>
+        label === 'D'
+          ? ('physician' as const)
+          : label === 'P'
+            ? ('patient' as const)
+            : label === 'O'
+              ? ('other' as const)
+              : ('unknown' as const),
+      );
+    } catch {
+      // 判別できなくても、文字は残す。話者が「不明」になるだけ
+      return unknown;
     }
   }
 

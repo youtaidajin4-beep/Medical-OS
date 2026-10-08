@@ -245,7 +245,7 @@ export class ConsultationsService {
     });
   }
 
-  async stopRecording(id: string, physicianId: string) {
+  async stopRecording(id: string, physicianId: string, options?: { fromLive?: boolean }) {
     await this.consultationAccess.assertPhysicianOwns(id, physicianId);
     const consultation = await this.prisma.consultation.update({
       where: { id },
@@ -254,9 +254,15 @@ export class ConsultationsService {
         endedAt: new Date(),
       },
     });
-    void this.aiPipeline.processConsultation(id).catch((error) => {
-      this.logger.error(`Async pipeline failed for consultation ${id}`, error);
-    });
+    void this.aiPipeline
+      // 診察中の文字からSOAPを作る速い経路。LIVE_FAST_PATH=off で、画面の指定を無視して
+      // 従来どおり録音全体から作る（実診察で取りこぼしが多いときの、すぐ効く止め方）
+      .processConsultation(id, {
+        fromLive: options?.fromLive === true && process.env.LIVE_FAST_PATH !== 'off',
+      })
+      .catch((error) => {
+        this.logger.error(`Async pipeline failed for consultation ${id}`, error);
+      });
     return consultation;
   }
 

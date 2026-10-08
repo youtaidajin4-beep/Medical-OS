@@ -127,6 +127,16 @@ export interface LlmProvider {
     system: string,
     user: string,
   ): Promise<Record<string, unknown>>;
+  /**
+   * 診察室の会話の文ごとに、医師・患者・その他を判別する（リアルタイム書き起こし用）。
+   *
+   * 文の内容は変えず、ラベルだけを返す。判別できない文・件数が合わないときは unknown。
+   * context は直前の流れ（「医師: …」「患者: …」の行）。
+   */
+  labelSpeakers?(
+    sentences: string[],
+    context?: string[],
+  ): Promise<Array<'physician' | 'patient' | 'other' | 'unknown'>>;
   /** Optional physician consult chat (legacy). Prefer subkarteChat. */
   consultChat?(
     system: string,

@@ -42,6 +42,16 @@ export interface SttProvider {
    * → 語彙つき 1.9秒「病名は高血圧症と2型糖尿病、あと労作時の胸痛の疑い」
    */
   transcribeDictation?(audio: Buffer, options?: DictationOptions): Promise<string>;
+  /**
+   * 診察中の会話の短い区間（リアルタイム書き起こし）。医師と患者の2人が話す音声を、話者分離なしで読む。
+   *
+   * 口述用のモデルは、1人の話し手を前提にしていて、2人の声が混じると片方の発話を落とす。
+   * 同じ診察音声を10秒ごとに区切って測ると（2026-10-09・基準は録音全体の文字起こし）:
+   *   口述用（gpt-4o-transcribe＋語彙）  再現率 61%（約4割を落とす）
+   *   小さいモデル（gpt-4o-mini-transcribe＋語彙）  再現率 84%・一致率 90%
+   * 会話にはこちらを使う。
+   */
+  transcribeConversation?(audio: Buffer, options?: DictationOptions): Promise<string>;
 }
 
 export class MockSttProvider implements SttProvider {

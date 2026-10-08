@@ -8,6 +8,7 @@ import { Alert } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import type { GainSetting } from '@/lib/audio-gain';
 import { api } from '@/lib/api-client';
+import type { LiveLine } from '@/hooks/use-recording';
 import { isOpenAiMode } from '@/lib/ai-status';
 import {
   micVerdictMessage,
@@ -37,6 +38,8 @@ type RecordingPhaseProps = {
   state: 'idle' | 'recording' | 'paused' | 'stopped';
   seconds: number;
   preview: string;
+  /** 診察中に流れる書き起こし（声の切れ目ごとに足される） */
+  liveLines?: LiveLine[];
   pendingChunks: number;
   limitReached: boolean;
   consentGiven: boolean;
@@ -133,11 +136,59 @@ function WaveBars({
   );
 }
 
+/**
+ * 診察中に流れる書き起こし。
+ *
+ * 声の切れ目ごとに1行ずつ足される（話し終えて数秒後に文字になる）。診察のあとに録音全体から
+ * 作り直すので、ここは「いま、聞き取れているか」を見るための下書き。語の取り違えがあっても
+ * 最終の原稿では直る。見てほしいのは、**患者さんの声まで文字になっているか**。
+ */
+function LiveTranscript({ lines, recording }: { lines: LiveLine[]; recording: boolean }) {
+  const endRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    endRef.current?.scrollIntoView?.({ block: 'end', behavior: 'smooth' });
+  }, [lines]);
+
+  return (
+    <div className="mt-3 w-full rounded-2xl border border-white/10 bg-black/15">
+      <div className="flex items-center gap-2 border-b border-white/10 px-4 py-2 text-[11px] font-semibold tracking-[0.18em] text-[#9fc0b9]">
+        <span
+          className={cn(
+            'h-1.5 w-1.5 rounded-full',
+            recording ? 'animate-pulse bg-emerald-400' : 'bg-amber-300',
+          )}
+        />
+        リアルタイム書き起こし
+      </div>
+      <div className="max-h-52 overflow-y-auto px-4 py-3 text-[13px] leading-relaxed text-[#e9f1ee]">
+        {lines.length === 0 ? (
+          <p className="py-3 text-center text-xs text-[#9fc0b9]">
+            話し始めると、ここに文字が流れます（話し終えて数秒後に出ます）
+          </p>
+        ) : (
+          <ul className="space-y-1.5">
+            {lines.map((line, i) => (
+              <li
+                key={line.id}
+                className={cn(i < lines.length - 3 && 'opacity-60', line.pending && 'animate-pulse')}
+              >
+                {line.pending ? <span className="text-[#9fc0b9]">聞き取り中…</span> : line.text}
+              </li>
+            ))}
+          </ul>
+        )}
+        <div ref={endRef} />
+      </div>
+    </div>
+  );
+}
+
 export function RecordingPhase({
   caseName,
   state,
   seconds,
   preview,
+  liveLines = [],
   pendingChunks,
   limitReached,
   consentGiven,
@@ -253,6 +304,7 @@ export function RecordingPhase({
             </div>
           </div>
         )}
+        {live && <LiveTranscript lines={liveLines} recording={state === 'recording'} />}
         {live && liveVerdict !== 'ok' && (
           <Alert variant="error" className="mt-3 w-full">
             {micVerdictMessage(liveVerdict)}

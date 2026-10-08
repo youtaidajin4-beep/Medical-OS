@@ -238,9 +238,10 @@ export function ConsultationWorkflow({
 
   useEffect(() => {
     if (phase !== 'processing') return;
+    // 診察中の文字からSOAPを作る経路は数秒で終わる。3秒おきでは、できてから最大3秒待たせてしまう
     const timer = setInterval(() => {
       void loadConsultation();
-    }, 3000);
+    }, 1000);
     return () => clearInterval(timer);
   }, [phase, loadConsultation]);
 
@@ -463,6 +464,7 @@ export function ConsultationWorkflow({
         state={recording.state}
         seconds={recording.seconds}
         preview={transcriptPreview.preview}
+        liveLines={recording.liveLines}
         pendingChunks={recording.pendingChunks}
         limitReached={recording.limitReached}
         consentGiven={consentGiven}

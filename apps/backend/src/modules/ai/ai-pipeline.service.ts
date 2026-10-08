@@ -61,7 +61,12 @@ export class AiPipelineService {
     @Inject(STT_PROVIDER) private readonly sttProvider: SttProvider,
   ) {}
 
-  async processConsultation(consultationId: string) {
+  /**
+   * @param options.fromLive 診察中に文字にしてある（リアルタイム書き起こし）なら、録音全体の
+   *   文字起こしを待たずにそれを使う。診察が終わってからSOAPまでの待ちの大半は、この文字起こしだった
+   *   （実測：録音の約0.3倍。6分の診察で約2分）。
+   */
+  async processConsultation(consultationId: string, options?: { fromLive?: boolean }) {
     const start = Date.now();
     const isMock = this.sttProvider.name === 'mock' && this.llmProvider.name === 'mock';
     const providerLabel = `${this.sttProvider.name}+${this.llmProvider.name}`;
@@ -98,78 +103,104 @@ export class AiPipelineService {
         await sleep(MOCK_PIPELINE_DELAY_MS);
       }
 
-      await logAiExecution(this.prisma, {
-        consultationId,
-        step: 'assemble_started',
-        provider: providerLabel,
-        status: 'started',
-      });
-
-      const chunks = await this.recordingService.listChunks(consultationId);
-      let audio: Buffer;
-      if (chunks.length > 0) {
-        audio = await this.recordingService.getAssembledAudioBuffer(consultationId);
-      } else {
-        const existing = await this.recordingService.getExistingAssembledBuffer(consultationId);
-        if (existing) {
-          audio = existing;
-        } else if (isMock) {
-          audio = Buffer.alloc(128);
-        } else {
-          throw new Error(
-            '録音データがありません。マイクの入力を確認して再度録音するか、「録り直す」からやり直してください。',
-          );
-        }
-      }
-
       const recordingDurationSec =
         consultation.endedAt && consultation.startedAt
           ? (consultation.endedAt.getTime() - consultation.startedAt.getTime()) / 1000
           : null;
-      const minExpectedBytes =
-        recordingDurationSec && recordingDurationSec > 5
-          ? Math.min(8000, Math.floor(recordingDurationSec * 200))
-          : 1024;
-      if (!isMock && audio.length < minExpectedBytes) {
-        throw new Error(
-          `録音データが不完全です（${Math.round(recordingDurationSec ?? 0)}秒録音に対し音声${audio.length}バイト）。通信状況を確認して再度録音してください。`,
-        );
-      }
+      const useLive = options?.fromLive === true && !isMock;
+      let transcriptQuality: { droppedLoopSegments: number; diarizationSpeakers: number };
 
-      await logAiExecution(this.prisma, {
-        consultationId,
-        step: 'stt_started',
-        provider: this.sttProvider.name,
-        status: 'started',
-      });
-      const sttStart = Date.now();
-      const { quality: transcriptQuality } = await this.transcriptService.finalizeFromAudio(
-        consultationId,
-        audio,
-        {
-          whisperPrompt,
-          resolvePhysicianLabel: isMock
-            ? undefined
-            : async (_labelA, _labelB, sampleA, sampleB) =>
-                this.resolvePhysicianSpeaker(sampleA, sampleB),
-        },
-      );
-      // どの経路で文字起こししたか（話者分離が落ちて whisper へ下がっていないか）。
-      // 画面には「話者が全部不明」としか出ないので、原因はここでしか辿れない
-      const sttMode = (
-        this.sttProvider as SttProvider & {
-          getLastSttMode?: () => { mode: string; detail?: string };
+      if (useLive) {
+        // 診察中に文字にしてある。録音の結合も、全体の文字起こしも要らない
+        await logAiExecution(this.prisma, {
+          consultationId,
+          step: 'stt_started',
+          provider: 'live',
+          status: 'started',
+        });
+        const liveStart = Date.now();
+        const live = await this.transcriptService.finalizeFromLive(consultationId);
+        transcriptQuality = live.quality;
+        await logAiExecution(this.prisma, {
+          consultationId,
+          step: 'stt_complete',
+          provider: 'live',
+          status: 'completed',
+          durationMs: Date.now() - liveStart,
+          promptVersion: 'live-v1',
+        });
+      } else {
+        await logAiExecution(this.prisma, {
+          consultationId,
+          step: 'assemble_started',
+          provider: providerLabel,
+          status: 'started',
+        });
+
+        const chunks = await this.recordingService.listChunks(consultationId);
+        let audio: Buffer;
+        if (chunks.length > 0) {
+          audio = await this.recordingService.getAssembledAudioBuffer(consultationId);
+        } else {
+          const existing = await this.recordingService.getExistingAssembledBuffer(consultationId);
+          if (existing) {
+            audio = existing;
+          } else if (isMock) {
+            audio = Buffer.alloc(128);
+          } else {
+            throw new Error(
+              '録音データがありません。マイクの入力を確認して再度録音するか、「録り直す」からやり直してください。',
+            );
+          }
         }
-      ).getLastSttMode?.();
-      await logAiExecution(this.prisma, {
-        consultationId,
-        step: 'stt_complete',
-        provider: this.sttProvider.name,
-        status: 'completed',
-        durationMs: Date.now() - sttStart,
-        promptVersion: isMock ? 'mock-v1' : `openai-${sttMode?.mode ?? 'diarize'}-v1`,
-        errorMessage: sttMode?.detail,
-      });
+
+        const minExpectedBytes =
+          recordingDurationSec && recordingDurationSec > 5
+            ? Math.min(8000, Math.floor(recordingDurationSec * 200))
+            : 1024;
+        if (!isMock && audio.length < minExpectedBytes) {
+          throw new Error(
+            `録音データが不完全です（${Math.round(recordingDurationSec ?? 0)}秒録音に対し音声${audio.length}バイト）。通信状況を確認して再度録音してください。`,
+          );
+        }
+
+        await logAiExecution(this.prisma, {
+          consultationId,
+          step: 'stt_started',
+          provider: this.sttProvider.name,
+          status: 'started',
+        });
+        const sttStart = Date.now();
+        const audioResult = await this.transcriptService.finalizeFromAudio(
+          consultationId,
+          audio,
+          {
+            whisperPrompt,
+            resolvePhysicianLabel: isMock
+              ? undefined
+              : async (_labelA, _labelB, sampleA, sampleB) =>
+                  this.resolvePhysicianSpeaker(sampleA, sampleB),
+          },
+        );
+        transcriptQuality = audioResult.quality;
+        // どの経路で文字起こししたか（話者分離が落ちて whisper へ下がっていないか）。
+        // 画面には「話者が全部不明」としか出ないので、原因はここでしか辿れない
+        const sttMode = (
+          this.sttProvider as SttProvider & {
+            getLastSttMode?: () => { mode: string; detail?: string };
+          }
+        ).getLastSttMode?.();
+        await logAiExecution(this.prisma, {
+          consultationId,
+          step: 'stt_complete',
+          provider: this.sttProvider.name,
+          status: 'completed',
+          durationMs: Date.now() - sttStart,
+          promptVersion: isMock ? 'mock-v1' : `openai-${sttMode?.mode ?? 'diarize'}-v1`,
+          errorMessage: sttMode?.detail,
+        });
+
+      }
 
       const segments = await this.transcriptService.getSegments(consultationId, { final: true });
       const rawText = segments.map((s) => s.rawText ?? s.text).join('\n');
@@ -213,12 +244,20 @@ export class AiPipelineService {
         },
       });
       segmentTexts = redistributeCorrectedLines(segmentTexts, knowledgeResult.correctedText);
-      await this.medicalKnowledge.persistCorrectionResult({
-        clinicId: consultation.clinicId,
-        physicianId: consultation.physicianId,
-        consultationId,
-        result: { ...knowledgeResult, rawText },
-      });
+      // 1語ずつ順に書くので、20〜60語で3〜10秒かかっていた（実測：この段が8〜18秒）。
+      // SOAPの材料ではなく、あとで辞書を育てるための記録なので、待たずに裏で書く
+      void this.medicalKnowledge
+        .persistCorrectionResult({
+          clinicId: consultation.clinicId,
+          physicianId: consultation.physicianId,
+          consultationId,
+          result: { ...knowledgeResult, rawText },
+        })
+        .catch((error) =>
+          this.logger.warn(
+            `校正の記録に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+          ),
+        );
       await logAiExecution(this.prisma, {
         consultationId,
         step: 'medical_knowledge_complete',
@@ -534,7 +573,15 @@ export class AiPipelineService {
       // 以前はここで必ず音声を消していた。そのため「処理は通ったが中身が使えない」
       // ときに作り直す手段が無く、「もう一度処理する」も録音が無いと言われて弾かれていた
       // （2026-09-05 桑原さん・立川さん）。保持期間のあいだは残し、期限切れは掃除に任せる。
-      if (deletesImmediately(resolveRetentionMinutes())) {
+      if (useLive) {
+        // 診察中の文字から作った。録音は画面が裏で送っているので、ここでは消さず、
+        // 取りこぼしの確認のあとで（保持期間が0なら）消す
+        void this.verifyLiveCoverage(consultationId).catch((error) =>
+          this.logger.warn(
+            `取りこぼしの確認に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+          ),
+        );
+      } else if (deletesImmediately(resolveRetentionMinutes())) {
         await this.recordingService.deleteAudioForConsultation(consultationId);
       } else {
         // 掃除の失敗で診療の完了を潰さない（次の実行で片付く）
@@ -592,6 +639,65 @@ export class AiPipelineService {
         `Speaker role LLM tie-break failed: ${error instanceof Error ? error.message : String(error)}`,
       );
       return null;
+    }
+  }
+
+  /**
+   * 診察中の文字が、録音全体の文字起こしより大きく少なくないかを、あとで確かめる。
+   *
+   * 診察中の文字（リアルタイム書き起こし）は、2人の声が混じる実診察で取りこぼしが出うる
+   * （評価用の音声では、録音全体の文字起こしの84%まで届いた）。SOAPを速く出すかわりに、
+   * 録音が届いたあとで録音全体を文字にして文字量を比べ、極端に少ないときは医師へ知らせる。
+   * 知らせるだけで、SOAPは勝手に作り直さない（画面の内容が、気づかないうちに変わってしまうため）。
+   */
+  private async verifyLiveCoverage(consultationId: string) {
+    const liveChars = (await this.transcriptService.getSegments(consultationId, { final: true }))
+      .map((seg) => seg.text.replace(/\s/g, '').length)
+      .reduce((a, b) => a + b, 0);
+
+    try {
+      // 画面は、診察を終えたあとで録音を送る。届くまで待つ（届き方によっては結合に失敗するので繰り返す）
+      let audio: Buffer | null = null;
+      for (let attempt = 0; attempt < 30 && !audio; attempt++) {
+        try {
+          audio = await this.recordingService.getAssembledAudioBuffer(consultationId);
+        } catch {
+          await sleep(3000);
+        }
+      }
+      if (!audio) return;
+
+      const startedAt = Date.now();
+      const segments = await this.sttProvider.transcribeFinal(audio, consultationId);
+      const fullChars = segments.map((seg) => seg.text.replace(/\s/g, '').length).reduce((a, b) => a + b, 0);
+      const ratio = fullChars > 0 ? liveChars / fullChars : 1;
+      await logAiExecution(this.prisma, {
+        consultationId,
+        step: 'live_coverage_check',
+        provider: this.sttProvider.name,
+        status: 'completed',
+        durationMs: Date.now() - startedAt,
+        errorMessage: JSON.stringify({ liveChars, fullChars, ratio: Math.round(ratio * 100) / 100 }),
+      });
+
+      // 短い診察や、録音側の幻聴で比が崩れないよう、ある程度の長さがあるときだけ見る
+      if (fullChars >= 80 && ratio < 0.7) {
+        await this.prisma.clinicalWarning.create({
+          data: {
+            consultationId,
+            category: 'recording',
+            severity: 'WARNING',
+            message: `要確認：診察中の文字起こしが、録音全体より約${Math.round((1 - ratio) * 100)}%少なくなっています。SOAPに抜けがある可能性があります。「作り直す」で、録音全体から作り直せます。`,
+          },
+        });
+      }
+    } finally {
+      // 保持期間が0の設定なら、確認が済んだ録音をここで消す（従来はパイプラインの直後に消していた）
+      if (deletesImmediately(resolveRetentionMinutes())) {
+        await this.recordingService.deleteAudioForConsultation(consultationId).catch(() => undefined);
+      } else {
+        await this.recordingService.purgeExpiredAudio().catch(() => undefined);
+      }
     }
   }
 

@@ -308,8 +308,16 @@ export const api = {
     }>(`/patients/${patientId}/consultations`),
   startRecording: (id: string) =>
     request(`/consultations/${id}/recording/start`, { method: 'POST' }),
-  stopRecording: (id: string) =>
-    request(`/consultations/${id}/recording/stop`, { method: 'POST' }),
+  /**
+   * 録音を終えて、診察記録の作成を始める。
+   * fromLive: 診察中に文字にした分が全部そろっているとき true。録音全体の文字起こしを待たずに
+   * その文字からSOAPを作る（待ちの大半は録音全体の文字起こしだった）。
+   */
+  stopRecording: (id: string, options?: { fromLive?: boolean }) =>
+    request(`/consultations/${id}/recording/stop`, {
+      method: 'POST',
+      body: JSON.stringify({ fromLive: options?.fromLive === true }),
+    }),
   reprocessConsultation: (id: string) =>
     request<{ id: string; status: string; hasAudio?: boolean }>(`/consultations/${id}/reprocess`, {
       method: 'POST',
@@ -351,6 +359,26 @@ export const api = {
       method: 'POST',
       body: form,
     });
+  },
+  /**
+   * 診察中のリアルタイム書き起こし。声の切れ目ごとの短い音声（WAV）を1区間ずつ送る。
+   * 無音・定型句と判断された区間は segment が null で返る。
+   */
+  liveTranscribe: (consultationId: string, wav: Blob, startMs: number, endMs: number) => {
+    const form = new FormData();
+    form.append('audio', wav, `live-${startMs}.wav`);
+    form.append('startMs', String(Math.round(startMs)));
+    form.append('endMs', String(Math.round(endMs)));
+    return request<{
+      segment: {
+        sequenceNumber: number;
+        text: string;
+        startMs: number;
+        endMs: number;
+        parts: Array<{ speaker: 'physician' | 'patient' | 'other' | 'unknown'; text: string }>;
+      } | null;
+      dropped?: string;
+    }>(`/consultations/${consultationId}/transcript/live`, { method: 'POST', body: form });
   },
   getTranscript: (consultationId: string, final?: boolean) => {
     const query = final === undefined ? '' : `?final=${final}`;

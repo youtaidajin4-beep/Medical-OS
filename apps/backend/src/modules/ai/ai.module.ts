@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AiPipelineService } from './ai-pipeline.service';
+import { LiveTranscriptionService } from './live-transcription.service';
+import { LiveTranscriptController } from './live-transcript.controller';
 import { TranscriptModule } from '../transcript/transcript.module';
 import { RecordingModule } from '../recording/recording.module';
 import { SettingsModule } from '../settings/settings.module';
@@ -11,8 +13,10 @@ import { LLM_PROVIDER } from '../../providers/ai/llm.tokens';
 
 @Module({
   imports: [TranscriptModule, RecordingModule, SettingsModule, MedicalKnowledgeModule],
+  controllers: [LiveTranscriptController],
   providers: [
     AiPipelineService,
+    LiveTranscriptionService,
     {
       provide: LLM_PROVIDER,
       useFactory: (config: ConfigService) => {

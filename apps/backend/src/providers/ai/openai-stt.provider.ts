@@ -8,6 +8,8 @@ export interface OpenAiSttConfig {
   fallbackModel?: string;
   /** 医師の口述用。話者分離が要らないぶん速く、語彙のヒントを受け付ける */
   dictationModel?: string;
+  /** 診察中のリアルタイム書き起こし用。2人の会話を落とさず読めるモデル */
+  conversationModel?: string;
 }
 
 const MIN_AUDIO_BYTES = 1024;
@@ -32,6 +34,11 @@ const DIARIZE_MODEL = 'gpt-4o-transcribe-diarize';
  * 語彙を渡せるこちらのほうが速くて正確になる。
  */
 const DICTATION_MODEL = 'gpt-4o-transcribe';
+/**
+ * 診察中の会話の短い区間に使うモデル。口述用のモデルは、2人の声が混じると片方を落とす
+ * （同じ診察音声で再現率 61%）。こちらは 84%・一致率 90%。
+ */
+const CONVERSATION_MODEL = 'gpt-4o-mini-transcribe';
 /** 口述は一言ぶん。診察の録音と同じ下限を当てると弾かれる */
 const MIN_DICTATION_BYTES = 256;
 
@@ -89,6 +96,7 @@ export class OpenAiSttProvider implements SttProvider {
   private readonly model: string;
   private readonly fallbackModel: string;
   private readonly dictationModel: string;
+  private readonly conversationModel: string;
   private lastSttMode: SttMode = 'diarize';
   private lastSttDetail?: string;
 
@@ -97,6 +105,7 @@ export class OpenAiSttProvider implements SttProvider {
     this.model = config.model ?? DIARIZE_MODEL;
     this.fallbackModel = config.fallbackModel ?? 'whisper-1';
     this.dictationModel = config.dictationModel ?? DICTATION_MODEL;
+    this.conversationModel = config.conversationModel ?? CONVERSATION_MODEL;
   }
 
   /**
@@ -121,6 +130,26 @@ export class OpenAiSttProvider implements SttProvider {
       mimeType,
       options?.vocabularyPrompt,
       this.dictationModel,
+      0,
+      'json',
+    );
+    return (data.text ?? '').trim();
+  }
+
+  /** 診察中の会話の短い区間。語彙を渡して、話者は分けず、2人の発話を落とさず読む */
+  async transcribeConversation(audio: Buffer, options?: DictationOptions): Promise<string> {
+    this.assertApiKey();
+    if (audio.length < MIN_DICTATION_BYTES) return '';
+    if (audio.length > WHISPER_MAX_UPLOAD_BYTES) {
+      throw new Error('音声が長すぎます。');
+    }
+    const { filename, mimeType } = this.sniffAudio(audio);
+    const data = await this.requestWhisper(
+      audio,
+      filename,
+      mimeType,
+      options?.vocabularyPrompt,
+      this.conversationModel,
       0,
       'json',
     );

@@ -116,3 +116,27 @@ describe('RecordingPhase の操作', () => {
   });
 });
 
+describe('RecordingPhase のリアルタイム書き起こし', () => {
+  const lines = [
+    { id: 'a', startMs: 0, text: '今日はどうされましたか', pending: false },
+    { id: 'b', startMs: 4000, text: '', pending: true },
+  ];
+
+  it('録音中、文字になった行と、聞き取り中の行が出る', () => {
+    render(<RecordingPhase {...baseProps} state="recording" liveLines={lines} liveLevel={0.4} />);
+    expect(screen.getByText('リアルタイム書き起こし')).toBeInTheDocument();
+    expect(screen.getByText('今日はどうされましたか')).toBeInTheDocument();
+    expect(screen.getByText('聞き取り中…')).toBeInTheDocument();
+  });
+
+  it('まだ何も出ていないときは、待つ案内が出る', () => {
+    render(<RecordingPhase {...baseProps} state="recording" liveLines={[]} liveLevel={0.4} />);
+    expect(screen.getByText(/話し始めると、ここに文字が流れます/)).toBeInTheDocument();
+  });
+
+  it('録音前には出ない', () => {
+    render(<RecordingPhase {...baseProps} state="idle" liveLines={lines} />);
+    expect(screen.queryByText('リアルタイム書き起こし')).not.toBeInTheDocument();
+  });
+});
+
