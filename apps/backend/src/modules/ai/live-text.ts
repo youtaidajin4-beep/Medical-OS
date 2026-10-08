@@ -22,9 +22,49 @@ function isForeignFiller(text: string): boolean {
   return text.replace(/\s/g, '').length <= 60;
 }
 
+const normalizeForEcho = (text: string) =>
+  text.normalize('NFKC').replace(/[\s、。，．,.!?！？:：「」()（）]/g, '').toLowerCase();
+
+function charGrams(text: string, n: number): Set<string> {
+  const out = new Set<string>();
+  for (let i = 0; i + n <= text.length; i++) out.add(text.slice(i, i + n));
+  return out;
+}
+
+/**
+ * 出力が、こちらから渡したヒント（語彙のリスト）の写しになっていないか。
+ *
+ * 小さいモデルは、**無音や雑音の区間で、渡されたヒントをそのまま書き出す**（実測 2026-10-09：
+ * どんなヒントでも、無音・雑音・ハム音の4種すべてで100%）。ヒントなしなら空で返る。
+ * 実診察の画面にも「内科診察の会話。主訴、現病歴…診断:高血圧、本態性高血圧症…」が流れた。
+ *
+ * 見分ける条件（どれか）:
+ * - ヒントの先頭をそのまま書いている
+ * - ヒントの一部分だけ（語彙の一語・一節）で、文になっていない
+ * - 長い出力の大半の文字列が、ヒントの中にある
+ * 医師が薬剤名を一言だけ言ったときも、前の条件に当たる。そのときは「ヒントなしで聞き直す」ので、
+ * 実際に言っていれば残り、無音なら空になる。
+ */
+export function isPromptEcho(text: string, prompt: string | undefined): boolean {
+  if (!prompt) return false;
+  const t = normalizeForEcho(text);
+  const p = normalizeForEcho(prompt);
+  if (t.length < 3 || p.length < 3) return false;
+  if (p.includes(t)) return true;
+  if (t.startsWith(p.slice(0, Math.min(10, p.length)))) return true;
+  if (t.length >= 12) {
+    const grams = charGrams(t, 4);
+    const inPrompt = charGrams(p, 4);
+    let hit = 0;
+    for (const g of grams) if (inPrompt.has(g)) hit++;
+    if (grams.size > 0 && hit / grams.size >= 0.7) return true;
+  }
+  return false;
+}
+
 export type LiveTextResult =
   | { keep: true; text: string }
-  | { keep: false; reason: 'empty' | 'stock-phrase' | 'foreign-filler' | 'loop' };
+  | { keep: false; reason: 'empty' | 'stock-phrase' | 'foreign-filler' | 'loop' | 'prompt-echo' };
 
 export function cleanLiveText(raw: string): LiveTextResult {
   const text = raw.replace(/\s+/g, ' ').trim();

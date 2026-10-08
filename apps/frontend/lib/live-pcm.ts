@@ -20,6 +20,12 @@ export type CutterOptions = {
   speechRms: number;
   /** 声が始まる前に残しておく長さ。出だしを削らない */
   preRollMs: number;
+  /** 1区間のうち「声がある」フレームが、これ（ms）に満たなければ送らない */
+  minSpeechMs: number;
+  /** 1区間のうち「声がある」フレームの割合が、これに満たなければ送らない（雑音だけの区間を弾く） */
+  minSpeechRatio: number;
+  /** 雑音の床の何倍を超えたら「声」とみなすか */
+  noiseMargin: number;
 };
 
 export const DEFAULT_CUTTER: CutterOptions = {
@@ -28,7 +34,13 @@ export const DEFAULT_CUTTER: CutterOptions = {
   silenceMs: 450,
   speechRms: 0.012,
   preRollMs: 300,
+  minSpeechMs: 240,
+  minSpeechRatio: 0.12,
+  noiseMargin: 2.2,
 };
+
+/** 雑音の水準がどれだけ高くても、これ以上のRMSは必ず「声」と数える */
+const MAX_SPEECH_THRESHOLD = 0.05;
 
 export type PcmSegment = {
   samples: Float32Array;
@@ -58,6 +70,9 @@ export class SegmentCutter {
   private segmentStart = 0;
   private hasSpeech = false;
   private silenceRun = 0;
+  private speechFrames = 0;
+  /** 直近のフレームのRMS（雑音の床を求める。約3秒ぶん） */
+  private recentRms: number[] = [];
 
   constructor(options: Partial<CutterOptions> = {}, private readonly offsetMs = 0) {
     this.opts = { ...DEFAULT_CUTTER, ...options };
@@ -65,6 +80,34 @@ export class SegmentCutter {
 
   private bufferedMs(): number {
     return (this.frames.length * FRAME_SAMPLES * 1000) / LIVE_SAMPLE_RATE;
+  }
+
+  /**
+   * いまの雑音の床。直近約6秒のうち、いちばん静かな側10%の平均。
+   *
+   * 入力は増幅してから受けている（自動で最大8倍）。空調や衣擦れまで持ち上がるので、
+   * 固定のしきい値だけでは「ずっと声がある」ことになり、雑音を延々と文字にしてしまう。
+   *
+   * 床は**保守的に**見積もる。会話には必ず間（文と文のあいだ）があり、そこが本当の雑音の水準。
+   * 平均や中央値を使うと、大きい声の医師のあとに続く小さな患者さんの声を雑音と誤判定する。
+   */
+  private noiseFloor(): number {
+    if (this.recentRms.length < 25) return 0;
+    const sorted = [...this.recentRms].sort((a, b) => a - b);
+    const k = Math.max(1, Math.floor(sorted.length * 0.1));
+    return sorted.slice(0, k).reduce((a, b) => a + b, 0) / k;
+  }
+
+  /**
+   * 声とみなす水準。雑音の床の数倍。ただし上限を置く：
+   * 増幅後の小さな声（RMS 0.05前後）は、雑音の水準がどうであれ、必ず声として数える。
+   */
+  private speechThreshold(): number {
+    // 録り始めの最初の0.5秒は、雑音の水準がまだ分からない。このあいだは、はっきり大きい音だけを声とする
+    // （分からないまま低いしきい値を使うと、録り始めの雑音を声として送ってしまう）
+    if (this.recentRms.length < 25) return MAX_SPEECH_THRESHOLD;
+    const adaptive = this.noiseFloor() * this.opts.noiseMargin;
+    return Math.min(MAX_SPEECH_THRESHOLD, Math.max(this.opts.speechRms, adaptive));
   }
 
   private toMs(sample: number): number {
@@ -82,7 +125,10 @@ export class SegmentCutter {
       const frame = merged.subarray(pos, pos + FRAME_SAMPLES);
       pos += FRAME_SAMPLES;
       this.consumed += FRAME_SAMPLES;
-      const speech = rms(frame) >= this.opts.speechRms;
+      const level = rms(frame);
+      const speech = level >= this.speechThreshold();
+      this.recentRms.push(level);
+      if (this.recentRms.length > 300) this.recentRms.shift();
 
       if (!this.hasSpeech && !speech) {
         // 声が始まる前は、出だし用の少しだけを残して捨てる
@@ -98,6 +144,7 @@ export class SegmentCutter {
       this.frames.push(frame.slice());
       if (speech) {
         this.hasSpeech = true;
+        this.speechFrames += 1;
         this.silenceRun = 0;
       } else {
         this.silenceRun += 20;
@@ -123,6 +170,7 @@ export class SegmentCutter {
     this.frames = [];
     this.hasSpeech = false;
     this.silenceRun = 0;
+    this.speechFrames = 0;
     this.segmentStart = this.consumed;
     return null;
   }
@@ -133,12 +181,19 @@ export class SegmentCutter {
     const endSample = startSample + frames.length * FRAME_SAMPLES;
     const samples = new Float32Array(frames.length * FRAME_SAMPLES);
     frames.forEach((f, i) => samples.set(f, i * FRAME_SAMPLES));
+    const speechFrames = this.speechFrames;
     this.frames = [];
     this.hasSpeech = false;
     this.silenceRun = 0;
+    this.speechFrames = 0;
     this.segmentStart = endSample;
     // 短すぎる区間（0.5秒未満）は声と呼べない（咳・物音）。送っても幻聴のもとになる
     if ((samples.length * 1000) / LIVE_SAMPLE_RATE < 500) return null;
+    // 声のあるフレームが少なすぎる区間（雑音・息づかい・物音だけ）も送らない。
+    // 声が無い区間をモデルへ渡すと、渡したヒントをそのまま書き出す
+    const speechMs = speechFrames * 20;
+    const ratio = speechFrames / Math.max(1, frames.length);
+    if (speechMs < this.opts.minSpeechMs || ratio < this.opts.minSpeechRatio) return null;
     return { samples, startMs: this.toMs(startSample), endMs: this.toMs(endSample) };
   }
 }

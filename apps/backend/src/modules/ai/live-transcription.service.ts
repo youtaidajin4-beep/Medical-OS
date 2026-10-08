@@ -8,7 +8,13 @@ import { LlmProvider } from '../../providers/ai/llm.provider';
 import { buildWhisperPrompt, resolveMedicalGlossary } from '../../providers/ai/medical-glossary';
 import { correctMedicalTerms } from '../../providers/ai/medical-term-corrector';
 import { SettingsService } from '../settings/settings.service';
-import { capSentences, cleanLiveText, MAX_SENTENCES_PER_SEGMENT, splitSentences } from './live-text';
+import {
+  capSentences,
+  cleanLiveText,
+  isPromptEcho,
+  MAX_SENTENCES_PER_SEGMENT,
+  splitSentences,
+} from './live-text';
 
 export type LiveSpeaker = 'physician' | 'patient' | 'other' | 'unknown';
 
@@ -86,11 +92,19 @@ export class LiveTranscriptionService {
 
     const rules = await this.settings.getPhysicianRules(physicianId).catch(() => undefined);
     const glossary = resolveMedicalGlossary(rules);
-    const heard = await this.stt.transcribeConversation(audio, {
-      vocabularyPrompt: buildWhisperPrompt(glossary),
-    });
+    const vocabularyPrompt = buildWhisperPrompt(glossary);
+    let cleaned = cleanLiveText(
+      await this.stt.transcribeConversation(audio, { vocabularyPrompt }),
+    );
 
-    const cleaned = cleanLiveText(heard);
+    // 声の無い区間で、モデルが渡したヒントをそのまま書き出すことがある。
+    // ヒントなしで聞き直す：実際に言っていれば残り、無音なら空になる
+    if (cleaned.keep && isPromptEcho(cleaned.text, vocabularyPrompt)) {
+      cleaned = cleanLiveText(await this.stt.transcribeConversation(audio, {}));
+      if (cleaned.keep && isPromptEcho(cleaned.text, vocabularyPrompt)) {
+        cleaned = { keep: false, reason: 'prompt-echo' };
+      }
+    }
     if (!cleaned.keep) return { segment: null, dropped: cleaned.reason };
 
     // 同音の取り違え（辞書にある語だけ）。CPUだけで終わるので待ち時間は増えない

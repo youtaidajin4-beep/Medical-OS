@@ -1,6 +1,7 @@
 import {
   capSentences,
   cleanLiveText,
+  isPromptEcho,
   mergeLiveRows,
   splitSentences,
 } from '../src/modules/ai/live-text';
@@ -108,5 +109,33 @@ describe('mergeLiveRows', () => {
     const input = [row('あ。', 'D', 0, 1), row('い。', 'D', 1, 2)];
     mergeLiveRows(input);
     expect(input[0]!.text).toBe('あ。');
+  });
+});
+
+describe('isPromptEcho', () => {
+  const prompt =
+    '内科診察の会話。主訴、現病歴、既往歴、聴診、再診、処方、経過観察。 診断:高血圧、本態性高血圧症、二次性高血圧 薬剤:アムロジピン、ニフェジピン、アゼルニジピン 読み:エーワンシー 所見:wheeze、ラ音、咽頭発赤';
+
+  it('ヒントをそのまま書き出したものを見つける（実診察の画面に出た文）', () => {
+    expect(isPromptEcho(prompt, prompt)).toBe(true);
+    expect(
+      isPromptEcho('内科診察の会話。主訴、現病歴、既往歴、聴診、再診、処方、経過観察。 診断:高血圧、本態性高血圧症', prompt),
+    ).toBe(true);
+  });
+
+  it('ヒントの一部（語彙の一語・一節）だけのものも見つける', () => {
+    expect(isPromptEcho('アゼルニジピン', prompt)).toBe(true);
+    expect(isPromptEcho('咽頭発赤が見られます。', prompt)).toBe(false); // 「が見られます」はヒントに無い
+    expect(isPromptEcho('主訴、現病歴、既往歴', prompt)).toBe(true);
+  });
+
+  it('診察の言葉は、薬剤名を含んでも残す', () => {
+    expect(isPromptEcho('アムロジピンを朝に1錠、欠かさず飲んでいます。', prompt)).toBe(false);
+    expect(isPromptEcho('血圧は140くらいです。', prompt)).toBe(false);
+    expect(isPromptEcho('本態性高血圧症の診断で、アムロジピンを続けましょう。', prompt)).toBe(false);
+  });
+
+  it('ヒントが無ければ判定しない', () => {
+    expect(isPromptEcho('アゼルニジピン', undefined)).toBe(false);
   });
 });
