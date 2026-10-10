@@ -61,24 +61,26 @@ enum WarningSeverity {
 }
 
 model Clinic {
-  id         String   @id @default(uuid())
-  /** Stable tenant key within the internal-medicine Supabase project (e.g. kushima_internal). */
-  code       String   @unique
-  name       String
+  id                    String                 @id @default(uuid())
+  /**
+   * Stable tenant key within the internal-medicine Supabase project (e.g. kushima_internal).
+   */
+  code                  String                 @unique
+  name                  String
   // 書類に印刷する医療機関の情報。院ごとに違うのでコードに持たせない
-  legalName       String? @map("legal_name")
-  postalCode      String? @map("postal_code")
-  address         String?
-  tel             String?
-  fax             String?
-  department      String?
+  legalName             String?                @map("legal_name")
+  postalCode            String?                @map("postal_code")
+  address               String?
+  tel                   String?
+  fax                   String?
+  department            String?
   /// 主治医意見書の市町村コード・管理市町村コード（例: 大村市 42205）
-  municipalityCode String? @map("municipality_code")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-  users      User[]
-  patients   Patient[]
-  anonymousCases AnonymousCase[]
+  municipalityCode      String?                @map("municipality_code")
+  createdAt             DateTime               @default(now()) @map("created_at")
+  updatedAt             DateTime               @updatedAt @map("updated_at")
+  users                 User[]
+  patients              Patient[]
+  anonymousCases        AnonymousCase[]
   clinicDictionaryTerms ClinicDictionaryTerm[]
   doctorDictionaryTerms DoctorDictionaryTerm[]
   transcriptCorrections TranscriptCorrection[]
@@ -87,23 +89,23 @@ model Clinic {
 }
 
 model User {
-  id           String    @id @default(uuid())
-  clinicId     String    @map("clinic_id")
-  name         String
+  id                    String                 @id @default(uuid())
+  clinicId              String                 @map("clinic_id")
+  name                  String
   /// 主治医意見書の医師番号。医師ごとに違う
-  doctorNumber String?   @map("doctor_number")
-  email        String    @unique
-  passwordHash String    @map("password_hash")
-  role               UserRole  @default(PHYSICIAN)
-  status             String    @default("active")
-  mustChangePassword Boolean   @default(false) @map("must_change_password")
-  lastLogin          DateTime? @map("last_login")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-  clinic       Clinic    @relation(fields: [clinicId], references: [id])
-  consultations Consultation[] @relation("PhysicianConsultations")
-  revisions    RevisionHistory[]
-  auditLogs    AuditLog[]
+  doctorNumber          String?                @map("doctor_number")
+  email                 String                 @unique
+  passwordHash          String                 @map("password_hash")
+  role                  UserRole               @default(PHYSICIAN)
+  status                String                 @default("active")
+  mustChangePassword    Boolean                @default(false) @map("must_change_password")
+  lastLogin             DateTime?              @map("last_login")
+  createdAt             DateTime               @default(now()) @map("created_at")
+  updatedAt             DateTime               @updatedAt @map("updated_at")
+  clinic                Clinic                 @relation(fields: [clinicId], references: [id])
+  consultations         Consultation[]         @relation("PhysicianConsultations")
+  revisions             RevisionHistory[]
+  auditLogs             AuditLog[]
   doctorDictionaryTerms DoctorDictionaryTerm[]
   transcriptCorrections TranscriptCorrection[]
 
@@ -111,23 +113,23 @@ model User {
 }
 
 model Patient {
-  id          String   @id @default(uuid())
-  clinicId    String   @map("clinic_id")
-  patientCode String   @map("patient_code")
-  name        String
-  dateOfBirth DateTime? @map("date_of_birth")
-  sex         String?
-  phone       String?
-  email       String?
-  memo        String?
+  id            String         @id @default(uuid())
+  clinicId      String         @map("clinic_id")
+  patientCode   String         @map("patient_code")
+  name          String
+  dateOfBirth   DateTime?      @map("date_of_birth")
+  sex           String?
+  phone         String?
+  email         String?
+  memo          String?
   // 紹介状の患者欄に印刷する属性。問診票のOCRから取り込み、空欄のときだけ埋める
-  nameKana    String?  @map("name_kana")
-  postalCode  String?  @map("postal_code")
-  address     String?
-  occupation  String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  clinic      Clinic   @relation(fields: [clinicId], references: [id])
+  nameKana      String?        @map("name_kana")
+  postalCode    String?        @map("postal_code")
+  address       String?
+  occupation    String?
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  clinic        Clinic         @relation(fields: [clinicId], references: [id])
   consultations Consultation[]
 
   @@unique([clinicId, patientCode])
@@ -135,15 +137,15 @@ model Patient {
 }
 
 model AnonymousCase {
-  id          String   @id @default(uuid())
-  clinicId    String   @map("clinic_id")
-  caseCode    String   @map("case_code")
-  displayName String   @map("display_name")
-  age         Int?
-  sex         String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  clinic      Clinic   @relation(fields: [clinicId], references: [id])
+  id            String         @id @default(uuid())
+  clinicId      String         @map("clinic_id")
+  caseCode      String         @map("case_code")
+  displayName   String         @map("display_name")
+  age           Int?
+  sex           String?
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  clinic        Clinic         @relation(fields: [clinicId], references: [id])
   consultations Consultation[]
 
   @@unique([clinicId, caseCode])
@@ -151,48 +153,49 @@ model AnonymousCase {
 }
 
 model Consultation {
-  id              String             @id @default(uuid())
-  clinicId        String             @map("clinic_id")
-  physicianId     String             @map("physician_id")
-  patientId       String?            @map("patient_id")
-  anonymousCaseId String?            @map("anonymous_case_id")
-  status          ConsultationStatus @default(DRAFT)
-  visitType       VisitType          @default(ROUTINE) @map("visit_type")
-  startedAt       DateTime?          @map("started_at")
-  endedAt         DateTime?          @map("ended_at")
-  approvedAt      DateTime?          @map("approved_at")
-  approvedById    String?            @map("approved_by_id")
-  copiedAt        DateTime?          @map("copied_at")
-  createdAt       DateTime           @default(now()) @map("created_at")
-  updatedAt       DateTime           @updatedAt @map("updated_at")
-  physician       User               @relation("PhysicianConsultations", fields: [physicianId], references: [id])
-  patient         Patient?           @relation(fields: [patientId], references: [id])
-  anonymousCase   AnonymousCase?     @relation(fields: [anonymousCaseId], references: [id])
-  audioChunks     AudioChunk[]
-  audioFiles      AudioFile[]
-  transcriptSegments TranscriptSegment[]
-  structuredData  StructuredClinicalData?
-  warnings        ClinicalWarning[]
-  soapDocuments   SoapDocument[]
-  clinicalNotes   ClinicalNote[]
-  generatedDocuments GeneratedDocument[]
-  revisions       RevisionHistory[]
-  aiExecutions    AIExecution[]
-  chatMessages    ConsultationChatMessage[]
-  attachments     ConsultationAttachment[]
+  id                    String                    @id @default(uuid())
+  clinicId              String                    @map("clinic_id")
+  physicianId           String                    @map("physician_id")
+  patientId             String?                   @map("patient_id")
+  anonymousCaseId       String?                   @map("anonymous_case_id")
+  status                ConsultationStatus        @default(DRAFT)
+  visitType             VisitType                 @default(ROUTINE) @map("visit_type")
+  startedAt             DateTime?                 @map("started_at")
+  endedAt               DateTime?                 @map("ended_at")
+  approvedAt            DateTime?                 @map("approved_at")
+  approvedById          String?                   @map("approved_by_id")
+  copiedAt              DateTime?                 @map("copied_at")
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @updatedAt @map("updated_at")
+  physician             User                      @relation("PhysicianConsultations", fields: [physicianId], references: [id])
+  patient               Patient?                  @relation(fields: [patientId], references: [id])
+  anonymousCase         AnonymousCase?            @relation(fields: [anonymousCaseId], references: [id])
+  audioChunks           AudioChunk[]
+  audioFiles            AudioFile[]
+  transcriptSegments    TranscriptSegment[]
+  structuredData        StructuredClinicalData?
+  warnings              ClinicalWarning[]
+  soapDocuments         SoapDocument[]
+  clinicalNotes         ClinicalNote[]
+  generatedDocuments    GeneratedDocument[]
+  revisions             RevisionHistory[]
+  aiExecutions          AIExecution[]
+  chatMessages          ConsultationChatMessage[]
+  attachments           ConsultationAttachment[]
   transcriptCorrections TranscriptCorrection[]
-  clinicalEntities ClinicalEntity[]
+  clinicalEntities      ClinicalEntity[]
+  qualityMeasurement    QualityMeasurement?
 
   @@map("consultations")
 }
 
 model AudioChunk {
-  id             String   @id @default(uuid())
-  consultationId String   @map("consultation_id")
-  sequenceNumber Int      @map("sequence_number")
-  storageKey     String   @map("storage_key")
+  id             String       @id @default(uuid())
+  consultationId String       @map("consultation_id")
+  sequenceNumber Int          @map("sequence_number")
+  storageKey     String       @map("storage_key")
   checksum       String?
-  uploadedAt     DateTime @default(now()) @map("uploaded_at")
+  uploadedAt     DateTime     @default(now()) @map("uploaded_at")
   consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
 
   @@unique([consultationId, sequenceNumber])
@@ -200,13 +203,13 @@ model AudioChunk {
 }
 
 model AudioFile {
-  id             String    @id @default(uuid())
-  consultationId String    @map("consultation_id")
-  storageKey     String    @map("storage_key")
-  durationSec    Int?      @map("duration_sec")
-  deletedAt      DateTime? @map("deleted_at")
-  deleteStatus   String?   @map("delete_status")
-  createdAt      DateTime  @default(now()) @map("created_at")
+  id             String       @id @default(uuid())
+  consultationId String       @map("consultation_id")
+  storageKey     String       @map("storage_key")
+  durationSec    Int?         @map("duration_sec")
+  deletedAt      DateTime?    @map("deleted_at")
+  deleteStatus   String?      @map("delete_status")
+  createdAt      DateTime     @default(now()) @map("created_at")
   consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
 
   @@map("audio_files")
@@ -233,12 +236,12 @@ model TranscriptSegment {
 }
 
 model StructuredClinicalData {
-  id             String   @id @default(uuid())
-  consultationId String   @unique @map("consultation_id")
+  id             String       @id @default(uuid())
+  consultationId String       @unique @map("consultation_id")
   data           Json
-  version        Int      @default(1)
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  version        Int          @default(1)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
   consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
 
   @@map("structured_clinical_data")
@@ -258,31 +261,31 @@ model ClinicalWarning {
 }
 
 model SoapDocument {
-  id             String   @id @default(uuid())
-  consultationId String   @map("consultation_id")
-  subjective     String   @default("")
-  objective      String   @default("")
-  assessment     String   @default("")
-  plan           String   @default("")
-  version        Int      @default(1)
-  isAiGenerated  Boolean  @default(true) @map("is_ai_generated")
-  approved       Boolean  @default(false)
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id             String       @id @default(uuid())
+  consultationId String       @map("consultation_id")
+  subjective     String       @default("")
+  objective      String       @default("")
+  assessment     String       @default("")
+  plan           String       @default("")
+  version        Int          @default(1)
+  isAiGenerated  Boolean      @default(true) @map("is_ai_generated")
+  approved       Boolean      @default(false)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
   consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
 
   @@map("soap_documents")
 }
 
 model ClinicalNote {
-  id             String   @id @default(uuid())
-  consultationId String   @map("consultation_id")
-  content        String   @default("")
-  version        Int      @default(1)
-  isAiGenerated  Boolean  @default(true) @map("is_ai_generated")
-  approved       Boolean  @default(false)
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id             String       @id @default(uuid())
+  consultationId String       @map("consultation_id")
+  content        String       @default("")
+  version        Int          @default(1)
+  isAiGenerated  Boolean      @default(true) @map("is_ai_generated")
+  approved       Boolean      @default(false)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
   consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
 
   @@map("clinical_notes")
@@ -320,17 +323,17 @@ model RevisionHistory {
 }
 
 model AIExecution {
-  id             String   @id @default(uuid())
-  consultationId String   @map("consultation_id")
+  id             String       @id @default(uuid())
+  consultationId String       @map("consultation_id")
   step           String
   provider       String
-  promptVersion  String?  @map("prompt_version")
-  inputTokens    Int?     @map("input_tokens")
-  outputTokens   Int?     @map("output_tokens")
-  durationMs     Int?     @map("duration_ms")
+  promptVersion  String?      @map("prompt_version")
+  inputTokens    Int?         @map("input_tokens")
+  outputTokens   Int?         @map("output_tokens")
+  durationMs     Int?         @map("duration_ms")
   status         String
-  errorMessage   String?  @map("error_message")
-  createdAt      DateTime @default(now()) @map("created_at")
+  errorMessage   String?      @map("error_message")
+  createdAt      DateTime     @default(now()) @map("created_at")
   consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
 
   @@map("ai_executions")
@@ -372,11 +375,11 @@ model UserSettings {
 }
 
 model ConsultationChatMessage {
-  id             String   @id @default(uuid())
-  consultationId String   @map("consultation_id")
+  id             String       @id @default(uuid())
+  consultationId String       @map("consultation_id")
   role           String
   content        String
-  createdAt      DateTime @default(now()) @map("created_at")
+  createdAt      DateTime     @default(now()) @map("created_at")
   consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
 
   @@index([consultationId, createdAt])
@@ -384,16 +387,16 @@ model ConsultationChatMessage {
 }
 
 model ConsultationAttachment {
-  id             String   @id @default(uuid())
-  consultationId String   @map("consultation_id")
-  fileName       String   @map("file_name")
-  mimeType       String   @map("mime_type")
-  storageKey     String   @map("storage_key")
-  ocrText        String?  @map("ocr_text")
+  id             String       @id @default(uuid())
+  consultationId String       @map("consultation_id")
+  fileName       String       @map("file_name")
+  mimeType       String       @map("mime_type")
+  storageKey     String       @map("storage_key")
+  ocrText        String?      @map("ocr_text")
   // 問診票から読み取った患者属性（氏名・カナ・生年月日・住所・電話・職業）。転記元の記録として残す
-  structuredData Json?    @map("structured_data")
-  documentKind   String   @default("other") @map("document_kind")
-  createdAt      DateTime @default(now()) @map("created_at")
+  structuredData Json?        @map("structured_data")
+  documentKind   String       @default("other") @map("document_kind")
+  createdAt      DateTime     @default(now()) @map("created_at")
   consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
 
   @@index([consultationId, createdAt])
@@ -469,22 +472,22 @@ enum KnowledgeSpecialty {
 
 /// LEVEL 1–2 shared medical terms (national import + specialty seeds). Codes must come from masters — never LLM-invented.
 model MedicalTerm {
-  id            String               @id @default(uuid())
-  canonicalName String               @map("canonical_name")
+  id            String                 @id @default(uuid())
+  canonicalName String                 @map("canonical_name")
   reading       String?
   category      MedicalTermCategory
   subcategory   String?
-  englishName   String?              @map("english_name")
+  englishName   String?                @map("english_name")
   abbreviation  String?
-  specialty     KnowledgeSpecialty   @default(internal_medicine)
-  priority      Int                  @default(100)
-  riskLevel     MedicalRiskLevel     @default(medium) @map("risk_level")
+  specialty     KnowledgeSpecialty     @default(internal_medicine)
+  priority      Int                    @default(100)
+  riskLevel     MedicalRiskLevel       @default(medium) @map("risk_level")
   source        MedicalKnowledgeSource @default(internal_medicine_seed)
   /// Official master code when verified (YLCM/HOT/JLAC/etc). Null if unverified — never invent.
-  sourceCode    String?              @map("source_code")
-  isActive      Boolean              @default(true) @map("is_active")
-  createdAt     DateTime             @default(now()) @map("created_at")
-  updatedAt     DateTime             @updatedAt @map("updated_at")
+  sourceCode    String?                @map("source_code")
+  isActive      Boolean                @default(true) @map("is_active")
+  createdAt     DateTime               @default(now()) @map("created_at")
+  updatedAt     DateTime               @updatedAt @map("updated_at")
   aliases       MedicalTermAlias[]
 
   @@index([canonicalName])
@@ -508,18 +511,18 @@ model MedicalTermAlias {
 
 /// LEVEL 3 clinic-specific dictionary
 model ClinicDictionaryTerm {
-  id           String              @id @default(uuid())
-  clinicId     String              @map("clinic_id")
-  canonicalName String             @map("canonical_name")
-  reading      String?
-  category     MedicalTermCategory @default(other)
-  aliases      Json                @default("[]")
-  frequency    Int                 @default(0)
-  priority     Int                 @default(100)
-  isActive     Boolean             @default(true) @map("is_active")
-  createdAt    DateTime            @default(now()) @map("created_at")
-  updatedAt    DateTime            @updatedAt @map("updated_at")
-  clinic       Clinic              @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  id            String              @id @default(uuid())
+  clinicId      String              @map("clinic_id")
+  canonicalName String              @map("canonical_name")
+  reading       String?
+  category      MedicalTermCategory @default(other)
+  aliases       Json                @default("[]")
+  frequency     Int                 @default(0)
+  priority      Int                 @default(100)
+  isActive      Boolean             @default(true) @map("is_active")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+  clinic        Clinic              @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
   @@index([clinicId, isActive])
   @@index([clinicId, canonicalName])
@@ -547,22 +550,22 @@ model DoctorDictionaryTerm {
 }
 
 model TranscriptCorrection {
-  id                String              @id @default(uuid())
-  clinicId          String              @map("clinic_id")
-  physicianId       String?             @map("physician_id")
-  consultationId    String              @map("consultation_id")
-  rawText           String              @map("raw_text")
-  correctedText     String              @map("corrected_text")
-  originalTerm      String?             @map("original_term")
-  correctedTerm     String?             @map("corrected_term")
-  category          MedicalTermCategory?
-  confidence        Float?
-  correctionSource  String              @map("correction_source")
-  approvedByDoctor  Boolean             @default(false) @map("approved_by_doctor")
-  createdAt         DateTime            @default(now()) @map("created_at")
-  clinic            Clinic              @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  physician         User?               @relation(fields: [physicianId], references: [id])
-  consultation      Consultation        @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  id               String               @id @default(uuid())
+  clinicId         String               @map("clinic_id")
+  physicianId      String?              @map("physician_id")
+  consultationId   String               @map("consultation_id")
+  rawText          String               @map("raw_text")
+  correctedText    String               @map("corrected_text")
+  originalTerm     String?              @map("original_term")
+  correctedTerm    String?              @map("corrected_term")
+  category         MedicalTermCategory?
+  confidence       Float?
+  correctionSource String               @map("correction_source")
+  approvedByDoctor Boolean              @default(false) @map("approved_by_doctor")
+  createdAt        DateTime             @default(now()) @map("created_at")
+  clinic           Clinic               @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  physician        User?                @relation(fields: [physicianId], references: [id])
+  consultation     Consultation         @relation(fields: [consultationId], references: [id], onDelete: Cascade)
 
   @@index([consultationId])
   @@index([clinicId, originalTerm, correctedTerm])
@@ -570,19 +573,19 @@ model TranscriptCorrection {
 }
 
 model ClinicalEntity {
-  id               String              @id @default(uuid())
-  consultationId   String              @map("consultation_id")
-  entityType       MedicalTermCategory @map("entity_type")
-  rawValue         String              @map("raw_value")
-  normalizedValue  String?             @map("normalized_value")
-  confidence       Float?
-  startPosition    Int?                @map("start_position")
-  endPosition      Int?                @map("end_position")
-  needsReview      Boolean             @default(false) @map("needs_review")
-  riskLevel        MedicalRiskLevel    @default(medium) @map("risk_level")
-  createdAt        DateTime            @default(now()) @map("created_at")
-  consultation     Consultation        @relation(fields: [consultationId], references: [id], onDelete: Cascade)
-  candidates       EntityCandidate[]
+  id              String              @id @default(uuid())
+  consultationId  String              @map("consultation_id")
+  entityType      MedicalTermCategory @map("entity_type")
+  rawValue        String              @map("raw_value")
+  normalizedValue String?             @map("normalized_value")
+  confidence      Float?
+  startPosition   Int?                @map("start_position")
+  endPosition     Int?                @map("end_position")
+  needsReview     Boolean             @default(false) @map("needs_review")
+  riskLevel       MedicalRiskLevel    @default(medium) @map("risk_level")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  consultation    Consultation        @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  candidates      EntityCandidate[]
 
   @@index([consultationId])
   @@index([consultationId, needsReview])
@@ -602,38 +605,84 @@ model EntityCandidate {
 }
 
 model KnowledgeQualityMetric {
-  id                          String   @id @default(uuid())
-  consultationId              String   @unique @map("consultation_id")
-  generalTranscriptionAccuracy Float?  @map("general_transcription_accuracy")
-  medicalTermAccuracy         Float?   @map("medical_term_accuracy")
-  medicationAccuracy          Float?   @map("medication_accuracy")
-  dosageAccuracy              Float?   @map("dosage_accuracy")
-  laboratoryAccuracy          Float?   @map("laboratory_accuracy")
-  numericAccuracy             Float?   @map("numeric_accuracy")
-  negationAccuracy            Float?   @map("negation_accuracy")
-  doctorCorrectionCount       Int      @default(0) @map("doctor_correction_count")
-  automaticCorrectionCount    Int      @default(0) @map("automatic_correction_count")
-  reviewRequiredCount         Int      @default(0) @map("review_required_count")
-  criticalMedicalErrorCount   Int      @default(0) @map("critical_medical_error_count")
-  createdAt                   DateTime @default(now()) @map("created_at")
-  updatedAt                   DateTime @updatedAt @map("updated_at")
+  id                           String   @id @default(uuid())
+  consultationId               String   @unique @map("consultation_id")
+  generalTranscriptionAccuracy Float?   @map("general_transcription_accuracy")
+  medicalTermAccuracy          Float?   @map("medical_term_accuracy")
+  medicationAccuracy           Float?   @map("medication_accuracy")
+  dosageAccuracy               Float?   @map("dosage_accuracy")
+  laboratoryAccuracy           Float?   @map("laboratory_accuracy")
+  numericAccuracy              Float?   @map("numeric_accuracy")
+  negationAccuracy             Float?   @map("negation_accuracy")
+  doctorCorrectionCount        Int      @default(0) @map("doctor_correction_count")
+  automaticCorrectionCount     Int      @default(0) @map("automatic_correction_count")
+  reviewRequiredCount          Int      @default(0) @map("review_required_count")
+  criticalMedicalErrorCount    Int      @default(0) @map("critical_medical_error_count")
+  createdAt                    DateTime @default(now()) @map("created_at")
+  updatedAt                    DateTime @updatedAt @map("updated_at")
 
   @@map("knowledge_quality_metrics")
 }
 
 /// Learning candidates promoted from repeated corrections — require admin approval before clinic dictionary insert
 model DictionaryLearningCandidate {
-  id            String              @id @default(uuid())
-  clinicId      String              @map("clinic_id")
-  originalTerm  String              @map("original_term")
-  correctedTerm String              @map("corrected_term")
-  category      MedicalTermCategory?
-  occurrenceCount Int               @default(1) @map("occurrence_count")
-  status        String              @default("pending") // pending | approved | rejected
-  createdAt     DateTime            @default(now()) @map("created_at")
-  updatedAt     DateTime            @updatedAt @map("updated_at")
+  id              String               @id @default(uuid())
+  clinicId        String               @map("clinic_id")
+  originalTerm    String               @map("original_term")
+  correctedTerm   String               @map("corrected_term")
+  category        MedicalTermCategory?
+  occurrenceCount Int                  @default(1) @map("occurrence_count")
+  status          String               @default("pending") // pending | approved | rejected
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
 
   @@unique([clinicId, originalTerm, correctedTerm])
   @@index([clinicId, status])
   @@map("dictionary_learning_candidates")
+}
+
+/// 音声認識とSOAPの品質を、診察ごとに1行で積む（管理画面 /admin/quality の元データ）。
+/// 正解データが無い本番では「基準との比」を測る。定義と読み方は 07_ROADMAP/10_quality_measurement.md
+model QualityMeasurement {
+  id             String   @id @default(uuid())
+  consultationId String   @unique @map("consultation_id")
+  clinicId       String   @map("clinic_id")
+  physicianId    String   @map("physician_id")
+  /// 診察の日時。月ごとの集計はこれで切る（日本時間）
+  visitedAt      DateTime @map("visited_at")
+
+  // 発話の再現率：録音全体の文字起こし（基準）に対する、診察中の文字起こし
+  refChars           Int?      @map("ref_chars")
+  liveChars          Int?      @map("live_chars")
+  utteranceRecall    Float?    @map("utterance_recall")
+  utterancePrecision Float?    @map("utterance_precision")
+  // 医療用語の回収率：基準に出た辞書の語が、診察中の文字起こしに残った割合
+  termRefCount       Int?      @map("term_ref_count")
+  /// 辞書補正のあと（SOAPの材料になった文字）で残った語の数
+  termHitCount       Int?      @map("term_hit_count")
+  /// 辞書補正の前（音声認識そのまま）で残った語の数
+  termRawHitCount    Int?      @map("term_raw_hit_count")
+  missedTerms        Json?     @map("missed_terms")
+  sttMeasuredAt      DateTime? @map("stt_measured_at")
+  sttError           String?   @map("stt_error")
+
+  // SOAPの転記率：会話に出た診療上の事実のうち、SOAPに書かれた割合（LLM判定）
+  factCount         Int?      @map("fact_count")
+  factHitCount      Int?      @map("fact_hit_count")
+  /// 会話に根拠のない記載の数。0であるべき
+  unsupportedCount  Int?      @map("unsupported_count")
+  missedFacts       Json?     @map("missed_facts")
+  unsupportedClaims Json?     @map("unsupported_claims")
+  judgeCostJpy      Float?    @map("judge_cost_jpy")
+  soapMeasuredAt    DateTime? @map("soap_measured_at")
+  soapError         String?   @map("soap_error")
+
+  /// 測ったときの構成（モデル名・コミット・辞書の語数）。数字が動いた理由を辿るため
+  config       Json
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  consultation Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId, visitedAt])
+  @@map("quality_measurements")
 }

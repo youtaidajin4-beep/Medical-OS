@@ -71,6 +71,62 @@ async function requestWithNetworkCheck<T>(path: string, options: RequestInit = {
   }
 }
 
+
+/** 管理画面 /admin/quality の型（backend の quality.service.ts と同じ形） */
+export type QualityMonth = {
+  month: string;
+  totalVisits: number;
+  measuredVisits: number;
+  utteranceRecall: number | null;
+  utterancePrecision: number | null;
+  termRecall: number | null;
+  termRecallRaw: number | null;
+  soapCoverage: number | null;
+  unsupportedPerVisit: number | null;
+  soapEditsPerVisit: number | null;
+  transcriptEditsPerVisit: number | null;
+  counts: { stt: number; term: number; soap: number };
+};
+
+export type QualityOverview = {
+  months: QualityMonth[];
+  configChanges: Array<{ at: string; diff: string[] }>;
+  measurementEnabled: boolean;
+};
+
+export type QualityVisit = {
+  id: string;
+  visitedAt: string;
+  physicianName: string;
+  visitType: string;
+  refChars: number | null;
+  utteranceRecall: number | null;
+  utterancePrecision: number | null;
+  termRefCount: number | null;
+  termRecall: number | null;
+  termRecallRaw: number | null;
+  factCount: number | null;
+  soapCoverage: number | null;
+  unsupportedCount: number | null;
+  soapEdits: number;
+  transcriptEdits: number;
+  sttError: string | null;
+  soapError: string | null;
+  config: Record<string, unknown> | null;
+};
+
+export type QualityVisitDetail = {
+  id: string;
+  visitedAt: string;
+  missedTerms: string[];
+  missedFacts: string[];
+  unsupportedClaims: Array<{ text: string; reason?: string }>;
+  judgeCostJpy: number | null;
+  sttMeasuredAt: string | null;
+  soapMeasuredAt: string | null;
+  config: Record<string, unknown> | null;
+};
+
 export const api = {
   health: () => requestWithNetworkCheck<{ status: string; version: string }>('/health'),
   healthAi: () =>
@@ -99,6 +155,7 @@ export const api = {
       id: string;
       name: string;
       email: string;
+      role?: string;
       mustChangePassword?: boolean;
     }>('/auth/me'),
   changePassword: (currentPassword: string, newPassword: string) =>
@@ -718,4 +775,17 @@ export const api = {
         attachmentCount: number;
       }>;
     }>(`/consultations/${consultationId}/timeline`),
+  qualityOverview: (months = 12) => request<QualityOverview>(`/quality/overview?months=${months}`),
+  qualityVisits: (month: string) =>
+    request<QualityVisit[]>(`/quality/visits?month=${encodeURIComponent(month)}`),
+  qualityVisitDetail: (id: string) => request<QualityVisitDetail>(`/quality/visits/${id}`),
+  /** 数字だけのCSV。認証つきなので、リンクではなく取得してから保存する */
+  qualityCsv: async (month: string): Promise<Blob> => {
+    const token = getToken();
+    const res = await fetch(`${API_URL}/api/v1/quality/export.csv?month=${encodeURIComponent(month)}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new ApiError('CSVを取得できませんでした', res.status);
+    return res.blob();
+  },
 };

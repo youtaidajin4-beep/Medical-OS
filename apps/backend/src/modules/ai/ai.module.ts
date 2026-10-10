@@ -7,12 +7,13 @@ import { TranscriptModule } from '../transcript/transcript.module';
 import { RecordingModule } from '../recording/recording.module';
 import { SettingsModule } from '../settings/settings.module';
 import { MedicalKnowledgeModule } from '../medical-knowledge/medical-knowledge.module';
+import { QualityModule } from '../quality/quality.module';
 import { MockLlmProvider } from '../../providers/ai/llm.provider';
 import { OpenAiLlmProvider } from '../../providers/ai/openai-llm.provider';
 import { LLM_PROVIDER } from '../../providers/ai/llm.tokens';
 
 @Module({
-  imports: [TranscriptModule, RecordingModule, SettingsModule, MedicalKnowledgeModule],
+  imports: [TranscriptModule, RecordingModule, SettingsModule, MedicalKnowledgeModule, QualityModule],
   controllers: [LiveTranscriptController],
   providers: [
     AiPipelineService,

@@ -40,6 +40,7 @@ import {
 } from '../recording/audio-retention';
 import { MedicalKnowledgeService } from '../medical-knowledge/medical-knowledge.service';
 import { logAiExecution } from './ai-execution.helper';
+import { QualityService } from '../quality/quality.service';
 
 const MOCK_PIPELINE_DELAY_MS = 2500;
 
@@ -59,6 +60,8 @@ export class AiPipelineService {
     private readonly medicalKnowledge: MedicalKnowledgeService,
     @Inject(LLM_PROVIDER) private readonly llmProvider: LlmProvider,
     @Inject(STT_PROVIDER) private readonly sttProvider: SttProvider,
+    /** 品質の計測。失敗しても診療は止めない（呼ぶ側は常に握りつぶす） */
+    private readonly quality?: QualityService,
   ) {}
 
   /**
@@ -590,6 +593,11 @@ export class AiPipelineService {
         }),
       ]);
 
+      // SOAPの転記率を裏で測る（会話に出た事実のうち、SOAPに書かれた割合）。待たない
+      if (!isMock && this.quality) {
+        void this.quality.measureSoap(consultationId).catch(() => undefined);
+      }
+
       // 以前はここで必ず音声を消していた。そのため「処理は通ったが中身が使えない」
       // ときに作り直す手段が無く、「もう一度処理する」も録音が無いと言われて弾かれていた
       // （2026-09-05 桑原さん・立川さん）。保持期間のあいだは残し、期限切れは掃除に任せる。
@@ -663,6 +671,27 @@ export class AiPipelineService {
   }
 
   /**
+   * 録音全体の文字起こし（基準）と、診察中の文字起こしを比べて、再現率と用語の回収率を残す。
+   * 管理画面（/admin/quality）の元データ。基準は正解ではないので、絶対値ではなく動きを見る。
+   */
+  private async recordSttQuality(consultationId: string, referenceText: string) {
+    if (!this.quality) return;
+    try {
+      const live = await this.transcriptService.getSegments(consultationId, { final: true });
+      await this.quality.recordStt(consultationId, {
+        referenceText,
+        liveRawText: live.map((seg) => seg.rawText ?? seg.text).join('\n'),
+        liveFinalText: live.map((seg) => seg.text).join('\n'),
+      });
+    } catch (error) {
+      // 計測の失敗で、取りこぼしの確認（このあとの処理）を止めない
+      this.logger.warn(
+        `品質の記録に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /**
    * 診察中の文字が、録音全体の文字起こしより大きく少なくないかを、あとで確かめる。
    *
    * 診察中の文字（リアルタイム書き起こし）は、2人の声が混じる実診察で取りこぼしが出うる
@@ -689,6 +718,7 @@ export class AiPipelineService {
 
       const startedAt = Date.now();
       const segments = await this.sttProvider.transcribeFinal(audio, consultationId);
+      await this.recordSttQuality(consultationId, segments.map((seg) => seg.text).join('\n'));
       const fullChars = segments.map((seg) => seg.text.replace(/\s/g, '').length).reduce((a, b) => a + b, 0);
       const ratio = fullChars > 0 ? liveChars / fullChars : 1;
       await logAiExecution(this.prisma, {
