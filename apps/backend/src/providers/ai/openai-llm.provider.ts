@@ -1,3 +1,4 @@
+import { ExamEvent, runExamEvents } from './exam-events';
 import {
   LlmProvider,
   StructuredClinicalDataPayload,
@@ -383,6 +384,18 @@ export class OpenAiLlmProvider implements LlmProvider {
     );
     const parsed = JSON.parse(result.content) as StructuredClinicalDataPayload;
     return StructuredClinicalDataSchema.parse(parsed);
+  }
+
+  /**
+   * 診察の発話から、部位ごとの診察の有無と結果を拾う。引用の検算は runExamEvents の中。
+   * requestChat を直接呼ぶ：chat 系は lastUsage を書き換え、並べて走るSOAP・抽出のトークン記録を壊すため。
+   */
+  async extractExamEvents(transcript: string, _consultationId?: string): Promise<ExamEvent[]> {
+    this.assertApiKey();
+    return runExamEvents(async (system, user) => {
+      const response = await this.requestChat(this.extractModel, system, user, true, 0, 1500);
+      return JSON.parse(response.content);
+    }, transcript);
   }
 
   async generateSoap(

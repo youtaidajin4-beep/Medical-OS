@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ConsultationStatus, DocumentType } from '@prisma/client';
+import { ConsultationStatus, DocumentType, WarningSeverity } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { TranscriptService } from '../transcript/transcript.service';
 import { RecordingService } from '../recording/recording.service';
@@ -33,6 +33,12 @@ import {
   SOAP_TEMPLATE_FLOORS,
 } from '../../providers/ai/soap-templates';
 import { applyRoutineFloor } from '../../providers/ai/soap-floor-gate';
+import {
+  EXAM_EVENTS_VERSION,
+  ExamResolution,
+  examSystemLabel,
+  resolveExam,
+} from '../../providers/ai/exam-events';
 import { applyPhrasingToSoap } from '../../providers/ai/soap-phrasing';
 import {
   deletesImmediately,
@@ -371,6 +377,24 @@ export class AiPipelineService {
 
       // Speaker-prefixed transcript for SOAP / structured extraction
       let soapSource = this.transcriptService.toSpeakerPrefixedText(updatedSegments);
+      // 診察の発話を部位ごとに拾う（Oの定型を入れてよいかの判定）。抽出・SOAP作成と並べて走らせる。
+      // 失敗しても診療は止めず、従来の語の判定へ戻る
+      const examSourceText = soapSource;
+      const examStart = Date.now();
+      const examPromise: Promise<ExamResolution | null> =
+        !isMock &&
+        resolveSoapVisitType(consultation.visitType) === 'ROUTINE' &&
+        this.llmProvider.extractExamEvents
+          ? this.llmProvider
+              .extractExamEvents(examSourceText, consultationId)
+              .then((events) => resolveExam(events))
+              .catch((error) => {
+                this.logger.warn(
+                  `診察の発話の判定に失敗しました（語の判定に戻ります）: ${error instanceof Error ? error.message : String(error)}`,
+                );
+                return null;
+              })
+          : Promise.resolve(null);
       if (reviewFlags.length) {
         soapSource = `${soapSource}\n\n${reviewFlags.join('\n')}`;
       }
@@ -492,9 +516,27 @@ export class AiPipelineService {
       // 空いた欄に、会話が裏づける床だけを入れる。
       // 「脈拍異常なし」は聴診した会話があるときだけ。無ければ入れず、
       // モデルが勝手に書いていれば取り除く
+      const examResolution = await examPromise;
+      if (examResolution) {
+        await logAiExecution(this.prisma, {
+          consultationId,
+          step: 'exam_events',
+          provider: this.llmProvider.name,
+          status: 'completed',
+          durationMs: Date.now() - examStart,
+          promptVersion: EXAM_EVENTS_VERSION,
+          // 部位ごとの判定と、根拠の引用（短い発話）。あとから「なぜ入った／入らなかったか」を辿る
+          errorMessage: JSON.stringify({
+            normal: examResolution.normal,
+            unconfirmed: examResolution.unconfirmed,
+            abnormal: examResolution.abnormal,
+            evidence: examResolution.evidence,
+          }).slice(0, 1500),
+        });
+      }
       const floorResult = passFloorToModel
         ? null
-        : applyRoutineFloor(generatedSoap, templateFloor, soapSource);
+        : applyRoutineFloor(generatedSoap, templateFloor, soapSource, examResolution);
       if (floorResult && (floorResult.withheld.length || floorResult.removed.length)) {
         await logAiExecution(this.prisma, {
           consultationId,
@@ -521,6 +563,39 @@ export class AiPipelineService {
             consultationId,
             ...w,
           })),
+        });
+      }
+      // Oの定型について、医師に見せる注意。していない所見を確認なしでカルテに残さない
+      const examWarnings: Array<{ category: string; message: string; severity: WarningSeverity }> = [];
+      if (floorResult && floorResult.unconfirmedExam.length > 0) {
+        const quotes = floorResult.unconfirmedExam
+          .map((sys) => {
+            const q = examResolution?.evidence[sys]?.action;
+            return q ? `${examSystemLabel(sys)}「${q.slice(0, 30)}」` : examSystemLabel(sys);
+          })
+          .join('、');
+        examWarnings.push({
+          category: 'objective_unconfirmed',
+          message: `要確認：Oの定型は、診察の発話は会話にありましたが、「異常なし」と述べた発話が確認できなかった部位を含みます（${quotes}）。診察で確認した内容か見てください。`,
+          severity: WarningSeverity.WARNING,
+        });
+      }
+      if (
+        floorResult &&
+        evidence.usable &&
+        floorResult.soap.objective.trim() === '' &&
+        floorResult.withheld.includes('objective')
+      ) {
+        examWarnings.push({
+          category: 'objective_blank',
+          message:
+            '要確認：Oは空欄です。診察を行った発話（聴診・脈・目の確認など）が会話に見つからなかったため、定型は入れていません。診察した場合は、SOAP欄の下の「定型文」ボタンで入れられます。',
+          severity: WarningSeverity.WARNING,
+        });
+      }
+      if (examWarnings.length) {
+        await this.prisma.clinicalWarning.createMany({
+          data: examWarnings.map((w) => ({ consultationId, ...w })),
         });
       }
       const questionnaire = questionnairePromise ? await questionnairePromise : null;

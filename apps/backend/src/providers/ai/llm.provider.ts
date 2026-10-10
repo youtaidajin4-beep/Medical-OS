@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { GeneratedDocumentType } from '@prisma/client';
 import { MedicalGlossary } from './medical-glossary.types';
+import type { ExamEvent } from './exam-events';
 import { mockScenarioContext } from './mock-scenario-context';
 import { MOCK_SCENARIOS } from './mock-scenarios';
 
@@ -129,6 +130,11 @@ export interface LlmProvider {
     system: string,
     user: string,
   ): Promise<Record<string, unknown>>;
+  /**
+   * 診察の会話から、医師が実際に行った身体診察を部位ごとに拾う（Oの定型を入れてよいかの判定）。
+   * 引用は会話に実在するものだけに検算して返す。モックは持たない（従来の語の判定に戻る）。
+   */
+  extractExamEvents?(transcript: string, consultationId?: string): Promise<ExamEvent[]>;
   /**
    * いまのSOAPを、指定された書き方に書き直す。事実は足さず、削らない。
    * transcript は、書き直しの根拠（会話に無いことを書かないための出典）。

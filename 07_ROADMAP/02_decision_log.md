@@ -39,6 +39,7 @@
 | 2026-08-24 | **くしま本番接続（推奨範囲1）**: Supabase `medical-os-kushima` + Nest/Prisma/JWT 維持。テナント `clinics.code=kushima_internal`。Auth/RLS は後続。Bright Dental 非接続 |
 | 2026-08-25 | **今堀ケース長尺ハング**: consultation `d68d4173…` は `pipeline_start` のみで STT 前停止（UIの「SOAP作成中」は偽プログレス）。STT/LLM timeout・セグメント校正爆発撤廃・停滞検知・実進捗UI を導入 |
 | 2026-08-26 | **SOAP作成ハング再発防止**: `pipelineError`/stale の SOAP有無ゲート撤廃、SOAP+note+REVIEW を transaction、timeout 再試行禁止、heartbeat、UI 40分タイムアウト・ポーリング失敗表示・SOAP/診療記録ステップ分割、失敗時 AI下書き削除して再処理可 |
+| 2026-10-10 | **Oの定型を、診察の発話の判定で決める**：本番66診察でOが空欄22件、うち10/2以降の12件は「聴診などの語が無いと定型を入れない」正規表現が原因だった。会話から部位ごとの診察と結果を引用つきで拾い、引用を機械で検算して、異常なし／未確認／異常ありの3段で入れる。偽の定型0・偽の診察0（未見の組でも）。詳細は [`11_exam_events.md`](./11_exam_events.md) |
 | 2026-10-10 | **品質計測を導入**：診察ごとに発話の再現率・用語の回収率・SOAPの転記率を積み、管理画面 `/admin/quality`（診療画面とは別）で月ごとに見る。基準は録音全体の文字起こし。SOAP判定のLLMは較正で1段目が使えず3段に作り直した。詳細は [`10_quality_measurement.md`](./10_quality_measurement.md) |
 | 2026-07-28 | **谷口優先 Phase 1–5 ロードマップ採用** — ①SOAPコピー→②書類ワンボタン→③学習・紹介パターン→④パネル内チャット→⑤紙OCR・患者蓄積。新機能は `/panel` 内に追加（画面遷移を増やさない） |
 

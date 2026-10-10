@@ -1,4 +1,5 @@
 import { SoapTemplateFloor } from './soap-templates';
+import { EXAM_SYSTEMS, ExamResolution, ExamSystem, normalSentences } from './exam-events';
 
 /**
  * 定型床を、モデルに渡すのをやめて、**空いた欄にこちらで入れる**。
@@ -59,6 +60,11 @@ function isBlank(value: string): boolean {
 
 export type FloorApplication = {
   soap: SoapFields;
+  /**
+   * Oに入れた定型のうち、診察の動作は会話にあったが「異常なし」と述べた発話が無かった部位。
+   * 呼び出し側が、医師の画面の「要確認」に出す（していない所見を、確認なしでカルテに残さない）
+   */
+  unconfirmedExam: ExamSystem[];
   /** どの欄に床を入れたか。実行ログに残して、あとから割合を見る */
   filled: Array<keyof SoapFields>;
   /** 根拠が無いので入れなかった欄 */
@@ -78,30 +84,70 @@ export function applyRoutineFloor(
   soap: SoapFields,
   floor: SoapTemplateFloor,
   transcript: string,
+  /**
+   * 診察の発話を部位ごとに拾った結果（exam-events.ts）。
+   * 渡されたときは、聴診などの語の有無ではなく、これでOの定型を決める。
+   * 渡されない（判定に失敗した・モックの）ときだけ、従来どおり語の有無で決める。
+   */
+  exam?: ExamResolution | null,
 ): FloorApplication {
   const out: SoapFields = { ...soap };
   const filled: Array<keyof SoapFields> = [];
   const withheld: Array<keyof SoapFields> = [];
+  let unconfirmedExam: ExamSystem[] = [];
 
-  const examined = AUSCULTATION_CUES.test(transcript);
+  const regexExamined = AUSCULTATION_CUES.test(transcript);
   const continued = CONTINUATION_CUES.test(transcript);
+
+  // Oに入れる定型の部位。診察の動作と「異常なし」の発話の両方が確かめられた部位は、そのまま入れる。
+  // 動作だけの部位は、入れるが「未確認」として呼び出し側が要確認に出す。
+  // 異常を述べた部位には入れない（会話から書く）
+  let normalSystems: ExamSystem[] = [];
+  let examined: boolean;
+  if (exam) {
+    const found = exam.normal.length + exam.unconfirmed.length + exam.abnormal.length > 0;
+    normalSystems = exam.normal;
+    unconfirmedExam = exam.unconfirmed;
+    // 部位が1つも拾えなかったが、聴診などの語はある：語の判定を、未確認の4部位として残す
+    // （語だけでは、患者の「背中が痛い」などにも当たるので、確認なしでは入れない）
+    if (!found && regexExamined) unconfirmedExam = [...EXAM_SYSTEMS];
+    examined = found || regexExamined;
+  } else {
+    examined = regexExamined;
+    if (regexExamined) normalSystems = [...EXAM_SYSTEMS];
+  }
+
+  const objectiveFromExam = (): string => {
+    const lines = [...normalSentences(normalSystems), ...normalSentences(unconfirmedExam)];
+    // 4部位とも異常なしのときは、先生の定型（床）そのままの文にそろえる
+    return lines.length ? lines.join('') : '';
+  };
 
   const rules: Array<{ field: keyof SoapFields; allowed: boolean }> = [
     { field: 'subjective', allowed: true },
-    { field: 'objective', allowed: examined },
+    { field: 'objective', allowed: normalSystems.length + unconfirmedExam.length > 0 },
     { field: 'assessment', allowed: true },
     { field: 'plan', allowed: continued },
   ];
 
+  const insertedUnconfirmed: ExamSystem[] = [];
   for (const { field, allowed } of rules) {
     if (!isBlank(out[field])) continue;
     if (!allowed) {
       withheld.push(field);
       continue;
     }
-    out[field] = floor[field];
+    if (field === 'objective') {
+      const text = objectiveFromExam();
+      out.objective = text === normalSentences([...EXAM_SYSTEMS]).join('') ? floor.objective : text;
+      insertedUnconfirmed.push(...unconfirmedExam);
+    } else {
+      out[field] = floor[field];
+    }
     filled.push(field);
   }
+  // Oに入らなかったとき（モデルがすでに書いていた）は、未確認の部位も入れていない
+  unconfirmedExam = insertedUnconfirmed;
 
   // モデルは過去の修正例や文体ヒントからも床の言い回しを拾ってくる。
   // 聴診していない診察に「脈拍異常なし」が出たら、プロンプトの約束に関係なく落とす
@@ -119,7 +165,7 @@ export function applyRoutineFloor(
     out.objective = kept.join('\n').trim();
   }
 
-  return { soap: out, filled, withheld, removed };
+  return { soap: out, unconfirmedExam, filled, withheld, removed };
 }
 
 /** 床のOの文だけで出来ている行か。会話から拾った事実が混ざっていれば残す */
