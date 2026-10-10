@@ -1,11 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, getToken, isUnauthorizedError } from '@/lib/api-client';
 import { useRecording } from '@/hooks/use-recording';
 import { useMicCheck } from '@/hooks/use-mic-check';
 import { useTranscriptPreview } from '@/hooks/use-transcript-preview';
+import { Spinner } from '@/components/ui/spinner';
 import { RecordingPhase } from '@/components/consultation/recording-phase';
 import { ProcessingPhase } from '@/components/consultation/processing-phase';
 import { ErrorPhase } from '@/components/consultation/error-phase';
@@ -14,7 +15,11 @@ import { formatSoapForChartCopy, type CopyStyle, type VisitType } from '@/lib/so
 
 type Soap = { subjective: string; objective: string; assessment: string; plan: string };
 type Warning = { id: string; message: string; severity: string };
-type Phase = 'recording' | 'processing' | 'error' | 'review';
+/**
+ * loading … 診察の状態を読み込む前。録音画面を仮に出すと、過去の診療を開くたびに
+ * 録音画面（とマイクの確認）が一瞬挟まる。読み込みが終わるまでは、何も決めずに待つ。
+ */
+type Phase = 'loading' | 'recording' | 'processing' | 'error' | 'review';
 
 /** Match backend pipeline-progress.ts */
 const CLIENT_STALE_NO_PROGRESS_MS = 15 * 60 * 1000;
@@ -37,7 +42,8 @@ export function ConsultationWorkflow({
   backHref?: string;
 }) {
   const router = useRouter();
-  const [phase, setPhase] = useState<Phase>('recording');
+  const [phase, setPhase] = useState<Phase>('loading');
+  const loadedOnceRef = useRef(false);
   // 録音前のマイク確認。録音が始まったら閉じて、マイクを二重に掴まないようにする。
   // ここで選んだマイクを、そのまま録音でも使う（診察室に置いた外付けマイクで録るため）
   const [micCheckOpen, setMicCheckOpen] = useState(true);
@@ -120,6 +126,7 @@ export function ConsultationWorkflow({
   const loadConsultation = useCallback(async () => {
     try {
       const data = await api.getConsultation(id);
+      loadedOnceRef.current = true;
       setPollFailCount(0);
       const patientName = data.patient?.name ?? data.anonymousCase?.displayName ?? '症例';
       setCaseName(patientName);
@@ -199,12 +206,18 @@ export function ConsultationWorkflow({
         return;
       }
 
-      if (data.status === 'RECORDING') {
-        setPhase('recording');
-      }
+      // 録音前（DRAFT）・録音中（RECORDING）。ここで初めて録音画面を出す
+      setPhase('recording');
     } catch (error) {
       if (isUnauthorizedError(error)) {
         router.replace('/login');
+        return;
+      }
+      // 最初の読み込みで失敗したときは、録音画面へ倒さずに、そのまま知らせる
+      if (!loadedOnceRef.current) {
+        setErrorMessage('診療記録を読み込めませんでした。通信を確認して、もう一度開いてください。');
+        setCanReprocess(false);
+        setPhase('error');
         return;
       }
       setPollFailCount((n) => {
@@ -455,6 +468,15 @@ export function ConsultationWorkflow({
     } finally {
       setGeneratingDocs(false);
     }
+  }
+
+  if (phase === 'loading') {
+    return (
+      <div className="flex items-center justify-center gap-2 py-24 text-sm text-slate-500" role="status">
+        <Spinner />
+        診療記録を開いています…
+      </div>
+    );
   }
 
   if (phase === 'recording') {
