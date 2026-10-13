@@ -32,8 +32,7 @@ async function main() {
       `${key}  ${String(a.measuredVisits).padStart(3)} | ${pct(a.utteranceRecall)} ${pct(a.utterancePrecision)} | ${pct(a.termRecall)} / ${pct(a.termRecallRaw)} | ${pct(a.soapCoverage)}  ${a.unsupportedPerVisit?.toFixed(2) ?? '—'}`,
     );
   }
-  console.log('
-※ SOAP転記率はLLM判定の物差し。人が的を付けたeval（Zoom+GPT=74%）の数字とは比べない');
+  console.log('\n※ SOAP転記率はLLM判定の物差し。人が的を付けたeval（Zoom+GPT=74%）の数字とは比べない');
   console.log('※ 割合は診察の合算。基準は録音全体の文字起こしで、正解ではない。1か月の動きを見る');
 
   if (visitsMonth) {

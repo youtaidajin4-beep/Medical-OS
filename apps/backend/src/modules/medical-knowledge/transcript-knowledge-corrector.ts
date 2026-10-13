@@ -121,7 +121,11 @@ export function correctTranscriptWithKnowledge(
     // 高リスクの未承認は書類作成をブロックするため、**正しく認識できているのに
     // 書類が作れない**という状態になる。
     /** 文字起こしが既に正式名称と同じ＝直すところが無い */
-    const alreadyCanonical = hit.surface === best.hit.canonicalName;
+    // 商品名で言われた薬（ロキソニン）は、書き換えも確認も要らない。正しく認識できているだけ。
+    // 商品名を一般名に直すかどうかは書類側の決め事で、文字起こしの誤りではない
+    const alreadyCanonical =
+      hit.surface === best.hit.canonicalName ||
+      (best.hit.aliasType === 'brand_name' && hit.surface === best.hit.matchAlias);
 
     // Patient context only boosts ranking scores above — never forces auto-apply.
     // High-risk categories never auto-apply; physician must approve.
@@ -171,7 +175,7 @@ export function correctTranscriptWithKnowledge(
           endPosition: hit.end,
         },
       });
-    } else if (best.hit.matchAlias !== best.hit.canonicalName) {
+    } else if (best.hit.matchAlias !== best.hit.canonicalName && !alreadyCanonical) {
       corrections.push({
         originalTerm: hit.surface,
         correctedTerm: best.hit.canonicalName,

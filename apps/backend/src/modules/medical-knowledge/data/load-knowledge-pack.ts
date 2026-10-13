@@ -27,22 +27,58 @@ type KnowledgePackV2 = {
   recommended_entity_types?: string[];
 };
 
-function resolvePackPath(): string {
+function resolveDataPath(file: string): string | null {
   const candidates = [
-    join(__dirname, 'medical_os_internal_medicine_knowledge_v2.json'),
-    join(process.cwd(), 'src/modules/medical-knowledge/data/medical_os_internal_medicine_knowledge_v2.json'),
-    join(
-      process.cwd(),
-      'apps/backend/src/modules/medical-knowledge/data/medical_os_internal_medicine_knowledge_v2.json',
-    ),
+    join(__dirname, file),
+    join(process.cwd(), 'src/modules/medical-knowledge/data', file),
+    join(process.cwd(), 'apps/backend/src/modules/medical-knowledge/data', file),
   ];
   for (const p of candidates) {
     if (existsSync(p)) return p;
   }
-  throw new Error('medical_os_internal_medicine_knowledge_v2.json not found');
+  return null;
+}
+
+function resolvePackPath(): string {
+  const found = resolveDataPath('medical_os_internal_medicine_knowledge_v2.json');
+  if (!found) throw new Error('medical_os_internal_medicine_knowledge_v2.json not found');
+  return found;
 }
 
 const data = JSON.parse(readFileSync(resolvePackPath(), 'utf8')) as KnowledgePackV2;
+
+/**
+ * 追加語彙（curated lexicon）。標準の辞書（v2）に無い薬・病名・検査・処置を足したもの。
+ *
+ * 標準の辞書は、実診察の書き起こしに出る語の取りこぼしが多かった（抗菌薬・抗ウイルス薬・
+ * 精神科の薬・漢方・外用薬・皮膚科や整形の病名がほぼ無い）。公的マスターを取り込むまでの
+ * つなぎとして、外来の内科で実際に出る語を足している。まだ医師・薬剤師の確認前なので、
+ * 標準のヒント（音声認識の語彙・校正の語彙）へは入れず、**辞書の照合と近い語の検索**にだけ使う。
+ * 無くても動く（ファイルが無ければ標準の辞書だけ）。
+ */
+function loadCurated(): KnowledgePackV2 | null {
+  const found = resolveDataPath('curated-lexicon-v1.json');
+  if (!found) return null;
+  try {
+    return JSON.parse(readFileSync(found, 'utf8')) as KnowledgePackV2;
+  } catch {
+    return null;
+  }
+}
+const curated = loadCurated();
+
+/** 標準＋追加。同じ語は標準を優先する（重複は追加側で除いてあるが、念のため） */
+const merged: KnowledgePackV2 = {
+  ...data,
+  terms: [...(data.terms ?? []), ...(curated?.terms ?? [])],
+  medication_brand_generic: [
+    ...(data.medication_brand_generic ?? []),
+    ...(curated?.medication_brand_generic ?? []),
+  ],
+  abbreviations: [...(data.abbreviations ?? []), ...(curated?.abbreviations ?? [])],
+  spoken_forms: [...(data.spoken_forms ?? []), ...(curated?.spoken_forms ?? [])],
+  common_stt_errors: [...(data.common_stt_errors ?? []), ...(curated?.common_stt_errors ?? [])],
+};
 
 function mapPriority(raw?: string): number {
   if (raw === 'high') return 150;
@@ -153,7 +189,7 @@ function upsertTerm(byName: Map<string, SeedTerm>, next: SeedTerm) {
 export function loadInternalMedicineKnowledgePack(): SeedTerm[] {
   const byName = new Map<string, SeedTerm>();
 
-  for (const t of data.terms ?? []) {
+  for (const t of merged.terms ?? []) {
     const category = mapPackCategory(t.category, t.canonical_name);
     upsertTerm(byName, {
       canonicalName: t.canonical_name,
@@ -166,7 +202,7 @@ export function loadInternalMedicineKnowledgePack(): SeedTerm[] {
     });
   }
 
-  for (const row of data.medication_brand_generic ?? []) {
+  for (const row of merged.medication_brand_generic ?? []) {
     upsertTerm(byName, {
       canonicalName: row.generic_name,
       category: 'medication',
@@ -176,7 +212,7 @@ export function loadInternalMedicineKnowledgePack(): SeedTerm[] {
     });
   }
 
-  for (const row of data.abbreviations ?? []) {
+  for (const row of merged.abbreviations ?? []) {
     const existing = byName.get(row.canonical);
     const category = existing?.category ?? 'diagnosis';
     upsertTerm(byName, {
@@ -189,7 +225,7 @@ export function loadInternalMedicineKnowledgePack(): SeedTerm[] {
     });
   }
 
-  for (const row of data.spoken_forms ?? []) {
+  for (const row of merged.spoken_forms ?? []) {
     const existing = byName.get(row.canonical);
     const category = existing?.category ?? 'laboratory_test';
     upsertTerm(byName, {
@@ -201,7 +237,7 @@ export function loadInternalMedicineKnowledgePack(): SeedTerm[] {
     });
   }
 
-  for (const row of data.common_stt_errors ?? []) {
+  for (const row of merged.common_stt_errors ?? []) {
     const existing = byName.get(row.canonical);
     const category = existing?.category ?? 'other';
     upsertTerm(byName, {
@@ -229,7 +265,7 @@ export function knowledgePackSafetyRules(): string[] {
 export function knowledgePackReading(canonicalName: string): string | undefined {
   if (!readingByName) {
     readingByName = new Map(
-      (data.terms ?? [])
+      (merged.terms ?? [])
         .filter((t) => t.reading)
         .map((t) => [t.canonical_name, t.reading as string]),
     );
@@ -268,7 +304,7 @@ export function knowledgePackCorrectionTerms(): {
 
 /** 商品名→一般名の対応表。書類で一般名を主に書くために使う */
 export function knowledgePackBrandGeneric(): Array<{ brand: string; generic: string }> {
-  return (data.medication_brand_generic ?? [])
+  return (merged.medication_brand_generic ?? [])
     .filter((row) => row.brand_name && row.generic_name)
     .map((row) => ({ brand: row.brand_name, generic: row.generic_name }));
 }
@@ -335,4 +371,52 @@ export function knowledgePackV2Counts(): {
     spokenForms: data.spoken_forms?.length ?? 0,
     sttErrors: data.common_stt_errors?.length ?? 0,
   };
+}
+
+/** 追加語彙を含めた語の一覧（近い語の検索・語彙の候補づくり用）。読みは無い語もある */
+export function knowledgePackLexiconTerms(): Array<{
+  name: string;
+  reading?: string;
+  category: string;
+  priority: string;
+}> {
+  return (merged.terms ?? []).map((t) => ({
+    name: t.canonical_name,
+    reading: t.reading,
+    category: t.category,
+    priority: t.priority ?? 'normal',
+  }));
+}
+
+/** 商品名と一般名を含めた、薬の表記の一覧（カタカナの近似照合用） */
+export function knowledgePackDrugSurfaces(): Array<{
+  surface: string;
+  canonical: string;
+  kind: 'generic' | 'brand';
+}> {
+  const out: Array<{ surface: string; canonical: string; kind: 'generic' | 'brand' }> = [];
+  for (const t of merged.terms ?? []) {
+    if (t.category === 'medications_generic') {
+      out.push({ surface: t.canonical_name, canonical: t.canonical_name, kind: 'generic' });
+    }
+  }
+  for (const b of merged.medication_brand_generic ?? []) {
+    out.push({ surface: b.brand_name, canonical: b.generic_name, kind: 'brand' });
+  }
+  return out;
+}
+
+/**
+ * 広い固定リスト。患者・医院の情報が無いときの土台になる語。
+ * 標準の辞書で優先度が高い薬・病名・検査と、代表的な商品名。追加語彙は含めない（確認前のため）。
+ */
+export function knowledgePackBroadPool(): string[] {
+  const high = (category: string) =>
+    (data.terms ?? []).filter((t) => t.priority === 'high' && t.category === category).map((t) => t.canonical_name);
+  return [
+    ...high('medications_generic'),
+    ...(data.medication_brand_generic ?? []).slice(0, 60).map((b) => b.brand_name),
+    ...high('diagnoses'),
+    ...high('laboratory_tests'),
+  ];
 }

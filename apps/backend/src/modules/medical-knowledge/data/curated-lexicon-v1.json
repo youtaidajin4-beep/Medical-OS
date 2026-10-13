@@ -1,0 +1,8812 @@
+{
+ "name": "メディカルOS 内科 追加語彙（curated lexicon）",
+ "version": "curated-v1",
+ "status": "unreviewed — 医師・薬剤師の確認前。読みと商品名↔一般名の対応は人の目で確かめてから「確認済み」にする",
+ "purpose": "内科外来で実際に出る病名・薬・検査・処置の取りこぼしを減らす。公的マスターを取り込むまでのつなぎ",
+ "terms": [
+  {
+   "canonical_name": "ニカルジピン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "エホニジピン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ニトレンジピン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "マニジピン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ニソルジピン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "テモカプリル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "キナプリル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ベナゼプリル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ドキサゾシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ウラピジル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "プラゾシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ブナゾシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "クロニジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "メチルドパ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ヒドララジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アロチノロール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ラベタロール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "セリプロロール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アセブトロール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ランジオロール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アムロジピン・アトルバスタチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "テルミサルタン・アムロジピン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "テルミサルタン・アムロジピン・ヒドロクロロチアジド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "バルサルタン・アムロジピン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "カンデサルタン・アムロジピン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "カンデサルタン・ヒドロクロロチアジド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "オルメサルタン・アゼルニジピン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "イルベサルタン・アムロジピン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "イルベサルタン・トリクロルメチアジド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アジルサルタン・アムロジピン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "バルサルタン・ヒドロクロロチアジド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ロサルタン・ヒドロクロロチアジド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "テルミサルタン・ヒドロクロロチアジド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "バルサルタン・シルニジピン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ロスバスタチン・エゼチミブ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アトルバスタチン・エゼチミブ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ピタバスタチン・エゼチミブ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アログリプチン・メトホルミン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ビルダグリプチン・メトホルミン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アナグリプチン・メトホルミン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "シタグリプチン・メトホルミン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ミチグリニド・ボグリボース",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "シタグリプチン・イプラグリフロジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "テネリグリプチン・カナグリフロジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "エンパグリフロジン・リナグリプチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ピオグリタゾン・グリメピリド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アログリプチン・ピオグリタゾン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ピオグリタゾン・メトホルミン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "メチクロチアジド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アセタゾラミド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "カンレノ酸カリウム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ミチグリニド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ナテグリニド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "レパグリニド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "グリベンクラミド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "トルブタミド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アナグリプチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "トレラグリプチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "オマリグリプチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "インスリンデテミル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "インスリンデグルデク・インスリンアスパルト",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "インスリンデグルデク・リラグルチド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "インスリングラルギン・リキシセナチド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "リキシセナチド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "エキセナチド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "フルバスタチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "クリノフィブラート",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "イコサペント酸エチル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "オメガ3脂肪酸エチル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "プロブコール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "コレスチミド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "コレスチラミン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ニコモール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ニセリトロール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "エボロクマブ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アリロクマブ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ベムペド酸",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アスピリン・ランソプラゾール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アスピリン・ボノプラザン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "チカグレロル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "チクロピジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "サルポグレラート",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ベラプロスト",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "リマプロスト",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ジピリダモール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アミオダロン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ベプリジル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ソタロール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ピルシカイニド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "フレカイニド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "プロパフェノン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ジソピラミド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "シベンゾリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "メキシレチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "一硝酸イソソルビド",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "いっしょうさんいそそるびど"
+  },
+  {
+   "canonical_name": "トリメタジジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ミドドリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ドロキシドパ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アメジニウム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ベルイシグアト",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ラニチジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ニザチジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ロキサチジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "シメチジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "テプレノン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "スクラルファート",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ソファルコン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ポラプレジンク",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アルギン酸ナトリウム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "イルソグラジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ゲファルナート",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "セトラキサート",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ドンペリドン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "メトクロプラミド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アコチアミド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "スルピリド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "オンダンセトロン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "グラニセトロン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アプレピタント",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "水酸化マグネシウム",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "すいさんかまぐねしうむ"
+  },
+  {
+   "canonical_name": "ラクツロース",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ラクチトール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "センナ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "大黄",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "だいおう"
+  },
+  {
+   "canonical_name": "ビサコジル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ポリカルボフィルカルシウム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "トリメブチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ラモセトロン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "メペンゾラート",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ブチルスコポラミン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "チキジウム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ロペラミド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "タンニン酸アルブミン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ウルソデオキシコール酸",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ケノデオキシコール酸",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "メサラジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "サラゾスルファピリジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ブデソニド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ジメチコン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ビフィズス菌",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "酪酸菌",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "耐性乳酸菌",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ラクトミン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ジメンヒドリナート",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アデノシン三リン酸",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "イソソルビド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "フルチカゾン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "フルチカゾンプロピオン酸エステル・サルメテロール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ブデソニド・ホルモテロール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "フルチカゾンフランカルボン酸エステル・ビランテロール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "フルチカゾンフランカルボン酸エステル・ウメクリジニウム・ビランテロール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "モメタゾン・インダカテロール・グリコピロニウム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ブデソニド・グリコピロニウム・ホルモテロール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "シクレソニド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "モメタゾン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ベクロメタゾン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "チオトロピウム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ウメクリジニウム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "グリコピロニウム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "インダカテロール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ホルモテロール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "サルメテロール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ツロブテロール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "プロカテロール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "サルブタモール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "テオフィリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アミノフィリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ザフィルルカスト",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "オマリズマブ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "メポリズマブ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ベンラリズマブ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "デュピルマブ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "テゼペルマブ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "L-エチルシステイン",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "えるえちるしすていん"
+  },
+  {
+   "canonical_name": "アセチルシステイン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "リン酸コデイン",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "りんさんこでいん"
+  },
+  {
+   "canonical_name": "ジヒドロコデイン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ジメモルファン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ベンプロペリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ペントキシベリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "レボドロプロピジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "エプラジノン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "トラネキサム酸",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "とらねきさむさん"
+  },
+  {
+   "canonical_name": "ベポタスチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ルパタジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ケトチフェン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アゼラスチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "メキタジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "エバスチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ジフェンヒドラミン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "クロルフェニラミン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ヒドロキシジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "シプロヘプタジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ベタメタゾン・d-クロルフェニラミン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "クロモグリク酸",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ペミロラスト",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "スプラタスト",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アモキシシリン・クラブラン酸",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アンピシリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ピペラシリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ピペラシリン・タゾバクタム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アンピシリン・スルバクタム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "セファレキシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "セフカペン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "セフポドキシム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "セフジトレン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "セフテラム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "セフォチアム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "セフトリアキソン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "セフメタゾール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "セフェピム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "セフタジジム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "セファゾリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "メロペネム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "イミペネム・シラスタチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "テビペネム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "エリスロマイシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ロキシスロマイシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ミノサイクリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ドキシサイクリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "テトラサイクリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "シタフロキサシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "モキシフロキサシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ガレノキサシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "トスフロキサシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ラスクフロキサシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ノルフロキサシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "スルファメトキサゾール・トリメトプリム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "クリンダマイシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ホスホマイシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "バンコマイシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "リファキシミン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "フィダキソマイシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ニトロフラントイン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "リネゾリド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "リファンピシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "イソニアジド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "エタンブトール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ピラジナミド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "オセルタミビル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ザナミビル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ラニナミビル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ペラミビル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "バロキサビル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "バラシクロビル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アシクロビル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ファムシクロビル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アメナメビル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ニルマトレルビル・リトナビル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "モルヌピラビル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "エンシトレルビル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "レムデシビル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "フルコナゾール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "イトラコナゾール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ボリコナゾール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "テルビナフィン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ホスラブコナゾール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ナイスタチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アムホテリシンB",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "あむほてりしんびー"
+  },
+  {
+   "canonical_name": "エンテカビル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "テノホビル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ベタメタゾン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "フルドロコルチゾン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "トリアムシノロン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "エトドラク",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "メロキシカム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ナプロキセン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "インドメタシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "プラノプロフェン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ロルノキシカム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "スリンダク",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ザルトプロフェン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "フルルビプロフェン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "トラマドール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "トラマドール・アセトアミノフェン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ブプレノルフィン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "フェンタニル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "オキシコドン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "モルヒネ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ペンタゾシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ワクシニアウイルス接種家兎炎症皮膚抽出液",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "わくしにあうぃるすせっしゅかとえんしょうひふちゅうしゅつえき"
+  },
+  {
+   "canonical_name": "エペリゾン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "チザニジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "バクロフェン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "トルペリゾン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "シクロベンザプリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アフロクアロン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "メトカルバモール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "クロルゾキサゾン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ゾピクロン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ブロチゾラム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "トリアゾラム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ロルメタゼパム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "リルマザホン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "フルニトラゼパム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ニトラゼパム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "エスタゾラム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ダリドレキサント",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ジアゼパム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "クロナゼパム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ブロマゼパム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "クロキサゾラム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "フルジアゼパム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ロフラゼプ酸エチル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "タンドスピロン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "セルトラリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "エスシタロプラム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "パロキセチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "フルボキサミン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ベンラファキシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ミルナシプラン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ミルタザピン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "トラゾドン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ボルチオキセチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ノルトリプチリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "イミプラミン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "クロミプラミン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アモキサピン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "マプロチリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "炭酸リチウム",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "たんさんりちうむ"
+  },
+  {
+   "canonical_name": "アリピプラゾール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ブレクスピプラゾール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "クエチアピン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "リスペリドン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "オランザピン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ペロスピロン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ブロナンセリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ハロペリドール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "クロルプロマジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ガランタミン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "リバスチグミン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "レカネマブ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ドナネマブ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "レボドパ・カルビドパ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "レボドパ・ベンセラジド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "プラミペキソール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ロチゴチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ロピニロール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "カベルゴリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ブロモクリプチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ペルゴリド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アマンタジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ゾニサミド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "セレギリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ラサギリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "サフィナミド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "エンタカポン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "イストラデフィリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "トリヘキシフェニジル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ビペリデン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "レベチラセタム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "バルプロ酸ナトリウム",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ばるぷろさんなとりうむ"
+  },
+  {
+   "canonical_name": "カルバマゼピン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ラモトリギン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ラコサミド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "フェニトイン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "フェノバルビタール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ペランパネル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "トピラマート",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "オクスカルバゼピン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "リザトリプタン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "スマトリプタン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ゾルミトリプタン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "エレトリプタン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ナラトリプタン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ロメリジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ガルカネズマブ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "エレヌマブ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "フレマネズマブ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "エルゴタミン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "タムスロシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "シロドシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ナフトピジル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "タダラフィル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "シルデナフィル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "バルデナフィル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "デュタステリド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "フィナステリド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ミラベグロン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ビベグロン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ソリフェナシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "イミダフェナシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "フェソテロジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "プロピベリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "オキシブチニン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "トルテロジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ジスチグミン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ベタネコール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "リオチロニン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "イバンドロン酸",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "いばんどろんさん"
+  },
+  {
+   "canonical_name": "ゾレドロン酸",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ぞれどろんさん"
+  },
+  {
+   "canonical_name": "アバロパラチド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "カルシトリオール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ファレカルシトリオール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ラロキシフェン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "バゼドキシフェン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "メナテトレノン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "活性型ビタミンD3",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "かっせいがたびたみんでぃーすりー"
+  },
+  {
+   "canonical_name": "乾燥硫酸鉄",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "かんそうりゅうさんてつ"
+  },
+  {
+   "canonical_name": "クエン酸第一鉄ナトリウム",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "くえんさんだいいちてつなとりうむ"
+  },
+  {
+   "canonical_name": "溶性ピロリン酸第二鉄",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ようせいぴろりんさんだいにてつ"
+  },
+  {
+   "canonical_name": "ビタミンB1",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "びたみんびーわん"
+  },
+  {
+   "canonical_name": "ビタミンB6",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "びたみんびーしっくす"
+  },
+  {
+   "canonical_name": "ビタミンC",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "びたみんしー"
+  },
+  {
+   "canonical_name": "ビタミンE",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "びたみんいー"
+  },
+  {
+   "canonical_name": "トピロキソスタット",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "プロベネシド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "クエン酸カリウム・クエン酸ナトリウム",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "くえんさんかりうむくえんさんなとりうむ"
+  },
+  {
+   "canonical_name": "炭酸ランタン",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "たんさんらんたん"
+  },
+  {
+   "canonical_name": "セベラマー",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "クエン酸第二鉄",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "くえんさんだいにてつ"
+  },
+  {
+   "canonical_name": "スクロオキシ水酸化鉄",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "すくろおきしすいさんかてつ"
+  },
+  {
+   "canonical_name": "ビキサロマー",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "沈降炭酸カルシウム",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ちんこうたんさんかるしうむ"
+  },
+  {
+   "canonical_name": "ポリスチレンスルホン酸ナトリウム",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "パチロマー",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ロキサデュスタット",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ダプロデュスタット",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "バダデュスタット",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "エポエチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "L-アスパラギン酸カリウム",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "えるあすぱらぎんさんかりうむ"
+  },
+  {
+   "canonical_name": "グルコン酸カリウム",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ぐるこんさんかりうむ"
+  },
+  {
+   "canonical_name": "塩化カリウム",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "えんかかりうむ"
+  },
+  {
+   "canonical_name": "塩化ナトリウム",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "えんかなとりうむ"
+  },
+  {
+   "canonical_name": "ナファモスタット",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ヘパリン類似物質",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "へぱりんるいじぶっしつ"
+  },
+  {
+   "canonical_name": "ベタメタゾン吉草酸エステル",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "べためたぞんきっそうさんえすてる"
+  },
+  {
+   "canonical_name": "ベタメタゾンジプロピオン酸エステル",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "べためたぞんじぷろぴおんさんえすてる"
+  },
+  {
+   "canonical_name": "ジフルプレドナート",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ヒドロコルチゾン酪酸エステル",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ひどろこるちぞんらくさんえすてる"
+  },
+  {
+   "canonical_name": "クロベタゾールプロピオン酸エステル",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "くろべたぞーるぷろぴおんさんえすてる"
+  },
+  {
+   "canonical_name": "モメタゾンフランカルボン酸エステル",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "もめたぞんふらんかるぼんさんえすてる"
+  },
+  {
+   "canonical_name": "ジフロラゾン酢酸エステル",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "じふろらぞんさくさんえすてる"
+  },
+  {
+   "canonical_name": "アムシノニド",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "デキサメタゾンプロピオン酸エステル",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "できさめたぞんぷろぴおんさんえすてる"
+  },
+  {
+   "canonical_name": "プレドニゾロン吉草酸エステル酢酸エステル",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ぷれどにぞろんきっそうさんえすてるさくさんえすてる"
+  },
+  {
+   "canonical_name": "ケトコナゾール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ルリコナゾール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ラノコナゾール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ビホナゾール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ブテナフィン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アモロルフィン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "エフィナコナゾール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "クロトリマゾール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ミコナゾール",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ミノキシジル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ゲンタマイシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "フシジン酸",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ナジフロキサシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ロメフロキサシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "デルゴシチニブ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ジファミラスト",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ブロメライン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "サリチル酸",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "さりちるさん"
+  },
+  {
+   "canonical_name": "尿素",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "にょうそ"
+  },
+  {
+   "canonical_name": "ワセリン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "亜鉛華軟膏",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "あえんかなんこう"
+  },
+  {
+   "canonical_name": "アズレン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "クロルヘキシジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ポビドンヨード",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アルプロスタジル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "リドカイン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ヒアルロン酸ナトリウム",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ひあるろんさんなとりうむ"
+  },
+  {
+   "canonical_name": "インフルエンザHAワクチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "肺炎球菌ワクチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "帯状疱疹ワクチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "RSウイルスワクチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "新型コロナワクチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "葛根湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "かっこんとう"
+  },
+  {
+   "canonical_name": "葛根湯加川芎辛夷",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "かっこんとうかせんきゅうしんい"
+  },
+  {
+   "canonical_name": "小青竜湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "しょうせいりゅうとう"
+  },
+  {
+   "canonical_name": "麻黄湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "まおうとう"
+  },
+  {
+   "canonical_name": "麦門冬湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ばくもんどうとう"
+  },
+  {
+   "canonical_name": "柴胡桂枝湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "さいこけいしとう"
+  },
+  {
+   "canonical_name": "補中益気湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ほちゅうえっきとう"
+  },
+  {
+   "canonical_name": "六君子湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "りっくんしとう"
+  },
+  {
+   "canonical_name": "半夏瀉心湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "はんげしゃしんとう"
+  },
+  {
+   "canonical_name": "五苓散",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ごれいさん"
+  },
+  {
+   "canonical_name": "真武湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "しんぶとう"
+  },
+  {
+   "canonical_name": "抑肝散",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "よくかんさん"
+  },
+  {
+   "canonical_name": "抑肝散加陳皮半夏",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "よくかんさんかちんぴはんげ"
+  },
+  {
+   "canonical_name": "芍薬甘草湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "しゃくやくかんぞうとう"
+  },
+  {
+   "canonical_name": "当帰芍薬散",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "とうきしゃくやくさん"
+  },
+  {
+   "canonical_name": "加味逍遙散",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "かみしょうようさん"
+  },
+  {
+   "canonical_name": "桂枝茯苓丸",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "けいしぶくりょうがん"
+  },
+  {
+   "canonical_name": "牛車腎気丸",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ごしゃじんきがん"
+  },
+  {
+   "canonical_name": "八味地黄丸",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "はちみじおうがん"
+  },
+  {
+   "canonical_name": "釣藤散",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ちょうとうさん"
+  },
+  {
+   "canonical_name": "大建中湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "だいけんちゅうとう"
+  },
+  {
+   "canonical_name": "防風通聖散",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ぼうふうつうしょうさん"
+  },
+  {
+   "canonical_name": "人参養栄湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "にんじんようえいとう"
+  },
+  {
+   "canonical_name": "十全大補湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "じゅうぜんたいほとう"
+  },
+  {
+   "canonical_name": "麻子仁丸",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ましにんがん"
+  },
+  {
+   "canonical_name": "大黄甘草湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "だいおうかんぞうとう"
+  },
+  {
+   "canonical_name": "桔梗湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ききょうとう"
+  },
+  {
+   "canonical_name": "半夏厚朴湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "はんげこうぼくとう"
+  },
+  {
+   "canonical_name": "苓桂朮甘湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "りょうけいじゅつかんとう"
+  },
+  {
+   "canonical_name": "四物湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "しもつとう"
+  },
+  {
+   "canonical_name": "竹茹温胆湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ちくじょうんたんとう"
+  },
+  {
+   "canonical_name": "清肺湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "せいはいとう"
+  },
+  {
+   "canonical_name": "五虎湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ごことう"
+  },
+  {
+   "canonical_name": "麻杏甘石湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "まきょうかんせきとう"
+  },
+  {
+   "canonical_name": "辛夷清肺湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "しんいせいはいとう"
+  },
+  {
+   "canonical_name": "荊芥連翹湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "けいがいれんぎょうとう"
+  },
+  {
+   "canonical_name": "越婢加朮湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "えっぴかじゅつとう"
+  },
+  {
+   "canonical_name": "防已黄耆湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ぼういおうぎとう"
+  },
+  {
+   "canonical_name": "疎経活血湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "そけいかっけつとう"
+  },
+  {
+   "canonical_name": "桂枝加朮附湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "けいしかじゅつぶとう"
+  },
+  {
+   "canonical_name": "柴苓湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "さいれいとう"
+  },
+  {
+   "canonical_name": "小柴胡湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "しょうさいことう"
+  },
+  {
+   "canonical_name": "茵蔯蒿湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "いんちんこうとう"
+  },
+  {
+   "canonical_name": "黄連解毒湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "おうれんげどくとう"
+  },
+  {
+   "canonical_name": "三黄瀉心湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "さんおうしゃしんとう"
+  },
+  {
+   "canonical_name": "柴胡加竜骨牡蛎湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "さいこかりゅうこつぼれいとう"
+  },
+  {
+   "canonical_name": "桂枝加竜骨牡蛎湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "けいしかりゅうこつぼれいとう"
+  },
+  {
+   "canonical_name": "酸棗仁湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "さんそうにんとう"
+  },
+  {
+   "canonical_name": "帰脾湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "きひとう"
+  },
+  {
+   "canonical_name": "加味帰脾湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "かみきひとう"
+  },
+  {
+   "canonical_name": "人参湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "にんじんとう"
+  },
+  {
+   "canonical_name": "安中散",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "あんちゅうさん"
+  },
+  {
+   "canonical_name": "平胃散",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "へいいさん"
+  },
+  {
+   "canonical_name": "茯苓飲",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ぶくりょういん"
+  },
+  {
+   "canonical_name": "香蘇散",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "こうそさん"
+  },
+  {
+   "canonical_name": "参蘇飲",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "じんそいん"
+  },
+  {
+   "canonical_name": "白虎加人参湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "びゃっこかにんじんとう"
+  },
+  {
+   "canonical_name": "猪苓湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ちょれいとう"
+  },
+  {
+   "canonical_name": "竜胆瀉肝湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "りゅうたんしゃかんとう"
+  },
+  {
+   "canonical_name": "清暑益気湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "せいしょえっきとう"
+  },
+  {
+   "canonical_name": "立効散",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "りっこうさん"
+  },
+  {
+   "canonical_name": "排膿散及湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "はいのうさんきゅうとう"
+  },
+  {
+   "canonical_name": "桂枝湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "けいしとう"
+  },
+  {
+   "canonical_name": "麻黄附子細辛湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "まおうぶしさいしんとう"
+  },
+  {
+   "canonical_name": "啓脾湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "けいひとう"
+  },
+  {
+   "canonical_name": "葛根湯加桔梗石膏",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "かっこんとうかききょうせっこう"
+  },
+  {
+   "canonical_name": "小建中湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "しょうけんちゅうとう"
+  },
+  {
+   "canonical_name": "黄耆建中湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "おうぎけんちゅうとう"
+  },
+  {
+   "canonical_name": "温経湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "うんけいとう"
+  },
+  {
+   "canonical_name": "五積散",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ごしゃくさん"
+  },
+  {
+   "canonical_name": "当帰四逆加呉茱萸生姜湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "とうきしぎゃくかごしゅゆしょうきょうとう"
+  },
+  {
+   "canonical_name": "呉茱萸湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ごしゅゆとう"
+  },
+  {
+   "canonical_name": "清心蓮子飲",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "せいしんれんしいん"
+  },
+  {
+   "canonical_name": "猪苓湯合四物湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ちょれいとうごうしもつとう"
+  },
+  {
+   "canonical_name": "三物黄芩湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "さんもつおうごんとう"
+  },
+  {
+   "canonical_name": "大柴胡湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "だいさいことう"
+  },
+  {
+   "canonical_name": "柴胡清肝湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "さいこせいかんとう"
+  },
+  {
+   "canonical_name": "消風散",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "しょうふうさん"
+  },
+  {
+   "canonical_name": "温清飲",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "うんせいいん"
+  },
+  {
+   "canonical_name": "十味敗毒湯",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "じゅうみはいどくとう"
+  },
+  {
+   "canonical_name": "高血圧緊急症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "こうけつあつきんきゅうしょう"
+  },
+  {
+   "canonical_name": "肺高血圧症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "はいこうけつあつしょう"
+  },
+  {
+   "canonical_name": "労作性狭心症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ろうさせいきょうしんしょう"
+  },
+  {
+   "canonical_name": "たこつぼ型心筋症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "たこつぼがたしんきんしょう"
+  },
+  {
+   "canonical_name": "心臓弁膜症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "しんぞうべんまくしょう"
+  },
+  {
+   "canonical_name": "下肢静脈瘤",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "かしじょうみゃくりゅう"
+  },
+  {
+   "canonical_name": "慢性静脈不全症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "まんせいじょうみゃくふぜんしょう"
+  },
+  {
+   "canonical_name": "起立性調節障害",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "きりつせいちょうせつしょうがい"
+  },
+  {
+   "canonical_name": "血管迷走神経反射",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "けっかんめいそうしんけいはんしゃ"
+  },
+  {
+   "canonical_name": "心臓神経症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "しんぞうしんけいしょう"
+  },
+  {
+   "canonical_name": "副甲状腺機能亢進症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ふくこうじょうせんきのうこうしんしょう"
+  },
+  {
+   "canonical_name": "副甲状腺機能低下症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ふくこうじょうせんきのうていかしょう"
+  },
+  {
+   "canonical_name": "亜急性甲状腺炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "あきゅうせいこうじょうせんえん"
+  },
+  {
+   "canonical_name": "無痛性甲状腺炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "むつうせいこうじょうせんえん"
+  },
+  {
+   "canonical_name": "甲状腺癌",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "こうじょうせんがん"
+  },
+  {
+   "canonical_name": "下垂体機能低下症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "かすいたいきのうていかしょう"
+  },
+  {
+   "canonical_name": "高プロラクチン血症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "こうぷろらくちんけっしょう"
+  },
+  {
+   "canonical_name": "褐色細胞腫",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "かっしょくさいぼうしゅ"
+  },
+  {
+   "canonical_name": "骨減少症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "こつげんしょうしょう"
+  },
+  {
+   "canonical_name": "痛風発作",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "つうふうほっさ"
+  },
+  {
+   "canonical_name": "偽痛風",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ぎつうふう"
+  },
+  {
+   "canonical_name": "高コレステロール血症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "こうこれすてろーるけっしょう"
+  },
+  {
+   "canonical_name": "糖尿病性足病変",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "とうにょうびょうせいそくびょうへん"
+  },
+  {
+   "canonical_name": "気管支拡張症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "きかんしかくちょうしょう"
+  },
+  {
+   "canonical_name": "肺癌",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "はいがん"
+  },
+  {
+   "canonical_name": "肺結節",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "はいけっせつ"
+  },
+  {
+   "canonical_name": "過敏性肺炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "かびんせいはいえん"
+  },
+  {
+   "canonical_name": "サルコイドーシス",
+   "category": "diagnoses",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "好酸球性肺炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "こうさんきゅうせいはいえん"
+  },
+  {
+   "canonical_name": "マイコプラズマ肺炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "まいこぷらずまはいえん"
+  },
+  {
+   "canonical_name": "細菌性肺炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "さいきんせいはいえん"
+  },
+  {
+   "canonical_name": "ウイルス性肺炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ういるすせいはいえん"
+  },
+  {
+   "canonical_name": "急性咽頭炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "きゅうせいいんとうえん"
+  },
+  {
+   "canonical_name": "急性副鼻腔炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "きゅうせいふくびくうえん"
+  },
+  {
+   "canonical_name": "慢性副鼻腔炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "まんせいふくびくうえん"
+  },
+  {
+   "canonical_name": "後鼻漏",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "こうびろう"
+  },
+  {
+   "canonical_name": "百日咳",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ひゃくにちぜき"
+  },
+  {
+   "canonical_name": "気道感染症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "きどうかんせんしょう"
+  },
+  {
+   "canonical_name": "溶連菌感染症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ようれんきんかんせんしょう"
+  },
+  {
+   "canonical_name": "伝染性単核球症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "でんせんせいたんかくきゅうしょう"
+  },
+  {
+   "canonical_name": "急性喉頭蓋炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "きゅうせいこうとうがいえん"
+  },
+  {
+   "canonical_name": "扁桃周囲膿瘍",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "へんとうしゅういのうよう"
+  },
+  {
+   "canonical_name": "過換気症候群",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "かかんきしょうこうぐん"
+  },
+  {
+   "canonical_name": "RSウイルス感染症",
+   "category": "diagnoses",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "手足口病",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "てあしくちびょう"
+  },
+  {
+   "canonical_name": "麻疹",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ましん"
+  },
+  {
+   "canonical_name": "風疹",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ふうしん"
+  },
+  {
+   "canonical_name": "水痘",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "すいとう"
+  },
+  {
+   "canonical_name": "流行性耳下腺炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "りゅうこうせいじかせんえん"
+  },
+  {
+   "canonical_name": "食道癌",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "しょくどうがん"
+  },
+  {
+   "canonical_name": "胃癌",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "いがん"
+  },
+  {
+   "canonical_name": "大腸癌",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "だいちょうがん"
+  },
+  {
+   "canonical_name": "膵癌",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "すいがん"
+  },
+  {
+   "canonical_name": "肝細胞癌",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "かんさいぼうがん"
+  },
+  {
+   "canonical_name": "胆道癌",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "たんどうがん"
+  },
+  {
+   "canonical_name": "ピロリ菌感染症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ぴろりきんかんせんしょう"
+  },
+  {
+   "canonical_name": "好酸球性食道炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "こうさんきゅうせいしょくどうえん"
+  },
+  {
+   "canonical_name": "バレット食道",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ばれっとしょくどう"
+  },
+  {
+   "canonical_name": "食道裂孔ヘルニア",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "しょくどうれっこうへるにあ"
+  },
+  {
+   "canonical_name": "急性虫垂炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "きゅうせいちゅうすいえん"
+  },
+  {
+   "canonical_name": "虚血性腸炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "きょけつせいちょうえん"
+  },
+  {
+   "canonical_name": "痔核",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "じかく"
+  },
+  {
+   "canonical_name": "裂肛",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "れっこう"
+  },
+  {
+   "canonical_name": "感染性腸炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "かんせんせいちょうえん"
+  },
+  {
+   "canonical_name": "偽膜性腸炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ぎまくせいちょうえん"
+  },
+  {
+   "canonical_name": "ノロウイルス感染症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "のろういるすかんせんしょう"
+  },
+  {
+   "canonical_name": "食中毒",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "しょくちゅうどく"
+  },
+  {
+   "canonical_name": "鼠径ヘルニア",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "そけいへるにあ"
+  },
+  {
+   "canonical_name": "急性腹症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "きゅうせいふくしょう"
+  },
+  {
+   "canonical_name": "総胆管結石",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "そうたんかんけっせき"
+  },
+  {
+   "canonical_name": "原発性胆汁性胆管炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "げんぱつせいたんじゅうせいたんかんえん"
+  },
+  {
+   "canonical_name": "自己免疫性肝炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "じこめんえきせいかんえん"
+  },
+  {
+   "canonical_name": "非アルコール性脂肪性肝炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ひあるこーるせいしぼうせいかんえん"
+  },
+  {
+   "canonical_name": "食道静脈瘤",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "しょくどうじょうみゃくりゅう"
+  },
+  {
+   "canonical_name": "膵嚢胞",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "すいのうほう"
+  },
+  {
+   "canonical_name": "胆嚢ポリープ",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "たんのうぽりーぷ"
+  },
+  {
+   "canonical_name": "胃ポリープ",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "いぽりーぷ"
+  },
+  {
+   "canonical_name": "腎嚢胞",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "じんのうほう"
+  },
+  {
+   "canonical_name": "水腎症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "すいじんしょう"
+  },
+  {
+   "canonical_name": "尿道炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "にょうどうえん"
+  },
+  {
+   "canonical_name": "前立腺炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ぜんりつせんえん"
+  },
+  {
+   "canonical_name": "前立腺癌",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ぜんりつせんがん"
+  },
+  {
+   "canonical_name": "神経因性膀胱",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "しんけいいんせいぼうこう"
+  },
+  {
+   "canonical_name": "腹圧性尿失禁",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ふくあつせいにょうしっきん"
+  },
+  {
+   "canonical_name": "切迫性尿失禁",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "せっぱくせいにょうしっきん"
+  },
+  {
+   "canonical_name": "ラクナ梗塞",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "らくなこうそく"
+  },
+  {
+   "canonical_name": "アテローム血栓性脳梗塞",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "あてろーむけっせんせいのうこうそく"
+  },
+  {
+   "canonical_name": "心原性脳塞栓症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "しんげんせいのうそくせんしょう"
+  },
+  {
+   "canonical_name": "頸動脈狭窄症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "けいどうみゃくきょうさくしょう"
+  },
+  {
+   "canonical_name": "慢性硬膜下血腫",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "まんせいこうまくかけっしゅ"
+  },
+  {
+   "canonical_name": "良性発作性頭位めまい症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "りょうせいほっさせいとういめまいしょう"
+  },
+  {
+   "canonical_name": "メニエール病",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "めにえーるびょう"
+  },
+  {
+   "canonical_name": "前庭神経炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ぜんていしんけいえん"
+  },
+  {
+   "canonical_name": "突発性難聴",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "とっぱつせいなんちょう"
+  },
+  {
+   "canonical_name": "自律神経失調症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "じりつしんけいしっちょうしょう"
+  },
+  {
+   "canonical_name": "本態性振戦",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ほんたいせいしんせん"
+  },
+  {
+   "canonical_name": "むずむず脚症候群",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "むずむずあししょうこうぐん"
+  },
+  {
+   "canonical_name": "三叉神経痛",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "さんさしんけいつう"
+  },
+  {
+   "canonical_name": "帯状疱疹後神経痛",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "たいじょうほうしんごしんけいつう"
+  },
+  {
+   "canonical_name": "顔面神経麻痺",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "がんめんしんけいまひ"
+  },
+  {
+   "canonical_name": "手根管症候群",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "しゅこんかんしょうこうぐん"
+  },
+  {
+   "canonical_name": "脊柱管狭窄症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "せきちゅうかんきょうさくしょう"
+  },
+  {
+   "canonical_name": "腰部脊柱管狭窄症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ようぶせきちゅうかんきょうさくしょう"
+  },
+  {
+   "canonical_name": "頸椎症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "けいついしょう"
+  },
+  {
+   "canonical_name": "椎間板ヘルニア",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ついかんばんへるにあ"
+  },
+  {
+   "canonical_name": "坐骨神経痛",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ざこつしんけいつう"
+  },
+  {
+   "canonical_name": "軽度認知障害",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "けいどにんちしょうがい"
+  },
+  {
+   "canonical_name": "正常圧水頭症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "せいじょうあつすいとうしょう"
+  },
+  {
+   "canonical_name": "うつ病",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "うつびょう"
+  },
+  {
+   "canonical_name": "双極性障害",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "そうきょくせいしょうがい"
+  },
+  {
+   "canonical_name": "パニック障害",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ぱにっくしょうがい"
+  },
+  {
+   "canonical_name": "全般性不安障害",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ぜんぱんせいふあんしょうがい"
+  },
+  {
+   "canonical_name": "ナルコレプシー",
+   "category": "diagnoses",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "心身症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "しんしんしょう"
+  },
+  {
+   "canonical_name": "湿疹",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "しっしん"
+  },
+  {
+   "canonical_name": "接触皮膚炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "せっしょくひふえん"
+  },
+  {
+   "canonical_name": "アトピー性皮膚炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "あとぴーせいひふえん"
+  },
+  {
+   "canonical_name": "脂漏性皮膚炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "しろうせいひふえん"
+  },
+  {
+   "canonical_name": "白癬",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "はくせん"
+  },
+  {
+   "canonical_name": "足白癬",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "あしはくせん"
+  },
+  {
+   "canonical_name": "爪白癬",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "つめはくせん"
+  },
+  {
+   "canonical_name": "皮脂欠乏症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ひしけつぼうしょう"
+  },
+  {
+   "canonical_name": "薬疹",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "やくしん"
+  },
+  {
+   "canonical_name": "乾癬",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "かんせん"
+  },
+  {
+   "canonical_name": "伝染性膿痂疹",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "でんせんせいのうかしん"
+  },
+  {
+   "canonical_name": "疥癬",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "かいせん"
+  },
+  {
+   "canonical_name": "食物アレルギー",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "しょくもつあれるぎー"
+  },
+  {
+   "canonical_name": "変形性膝関節症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "へんけいせいひざかんせつしょう"
+  },
+  {
+   "canonical_name": "五十肩",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ごじゅうかた"
+  },
+  {
+   "canonical_name": "肩関節周囲炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "かたかんせつしゅういえん"
+  },
+  {
+   "canonical_name": "腱鞘炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "けんしょうえん"
+  },
+  {
+   "canonical_name": "ばね指",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ばねゆび"
+  },
+  {
+   "canonical_name": "腰痛症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ようつうしょう"
+  },
+  {
+   "canonical_name": "圧迫骨折",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "あっぱくこっせつ"
+  },
+  {
+   "canonical_name": "大腿骨頸部骨折",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "だいたいこつけいぶこっせつ"
+  },
+  {
+   "canonical_name": "線維筋痛症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "せんいきんつうしょう"
+  },
+  {
+   "canonical_name": "シェーグレン症候群",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "しぇーぐれんしょうこうぐん"
+  },
+  {
+   "canonical_name": "全身性エリテマトーデス",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ぜんしんせいえりてまとーです"
+  },
+  {
+   "canonical_name": "SLE",
+   "category": "diagnoses",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "強皮症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "きょうひしょう"
+  },
+  {
+   "canonical_name": "多発性筋炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "たはつせいきんえん"
+  },
+  {
+   "canonical_name": "巨細胞性動脈炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "きょさいぼうせいどうみゃくえん"
+  },
+  {
+   "canonical_name": "ANCA関連血管炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "あんかかんれんけっかんえん"
+  },
+  {
+   "canonical_name": "骨髄異形成症候群",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "こつずいいけいせいしょうこうぐん"
+  },
+  {
+   "canonical_name": "多発性骨髄腫",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "たはつせいこつずいしゅ"
+  },
+  {
+   "canonical_name": "悪性リンパ腫",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "あくせいりんぱしゅ"
+  },
+  {
+   "canonical_name": "白血病",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "はっけつびょう"
+  },
+  {
+   "canonical_name": "特発性血小板減少性紫斑病",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "とくはつせいけっしょうばんげんしょうせいしはんびょう"
+  },
+  {
+   "canonical_name": "ITP",
+   "category": "diagnoses",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "梅毒",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ばいどく"
+  },
+  {
+   "canonical_name": "HIV感染症",
+   "category": "diagnoses",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "結核",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "けっかく"
+  },
+  {
+   "canonical_name": "潜在性結核感染症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "せんざいせいけっかくかんせんしょう"
+  },
+  {
+   "canonical_name": "性感染症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "せいかんせんしょう"
+  },
+  {
+   "canonical_name": "クラミジア感染症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "くらみじあかんせんしょう"
+  },
+  {
+   "canonical_name": "淋菌感染症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "りんきんかんせんしょう"
+  },
+  {
+   "canonical_name": "カンジダ症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "かんじだしょう"
+  },
+  {
+   "canonical_name": "口腔カンジダ症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "こうくうかんじだしょう"
+  },
+  {
+   "canonical_name": "丹毒",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "たんどく"
+  },
+  {
+   "canonical_name": "更年期障害",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "こうねんきしょうがい"
+  },
+  {
+   "canonical_name": "慢性疲労症候群",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "まんせいひろうしょうこうぐん"
+  },
+  {
+   "canonical_name": "食後低血圧",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "しょくごていけつあつ"
+  },
+  {
+   "canonical_name": "高血圧性心疾患",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "こうけつあつせいしんしっかん"
+  },
+  {
+   "canonical_name": "心肥大",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "しんひだい"
+  },
+  {
+   "canonical_name": "左室肥大",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "さしつひだい"
+  },
+  {
+   "canonical_name": "左室駆出率低下",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "さしつくしゅつりつていか"
+  },
+  {
+   "canonical_name": "脚ブロック",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "きゃくぶろっく"
+  },
+  {
+   "canonical_name": "右脚ブロック",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "うきゃくぶろっく"
+  },
+  {
+   "canonical_name": "左脚ブロック",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "さきゃくぶろっく"
+  },
+  {
+   "canonical_name": "無症候性心筋虚血",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "むしょうこうせいしんきんきょけつ"
+  },
+  {
+   "canonical_name": "冠攣縮",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "かんれんしゅく"
+  },
+  {
+   "canonical_name": "下肢閉塞性動脈硬化症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "かしへいそくせいどうみゃくこうかしょう"
+  },
+  {
+   "canonical_name": "間欠性跛行",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "かんけつせいはこう"
+  },
+  {
+   "canonical_name": "気管支喘息発作",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "きかんしぜんそくほっさ"
+  },
+  {
+   "canonical_name": "アスピリン喘息",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "あすぴりんぜんそく"
+  },
+  {
+   "canonical_name": "アレルギー性気管支肺アスペルギルス症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "あれるぎーせいきかんしはいあすぺるぎるすしょう"
+  },
+  {
+   "canonical_name": "慢性咳嗽",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "まんせいがいそう"
+  },
+  {
+   "canonical_name": "感染後咳嗽",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "かんせんごがいそう"
+  },
+  {
+   "canonical_name": "非びらん性胃食道逆流症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ひびらんせいいしょくどうぎゃくりゅうしょう"
+  },
+  {
+   "canonical_name": "急性腸炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "きゅうせいちょうえん"
+  },
+  {
+   "canonical_name": "細菌性腸炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "さいきんせいちょうえん"
+  },
+  {
+   "canonical_name": "ウイルス性腸炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ういるすせいちょうえん"
+  },
+  {
+   "canonical_name": "腸管感染症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ちょうかんかんせんしょう"
+  },
+  {
+   "canonical_name": "大腸憩室炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "だいちょうけいしつえん"
+  },
+  {
+   "canonical_name": "閉塞性黄疸",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "へいそくせいおうだん"
+  },
+  {
+   "canonical_name": "肝嚢胞",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "かんのうほう"
+  },
+  {
+   "canonical_name": "肝血管腫",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "かんけっかんしゅ"
+  },
+  {
+   "canonical_name": "アルコール性肝炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "あるこーるせいかんえん"
+  },
+  {
+   "canonical_name": "脂肪性肝疾患",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "しぼうせいかんしっかん"
+  },
+  {
+   "canonical_name": "代謝機能障害関連脂肪性肝疾患",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "たいしゃきのうしょうがいかんれんしぼうせいかんしっかん"
+  },
+  {
+   "canonical_name": "腎硬化症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "じんこうかしょう"
+  },
+  {
+   "canonical_name": "慢性糸球体腎炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "まんせいしきゅうたいじんえん"
+  },
+  {
+   "canonical_name": "薬剤性腎障害",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "やくざいせいじんしょうがい"
+  },
+  {
+   "canonical_name": "代謝性アシドーシス",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "たいしゃせいあしどーしす"
+  },
+  {
+   "canonical_name": "鉄過剰症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "てつかじょうしょう"
+  },
+  {
+   "canonical_name": "ビタミンK欠乏症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "びたみんけーけつぼうしょう"
+  },
+  {
+   "canonical_name": "亜鉛欠乏症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "あえんけつぼうしょう"
+  },
+  {
+   "canonical_name": "ヘモクロマトーシス",
+   "category": "diagnoses",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "再生不良性貧血",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "さいせいふりょうせいひんけつ"
+  },
+  {
+   "canonical_name": "慢性炎症に伴う貧血",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "まんせいえんしょうにともなうひんけつ"
+  },
+  {
+   "canonical_name": "二次性多血症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "にじせいたけつしょう"
+  },
+  {
+   "canonical_name": "本態性血小板血症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ほんたいせいけっしょうばんけっしょう"
+  },
+  {
+   "canonical_name": "エコノミークラス症候群",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "えこのみーくらすしょうこうぐん"
+  },
+  {
+   "canonical_name": "リンパ浮腫",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "りんぱふしゅ"
+  },
+  {
+   "canonical_name": "血管性浮腫",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "けっかんせいふしゅ"
+  },
+  {
+   "canonical_name": "アナフィラキシーショック",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "あなふぃらきしーしょっく"
+  },
+  {
+   "canonical_name": "薬剤アレルギー",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "やくざいあれるぎー"
+  },
+  {
+   "canonical_name": "アレルギー性結膜炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "あれるぎーせいけつまくえん"
+  },
+  {
+   "canonical_name": "結膜炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "けつまくえん"
+  },
+  {
+   "canonical_name": "麦粒腫",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ばくりゅうしゅ"
+  },
+  {
+   "canonical_name": "中耳炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ちゅうじえん"
+  },
+  {
+   "canonical_name": "外耳炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "がいじえん"
+  },
+  {
+   "canonical_name": "急性中耳炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "きゅうせいちゅうじえん"
+  },
+  {
+   "canonical_name": "滲出性中耳炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "しんしゅつせいちゅうじえん"
+  },
+  {
+   "canonical_name": "鼻出血",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "びけつ"
+  },
+  {
+   "canonical_name": "眼前暗黒感",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "がんぜんあんこくかん"
+  },
+  {
+   "canonical_name": "浮遊感",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "ふゆうかん"
+  },
+  {
+   "canonical_name": "耳鳴り",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "みみなり"
+  },
+  {
+   "canonical_name": "難聴",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "なんちょう"
+  },
+  {
+   "canonical_name": "耳閉感",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "じへいかん"
+  },
+  {
+   "canonical_name": "咽頭違和感",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "いんとういわかん"
+  },
+  {
+   "canonical_name": "咽頭異物感",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "いんとういぶつかん"
+  },
+  {
+   "canonical_name": "痰がらみ",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "たんがらみ"
+  },
+  {
+   "canonical_name": "背部放散痛",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "はいぶほうさんつう"
+  },
+  {
+   "canonical_name": "放散痛",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "ほうさんつう"
+  },
+  {
+   "canonical_name": "心窩部不快感",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "しんかぶふかいかん"
+  },
+  {
+   "canonical_name": "圧痛",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "あっつう"
+  },
+  {
+   "canonical_name": "反跳痛",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "はんちょうつう"
+  },
+  {
+   "canonical_name": "筋性防御",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "きんせいぼうぎょ"
+  },
+  {
+   "canonical_name": "排便困難",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "はいべんこんなん"
+  },
+  {
+   "canonical_name": "残便感",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "ざんべんかん"
+  },
+  {
+   "canonical_name": "褐色尿",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "かっしょくにょう"
+  },
+  {
+   "canonical_name": "肉眼的血尿",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "にくがんてきけつにょう"
+  },
+  {
+   "canonical_name": "乏尿",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "ぼうにょう"
+  },
+  {
+   "canonical_name": "多汗",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "たかん"
+  },
+  {
+   "canonical_name": "手指振戦",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "しゅししんせん"
+  },
+  {
+   "canonical_name": "筋痙攣",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "きんけいれん"
+  },
+  {
+   "canonical_name": "こむら返り",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "こむらがえり"
+  },
+  {
+   "canonical_name": "感覚鈍麻",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "かんかくどんま"
+  },
+  {
+   "canonical_name": "視力低下",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "しりょくていか"
+  },
+  {
+   "canonical_name": "複視",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "ふくし"
+  },
+  {
+   "canonical_name": "霧視",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "むし"
+  },
+  {
+   "canonical_name": "飛蚊症",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "ひぶんしょう"
+  },
+  {
+   "canonical_name": "眼瞼下垂",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "がんけんかすい"
+  },
+  {
+   "canonical_name": "口内炎",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "こうないえん"
+  },
+  {
+   "canonical_name": "味覚障害",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "みかくしょうがい"
+  },
+  {
+   "canonical_name": "嗅覚障害",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "きゅうかくしょうがい"
+  },
+  {
+   "canonical_name": "咽頭発赤",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "いんとうほっせき"
+  },
+  {
+   "canonical_name": "扁桃腫大",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "へんとうしゅだい"
+  },
+  {
+   "canonical_name": "白苔",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "はくたい"
+  },
+  {
+   "canonical_name": "頸部リンパ節腫脹",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "けいぶりんぱせつしゅちょう"
+  },
+  {
+   "canonical_name": "リンパ節腫脹",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "りんぱせつしゅちょう"
+  },
+  {
+   "canonical_name": "胸水貯留",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "きょうすいちょりゅう"
+  },
+  {
+   "canonical_name": "湿性ラ音",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "しっせいらおん"
+  },
+  {
+   "canonical_name": "乾性ラ音",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "かんせいらおん"
+  },
+  {
+   "canonical_name": "呼吸音減弱",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "こきゅうおんげんじゃく"
+  },
+  {
+   "canonical_name": "心雑音",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "しんざつおん"
+  },
+  {
+   "canonical_name": "収縮期雑音",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "しゅうしゅくきざつおん"
+  },
+  {
+   "canonical_name": "拡張期雑音",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "かくちょうきざつおん"
+  },
+  {
+   "canonical_name": "頸静脈怒張",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "けいじょうみゃくどちょう"
+  },
+  {
+   "canonical_name": "圧痕性浮腫",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "あっこんせいふしゅ"
+  },
+  {
+   "canonical_name": "腹部膨隆",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "ふくぶぼうりゅう"
+  },
+  {
+   "canonical_name": "腸蠕動音",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "ちょうぜんどうおん"
+  },
+  {
+   "canonical_name": "項部硬直",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "こうぶこうちょく"
+  },
+  {
+   "canonical_name": "眼振",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "がんしん"
+  },
+  {
+   "canonical_name": "病的反射",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "びょうてきはんしゃ"
+  },
+  {
+   "canonical_name": "腱反射亢進",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "けんはんしゃこうしん"
+  },
+  {
+   "canonical_name": "握力低下",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "あくりょくていか"
+  },
+  {
+   "canonical_name": "上気道症状",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "じょうきどうしょうじょう"
+  },
+  {
+   "canonical_name": "下気道症状",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "かきどうしょうじょう"
+  },
+  {
+   "canonical_name": "筋緊張",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "きんきんちょう"
+  },
+  {
+   "canonical_name": "関節腫脹",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "かんせつしゅちょう"
+  },
+  {
+   "canonical_name": "朝のこわばり",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "あさのこわばり"
+  },
+  {
+   "canonical_name": "こわばり",
+   "category": "symptoms_findings",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "下肢のむくみ",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "かしのむくみ"
+  },
+  {
+   "canonical_name": "片麻痺",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "かたまひ"
+  },
+  {
+   "canonical_name": "呂律困難",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "ろれつこんなん"
+  },
+  {
+   "canonical_name": "顔のゆがみ",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "かおのゆがみ"
+  },
+  {
+   "canonical_name": "手足のしびれ",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "てあしのしびれ"
+  },
+  {
+   "canonical_name": "動悸発作",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "どうきほっさ"
+  },
+  {
+   "canonical_name": "冷感",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "れいかん"
+  },
+  {
+   "canonical_name": "ほてり",
+   "category": "symptoms_findings",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "のぼせ",
+   "category": "symptoms_findings",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "全身掻痒",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "ぜんしんそうよう"
+  },
+  {
+   "canonical_name": "皮膚乾燥",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "ひふかんそう"
+  },
+  {
+   "canonical_name": "痂皮",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "かひ"
+  },
+  {
+   "canonical_name": "水疱",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "すいほう"
+  },
+  {
+   "canonical_name": "膿疱",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "のうほう"
+  },
+  {
+   "canonical_name": "咳込み",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "せきこみ"
+  },
+  {
+   "canonical_name": "痰の色",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "たんのいろ"
+  },
+  {
+   "canonical_name": "喀痰量",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "かくたんりょう"
+  },
+  {
+   "canonical_name": "くしゃみ",
+   "category": "symptoms_findings",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "目のかゆみ",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "めのかゆみ"
+  },
+  {
+   "canonical_name": "抗ds-DNA抗体",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "抗SS-A抗体",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "抗SS-B抗体",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "MPO-ANCA",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "PR3-ANCA",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "抗GAD抗体",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "HLA-B27",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "尿中ケトン体",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "にょうちゅうけとんたい"
+  },
+  {
+   "canonical_name": "尿比重",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "にょうひじゅう"
+  },
+  {
+   "canonical_name": "尿浸透圧",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "にょうしんとうあつ"
+  },
+  {
+   "canonical_name": "血清浸透圧",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "けっせいしんとうあつ"
+  },
+  {
+   "canonical_name": "動脈血ガス",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "どうみゃくけつがす"
+  },
+  {
+   "canonical_name": "血液ガス",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "けつえきがす"
+  },
+  {
+   "canonical_name": "乳酸",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "にゅうさん"
+  },
+  {
+   "canonical_name": "ラクテート",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "HCO3",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "PaO2",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "PaCO2",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "電解質",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "でんかいしつ"
+  },
+  {
+   "canonical_name": "肝機能",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "かんきのう"
+  },
+  {
+   "canonical_name": "腎機能",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "じんきのう"
+  },
+  {
+   "canonical_name": "甲状腺機能",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "こうじょうせんきのう"
+  },
+  {
+   "canonical_name": "凝固能",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "ぎょうこのう"
+  },
+  {
+   "canonical_name": "血液像",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "けつえきぞう"
+  },
+  {
+   "canonical_name": "末梢血液像",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "まっしょうけつえきぞう"
+  },
+  {
+   "canonical_name": "生化学",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "せいかがく"
+  },
+  {
+   "canonical_name": "胆汁酸",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "たんじゅうさん"
+  },
+  {
+   "canonical_name": "ピロリ菌抗体",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "ぴろりきんこうたい"
+  },
+  {
+   "canonical_name": "尿素呼気試験",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "にょうそこきしけん"
+  },
+  {
+   "canonical_name": "便中ピロリ抗原",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "べんちゅうぴろりこうげん"
+  },
+  {
+   "canonical_name": "便中カルプロテクチン",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "便虫卵",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "べんちゅうらん"
+  },
+  {
+   "canonical_name": "CDトキシン",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アデノウイルス迅速検査",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "あでのういるすじんそくけんさ"
+  },
+  {
+   "canonical_name": "RSウイルス迅速検査",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "あーるえすういるすじんそくけんさ"
+  },
+  {
+   "canonical_name": "肺炎球菌尿中抗原",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "はいえんきゅうきんにょうちゅうこうげん"
+  },
+  {
+   "canonical_name": "レジオネラ尿中抗原",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "れじおねらにょうちゅうこうげん"
+  },
+  {
+   "canonical_name": "マイコプラズマ抗体",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "まいこぷらずまこうたい"
+  },
+  {
+   "canonical_name": "マイコプラズマ迅速検査",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "まいこぷらずまじんそくけんさ"
+  },
+  {
+   "canonical_name": "β-Dグルカン",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "べーたでぃーぐるかん"
+  },
+  {
+   "canonical_name": "髄液検査",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "ずいえきけんさ"
+  },
+  {
+   "canonical_name": "腫瘍マーカー",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "しゅようまーかー"
+  },
+  {
+   "canonical_name": "SCC",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "NSE",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ProGRP",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "CYFRA",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "可溶性IL-2レセプター",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "かようせいあいえるつーれせぷたー"
+  },
+  {
+   "canonical_name": "ビタミンK",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "びたみんけー"
+  },
+  {
+   "canonical_name": "セルロプラスミン",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "1,5-AG",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "SAA",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ホモシステイン",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "Lp(a)",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "アポB",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "あぽびー"
+  },
+  {
+   "canonical_name": "トランスフェリン飽和度",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "とらんすふぇりんほうわど"
+  },
+  {
+   "canonical_name": "HOMA-IR",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "75gOGTT",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "経口ブドウ糖負荷試験",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "けいこうぶどうとうふかしけん"
+  },
+  {
+   "canonical_name": "ブドウ糖負荷試験",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "ぶどうとうふかしけん"
+  },
+  {
+   "canonical_name": "尿中Cペプチド",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "にょうちゅうしーぺぷちど"
+  },
+  {
+   "canonical_name": "血漿レニン活性",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "けっしょうれにんかっせい"
+  },
+  {
+   "canonical_name": "アルドステロン",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ARR",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "カテコラミン",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "メタネフリン",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "DHEA-S",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "テストステロン",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "エストラジオール",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "LH",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "FSH",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "プロラクチン",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "成長ホルモン",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "せいちょうほるもん"
+  },
+  {
+   "canonical_name": "IGF-1",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "PTH",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "骨代謝マーカー",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "こつたいしゃまーかー"
+  },
+  {
+   "canonical_name": "TRACP-5b",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "P1NP",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "尿中NTX",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "にょうちゅうえぬてぃーえっくす"
+  },
+  {
+   "canonical_name": "血清アミロイドA",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "けっせいあみろいどえー"
+  },
+  {
+   "canonical_name": "血糖コントロール",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "けっとうこんとろーる"
+  },
+  {
+   "canonical_name": "頸部エコー",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "けいぶえこー"
+  },
+  {
+   "canonical_name": "下肢静脈エコー",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "かしじょうみゃくえこー"
+  },
+  {
+   "canonical_name": "下肢動脈エコー",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "かしどうみゃくえこー"
+  },
+  {
+   "canonical_name": "経胸壁心エコー",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "けいきょうへきしんえこー"
+  },
+  {
+   "canonical_name": "経食道心エコー",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "けいしょくどうしんえこー"
+  },
+  {
+   "canonical_name": "負荷心電図",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "ふかしんでんず"
+  },
+  {
+   "canonical_name": "運動負荷試験",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "うんどうふかしけん"
+  },
+  {
+   "canonical_name": "トレッドミル",
+   "category": "imaging_procedures",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "心筋シンチ",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "しんきんしんち"
+  },
+  {
+   "canonical_name": "冠動脈造影",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "かんどうみゃくぞうえい"
+  },
+  {
+   "canonical_name": "心臓カテーテル検査",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "しんぞうかてーてるけんさ"
+  },
+  {
+   "canonical_name": "PCI",
+   "category": "imaging_procedures",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ペースメーカー",
+   "category": "imaging_procedures",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "HRCT",
+   "category": "imaging_procedures",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "造影MRI",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "ぞうえいえむあーるあい"
+  },
+  {
+   "canonical_name": "頸動脈MRA",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "けいどうみゃくえむあーるえー"
+  },
+  {
+   "canonical_name": "腹部MRI",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "ふくぶえむあーるあい"
+  },
+  {
+   "canonical_name": "MRCP",
+   "category": "imaging_procedures",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "超音波内視鏡",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "ちょうおんぱないしきょう"
+  },
+  {
+   "canonical_name": "ERCP",
+   "category": "imaging_procedures",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "気管支鏡",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "きかんしきょう"
+  },
+  {
+   "canonical_name": "気管支鏡検査",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "きかんしきょうけんさ"
+  },
+  {
+   "canonical_name": "呼吸機能検査",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "こきゅうきのうけんさ"
+  },
+  {
+   "canonical_name": "呼気NO",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "こきえぬおー"
+  },
+  {
+   "canonical_name": "6分間歩行試験",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "ろっぷんかんほこうしけん"
+  },
+  {
+   "canonical_name": "胸部エックス線",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "きょうぶえっくすせん"
+  },
+  {
+   "canonical_name": "腹部エックス線",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "ふくぶえっくすせん"
+  },
+  {
+   "canonical_name": "胃バリウム検査",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "いばりうむけんさ"
+  },
+  {
+   "canonical_name": "注腸造影",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "ちゅうちょうぞうえい"
+  },
+  {
+   "canonical_name": "骨密度検査",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "こつみつどけんさ"
+  },
+  {
+   "canonical_name": "PET-CT",
+   "category": "imaging_procedures",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "RI検査",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "あーるあいけんさ"
+  },
+  {
+   "canonical_name": "静脈注射",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "じょうみゃくちゅうしゃ"
+  },
+  {
+   "canonical_name": "筋肉注射",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "きんにくちゅうしゃ"
+  },
+  {
+   "canonical_name": "皮下注射",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "ひかちゅうしゃ"
+  },
+  {
+   "canonical_name": "導尿",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "どうにょう"
+  },
+  {
+   "canonical_name": "創処置",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "そうしょち"
+  },
+  {
+   "canonical_name": "軟膏処置",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "なんこうしょち"
+  },
+  {
+   "canonical_name": "ネブライザー",
+   "category": "imaging_procedures",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "酸素投与",
+   "category": "imaging_procedures",
+   "priority": "normal",
+   "reading": "さんそとうよ"
+  },
+  {
+   "canonical_name": "在宅酸素",
+   "category": "treatment_actions",
+   "priority": "normal",
+   "reading": "ざいたくさんそ"
+  },
+  {
+   "canonical_name": "CPAP",
+   "category": "imaging_procedures",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "インスリン導入",
+   "category": "treatment_actions",
+   "priority": "normal",
+   "reading": "いんすりんどうにゅう"
+  },
+  {
+   "canonical_name": "食事療法",
+   "category": "treatment_actions",
+   "priority": "normal",
+   "reading": "しょくじりょうほう"
+  },
+  {
+   "canonical_name": "運動療法",
+   "category": "treatment_actions",
+   "priority": "normal",
+   "reading": "うんどうりょうほう"
+  },
+  {
+   "canonical_name": "禁煙指導",
+   "category": "treatment_actions",
+   "priority": "normal",
+   "reading": "きんえんしどう"
+  },
+  {
+   "canonical_name": "生活指導",
+   "category": "treatment_actions",
+   "priority": "normal",
+   "reading": "せいかつしどう"
+  },
+  {
+   "canonical_name": "栄養指導",
+   "category": "treatment_actions",
+   "priority": "normal",
+   "reading": "えいようしどう"
+  },
+  {
+   "canonical_name": "意見書",
+   "category": "documents_workflow",
+   "priority": "normal",
+   "reading": "いけんしょ"
+  },
+  {
+   "canonical_name": "予防接種",
+   "category": "treatment_actions",
+   "priority": "normal",
+   "reading": "よぼうせっしゅ"
+  },
+  {
+   "canonical_name": "特定健診",
+   "category": "treatment_actions",
+   "priority": "normal",
+   "reading": "とくていけんしん"
+  },
+  {
+   "canonical_name": "健康診断",
+   "category": "treatment_actions",
+   "priority": "normal",
+   "reading": "けんこうしんだん"
+  },
+  {
+   "canonical_name": "人間ドック",
+   "category": "treatment_actions",
+   "priority": "normal",
+   "reading": "にんげんどっく"
+  },
+  {
+   "canonical_name": "視診",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "ししん"
+  },
+  {
+   "canonical_name": "心音",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "しんおん"
+  },
+  {
+   "canonical_name": "呼吸音",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "こきゅうおん"
+  },
+  {
+   "canonical_name": "肺胞呼吸音",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "はいほうこきゅうおん"
+  },
+  {
+   "canonical_name": "水泡音",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "すいほうおん"
+  },
+  {
+   "canonical_name": "捻髪音",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "ねんぱつおん"
+  },
+  {
+   "canonical_name": "笛声音",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "てきせいおん"
+  },
+  {
+   "canonical_name": "いびき音",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "いびきおん"
+  },
+  {
+   "canonical_name": "整脈",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "せいみゃく"
+  },
+  {
+   "canonical_name": "眼瞼結膜",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "がんけんけつまく"
+  },
+  {
+   "canonical_name": "眼球結膜",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "がんきゅうけつまく"
+  },
+  {
+   "canonical_name": "咽頭",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "いんとう"
+  },
+  {
+   "canonical_name": "扁桃",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "へんとう"
+  },
+  {
+   "canonical_name": "鼓膜",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "こまく"
+  },
+  {
+   "canonical_name": "甲状腺触診",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "こうじょうせんしょくしん"
+  },
+  {
+   "canonical_name": "腹部平坦軟",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "ふくぶへいたんなん"
+  },
+  {
+   "canonical_name": "肝脾腫",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "かんひしゅ"
+  },
+  {
+   "canonical_name": "瞳孔",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "どうこう"
+  },
+  {
+   "canonical_name": "対光反射",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "たいこうはんしゃ"
+  },
+  {
+   "canonical_name": "深部腱反射",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "しんぶけんはんしゃ"
+  },
+  {
+   "canonical_name": "徒手筋力テスト",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "としゅきんりょくてすと"
+  },
+  {
+   "canonical_name": "血圧左右差",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "けつあつさゆうさ"
+  },
+  {
+   "canonical_name": "心尖拍動",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "しんせんはくどう"
+  },
+  {
+   "canonical_name": "股関節",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "こかんせつ"
+  },
+  {
+   "canonical_name": "可動域",
+   "category": "symptoms_findings",
+   "priority": "normal",
+   "reading": "かどういき"
+  },
+  {
+   "canonical_name": "胆道感染症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "たんどうかんせんしょう"
+  },
+  {
+   "canonical_name": "肝膿瘍",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "かんのうよう"
+  },
+  {
+   "canonical_name": "胸膜炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "きょうまくえん"
+  },
+  {
+   "canonical_name": "肋間神経痛",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ろっかんしんけいつう"
+  },
+  {
+   "canonical_name": "肋骨骨折",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ろっこつこっせつ"
+  },
+  {
+   "canonical_name": "食道炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "しょくどうえん"
+  },
+  {
+   "canonical_name": "胃十二指腸潰瘍",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "いじゅうにしちょうかいよう"
+  },
+  {
+   "canonical_name": "薬剤性胃炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "やくざいせいいえん"
+  },
+  {
+   "canonical_name": "季節性アレルギー",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "きせつせいあれるぎー"
+  },
+  {
+   "canonical_name": "眼精疲労",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "がんせいひろう"
+  },
+  {
+   "canonical_name": "ドライアイ",
+   "category": "diagnoses",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "緑内障",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "りょくないしょう"
+  },
+  {
+   "canonical_name": "白内障",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "はくないしょう"
+  },
+  {
+   "canonical_name": "加齢黄斑変性",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "かれいおうはんへんせい"
+  },
+  {
+   "canonical_name": "耳垢塞栓",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "じこうそくせん"
+  },
+  {
+   "canonical_name": "不安障害",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ふあんしょうがい"
+  },
+  {
+   "canonical_name": "気分障害",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "きぶんしょうがい"
+  },
+  {
+   "canonical_name": "統合失調症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "とうごうしっちょうしょう"
+  },
+  {
+   "canonical_name": "アルコール依存症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "あるこーるいぞんしょう"
+  },
+  {
+   "canonical_name": "認知症周辺症状",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "にんちしょうしゅうへんしょうじょう"
+  },
+  {
+   "canonical_name": "粉瘤",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ふんりゅう"
+  },
+  {
+   "canonical_name": "脂肪腫",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "しぼうしゅ"
+  },
+  {
+   "canonical_name": "巻き爪",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "まきづめ"
+  },
+  {
+   "canonical_name": "陥入爪",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "かんにゅうそう"
+  },
+  {
+   "canonical_name": "褥瘡",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "じょくそう"
+  },
+  {
+   "canonical_name": "熱傷",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ねっしょう"
+  },
+  {
+   "canonical_name": "虫刺され",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "むしさされ"
+  },
+  {
+   "canonical_name": "日光皮膚炎",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "にっこうひふえん"
+  },
+  {
+   "canonical_name": "月経不順",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "げっけいふじゅん"
+  },
+  {
+   "canonical_name": "月経困難症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "げっけいこんなんしょう"
+  },
+  {
+   "canonical_name": "低体温症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ていたいおんしょう"
+  },
+  {
+   "canonical_name": "高体温",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "こうたいおん"
+  },
+  {
+   "canonical_name": "脳卒中",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "のうそっちゅう"
+  },
+  {
+   "canonical_name": "心原性ショック",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "しんげんせいしょっく"
+  },
+  {
+   "canonical_name": "敗血症性ショック",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "はいけつしょうせいしょっく"
+  },
+  {
+   "canonical_name": "閉塞性肺疾患",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "へいそくせいはいしっかん"
+  },
+  {
+   "canonical_name": "拘束性肺疾患",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "こうそくせいはいしっかん"
+  },
+  {
+   "canonical_name": "呼吸不全",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "こきゅうふぜん"
+  },
+  {
+   "canonical_name": "慢性呼吸不全",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "まんせいこきゅうふぜん"
+  },
+  {
+   "canonical_name": "急性呼吸不全",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "きゅうせいこきゅうふぜん"
+  },
+  {
+   "canonical_name": "胸痛症候群",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "きょうつうしょうこうぐん"
+  },
+  {
+   "canonical_name": "急性冠症候群",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "きゅうせいかんしょうこうぐん"
+  },
+  {
+   "canonical_name": "心嚢液貯留",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "しんのうえきちょりゅう"
+  },
+  {
+   "canonical_name": "腹水貯留",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ふくすいちょりゅう"
+  },
+  {
+   "canonical_name": "高アンモニア血症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "こうあんもにあけっしょう"
+  },
+  {
+   "canonical_name": "高カルシウム血症クリーゼ",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "こうかるしうむけっしょうくりーぜ"
+  },
+  {
+   "canonical_name": "甲状腺クリーゼ",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "こうじょうせんくりーぜ"
+  },
+  {
+   "canonical_name": "副腎クリーゼ",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "ふくじんくりーぜ"
+  },
+  {
+   "canonical_name": "腎前性腎不全",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "じんぜんせいじんふぜん"
+  },
+  {
+   "canonical_name": "腎後性腎不全",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "じんごせいじんふぜん"
+  },
+  {
+   "canonical_name": "横紋筋融解症",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "おうもんきんゆうかいしょう"
+  },
+  {
+   "canonical_name": "薬剤性肺障害",
+   "category": "diagnoses",
+   "priority": "normal",
+   "reading": "やくざいせいはいしょうがい"
+  },
+  {
+   "canonical_name": "血算",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "けっさん"
+  },
+  {
+   "canonical_name": "CBC",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "尿検査",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "にょうけんさ"
+  },
+  {
+   "canonical_name": "尿一般",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "にょういっぱん"
+  },
+  {
+   "canonical_name": "便検査",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "べんけんさ"
+  },
+  {
+   "canonical_name": "血液検査",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "けつえきけんさ"
+  },
+  {
+   "canonical_name": "生化学検査",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "せいかがくけんさ"
+  },
+  {
+   "canonical_name": "凝固検査",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "ぎょうこけんさ"
+  },
+  {
+   "canonical_name": "甲状腺ホルモン",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "こうじょうせんほるもん"
+  },
+  {
+   "canonical_name": "炎症反応",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "えんしょうはんのう"
+  },
+  {
+   "canonical_name": "腎機能検査",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "じんきのうけんさ"
+  },
+  {
+   "canonical_name": "肝機能検査",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "かんきのうけんさ"
+  },
+  {
+   "canonical_name": "脂質検査",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "ししつけんさ"
+  },
+  {
+   "canonical_name": "血糖測定",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "けっとうそくてい"
+  },
+  {
+   "canonical_name": "自己血糖測定",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "じここけっとうそくてい"
+  },
+  {
+   "canonical_name": "持続血糖測定",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "じぞくけっとうそくてい"
+  },
+  {
+   "canonical_name": "FreeStyleリブレ",
+   "category": "laboratory_tests",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "糖負荷試験",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "とうふかしけん"
+  },
+  {
+   "canonical_name": "ヘマトクリット値",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "へまとくりっとち"
+  },
+  {
+   "canonical_name": "白血球数",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "はっけっきゅうすう"
+  },
+  {
+   "canonical_name": "赤血球数",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "せっけっきゅうすう"
+  },
+  {
+   "canonical_name": "血小板数",
+   "category": "laboratory_tests",
+   "priority": "normal",
+   "reading": "けっしょうばんすう"
+  },
+  {
+   "canonical_name": "パブロン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ルル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "新ルルA錠",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "しんるるえーじょう"
+  },
+  {
+   "canonical_name": "ベンザブロック",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ストナ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "エスタロンモカ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ドリエル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ナロンエース",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ノーシン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "セデス",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "イブ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ロキソニンS",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "太田胃散",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "おおたいさん"
+  },
+  {
+   "canonical_name": "キャベジン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ガスター10",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "パンシロン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "正露丸",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "せいろがん"
+  },
+  {
+   "canonical_name": "ユンケル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ムヒ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ボルタレンゲル",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "フェイタス",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "サロンパス",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ロキソニンテープ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ボルタレンテープ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "モーラステープ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ロキソニンパップ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ロキソプロフェンテープ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ケトプロフェンテープ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "エスフルルビプロフェン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "湿布",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "しっぷ"
+  },
+  {
+   "canonical_name": "アムロジピン・テルミサルタン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ニフェジピンCR",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ニフェジピンL",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ジルチアゼム徐放",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ビソプロロールテープ",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ゾルピデム酒石酸塩",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ぞるぴでむしゅせきさんえん"
+  },
+  {
+   "canonical_name": "カルシウム拮抗薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "かるしうむきっこうやく"
+  },
+  {
+   "canonical_name": "ARB",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "ACE阻害薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "えーしーいーそがいやく"
+  },
+  {
+   "canonical_name": "β遮断薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "べーたしゃだんやく"
+  },
+  {
+   "canonical_name": "利尿薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "りにょうやく"
+  },
+  {
+   "canonical_name": "抗血小板薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "こうけっしょうばんやく"
+  },
+  {
+   "canonical_name": "抗凝固薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "こうぎょうこやく"
+  },
+  {
+   "canonical_name": "スタチン",
+   "category": "medications_generic",
+   "priority": "normal"
+  },
+  {
+   "canonical_name": "SGLT2阻害薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "えすじーえるてぃーつーそがいやく"
+  },
+  {
+   "canonical_name": "DPP-4阻害薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "でぃーぴーぴーふぉーそがいやく"
+  },
+  {
+   "canonical_name": "GLP-1受容体作動薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "じーえるぴーわんじゅようたいさどうやく"
+  },
+  {
+   "canonical_name": "ビグアナイド薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "びぐあないどやく"
+  },
+  {
+   "canonical_name": "SU薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "えすゆーやく"
+  },
+  {
+   "canonical_name": "インスリン製剤",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "いんすりんせいざい"
+  },
+  {
+   "canonical_name": "ステロイド薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "すてろいどやく"
+  },
+  {
+   "canonical_name": "抗菌薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "こうきんやく"
+  },
+  {
+   "canonical_name": "抗生物質",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "こうせいぶっしつ"
+  },
+  {
+   "canonical_name": "抗ヒスタミン薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "こうひすたみんやく"
+  },
+  {
+   "canonical_name": "去痰薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "きょたんやく"
+  },
+  {
+   "canonical_name": "鎮咳薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "ちんがいやく"
+  },
+  {
+   "canonical_name": "解熱鎮痛薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "げねつちんつうやく"
+  },
+  {
+   "canonical_name": "睡眠薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "すいみんやく"
+  },
+  {
+   "canonical_name": "抗不安薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "こうふあんやく"
+  },
+  {
+   "canonical_name": "抗うつ薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "こううつやく"
+  },
+  {
+   "canonical_name": "整腸剤",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "せいちょうざい"
+  },
+  {
+   "canonical_name": "下剤",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "げざい"
+  },
+  {
+   "canonical_name": "漢方薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "かんぽうやく"
+  },
+  {
+   "canonical_name": "点眼薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "てんがんやく"
+  },
+  {
+   "canonical_name": "外用薬",
+   "category": "medications_generic",
+   "priority": "normal",
+   "reading": "がいようやく"
+  }
+ ],
+ "medication_brand_generic": [
+  {
+   "brand_name": "ペルジピン",
+   "generic_name": "ニカルジピン"
+  },
+  {
+   "brand_name": "ランデル",
+   "generic_name": "エホニジピン"
+  },
+  {
+   "brand_name": "バイロテンシン",
+   "generic_name": "ニトレンジピン"
+  },
+  {
+   "brand_name": "カルスロット",
+   "generic_name": "マニジピン"
+  },
+  {
+   "brand_name": "バイミカード",
+   "generic_name": "ニソルジピン"
+  },
+  {
+   "brand_name": "エースコール",
+   "generic_name": "テモカプリル"
+  },
+  {
+   "brand_name": "コナン",
+   "generic_name": "キナプリル"
+  },
+  {
+   "brand_name": "チバセン",
+   "generic_name": "ベナゼプリル"
+  },
+  {
+   "brand_name": "カルデナリン",
+   "generic_name": "ドキサゾシン"
+  },
+  {
+   "brand_name": "エブランチル",
+   "generic_name": "ウラピジル"
+  },
+  {
+   "brand_name": "ミニプレス",
+   "generic_name": "プラゾシン"
+  },
+  {
+   "brand_name": "デタントール",
+   "generic_name": "ブナゾシン"
+  },
+  {
+   "brand_name": "カタプレス",
+   "generic_name": "クロニジン"
+  },
+  {
+   "brand_name": "アルドメット",
+   "generic_name": "メチルドパ"
+  },
+  {
+   "brand_name": "アプレゾリン",
+   "generic_name": "ヒドララジン"
+  },
+  {
+   "brand_name": "アルマール",
+   "generic_name": "アロチノロール"
+  },
+  {
+   "brand_name": "トランデート",
+   "generic_name": "ラベタロール"
+  },
+  {
+   "brand_name": "セレクトール",
+   "generic_name": "セリプロロール"
+  },
+  {
+   "brand_name": "アセタノール",
+   "generic_name": "アセブトロール"
+  },
+  {
+   "brand_name": "オノアクト",
+   "generic_name": "ランジオロール"
+  },
+  {
+   "brand_name": "カデュエット",
+   "generic_name": "アムロジピン・アトルバスタチン"
+  },
+  {
+   "brand_name": "ミカムロ",
+   "generic_name": "テルミサルタン・アムロジピン"
+  },
+  {
+   "brand_name": "ミカトリオ",
+   "generic_name": "テルミサルタン・アムロジピン・ヒドロクロロチアジド"
+  },
+  {
+   "brand_name": "エックスフォージ",
+   "generic_name": "バルサルタン・アムロジピン"
+  },
+  {
+   "brand_name": "ユニシア",
+   "generic_name": "カンデサルタン・アムロジピン"
+  },
+  {
+   "brand_name": "エカード",
+   "generic_name": "カンデサルタン・ヒドロクロロチアジド"
+  },
+  {
+   "brand_name": "レザルタス",
+   "generic_name": "オルメサルタン・アゼルニジピン"
+  },
+  {
+   "brand_name": "アイミクス",
+   "generic_name": "イルベサルタン・アムロジピン"
+  },
+  {
+   "brand_name": "イルトラ",
+   "generic_name": "イルベサルタン・トリクロルメチアジド"
+  },
+  {
+   "brand_name": "ザクラス",
+   "generic_name": "アジルサルタン・アムロジピン"
+  },
+  {
+   "brand_name": "コディオ",
+   "generic_name": "バルサルタン・ヒドロクロロチアジド"
+  },
+  {
+   "brand_name": "プレミネント",
+   "generic_name": "ロサルタン・ヒドロクロロチアジド"
+  },
+  {
+   "brand_name": "ミコンビ",
+   "generic_name": "テルミサルタン・ヒドロクロロチアジド"
+  },
+  {
+   "brand_name": "アテディオ",
+   "generic_name": "バルサルタン・シルニジピン"
+  },
+  {
+   "brand_name": "ロスーゼット",
+   "generic_name": "ロスバスタチン・エゼチミブ"
+  },
+  {
+   "brand_name": "アトーゼット",
+   "generic_name": "アトルバスタチン・エゼチミブ"
+  },
+  {
+   "brand_name": "リバロゼット",
+   "generic_name": "ピタバスタチン・エゼチミブ"
+  },
+  {
+   "brand_name": "イニシンク",
+   "generic_name": "アログリプチン・メトホルミン"
+  },
+  {
+   "brand_name": "エクメット",
+   "generic_name": "ビルダグリプチン・メトホルミン"
+  },
+  {
+   "brand_name": "メトアナ",
+   "generic_name": "アナグリプチン・メトホルミン"
+  },
+  {
+   "brand_name": "ジャヌメット",
+   "generic_name": "シタグリプチン・メトホルミン"
+  },
+  {
+   "brand_name": "グルベス",
+   "generic_name": "ミチグリニド・ボグリボース"
+  },
+  {
+   "brand_name": "スージャヌ",
+   "generic_name": "シタグリプチン・イプラグリフロジン"
+  },
+  {
+   "brand_name": "カナリア",
+   "generic_name": "テネリグリプチン・カナグリフロジン"
+  },
+  {
+   "brand_name": "トラディアンス",
+   "generic_name": "エンパグリフロジン・リナグリプチン"
+  },
+  {
+   "brand_name": "ソニアス",
+   "generic_name": "ピオグリタゾン・グリメピリド"
+  },
+  {
+   "brand_name": "リオベル",
+   "generic_name": "アログリプチン・ピオグリタゾン"
+  },
+  {
+   "brand_name": "メタクト",
+   "generic_name": "ピオグリタゾン・メトホルミン"
+  },
+  {
+   "brand_name": "フルイトラン",
+   "generic_name": "トリクロルメチアジド"
+  },
+  {
+   "brand_name": "ナトリックス",
+   "generic_name": "インダパミド"
+  },
+  {
+   "brand_name": "エンデュロン",
+   "generic_name": "メチクロチアジド"
+  },
+  {
+   "brand_name": "ダイアモックス",
+   "generic_name": "アセタゾラミド"
+  },
+  {
+   "brand_name": "ルプラック",
+   "generic_name": "トラセミド"
+  },
+  {
+   "brand_name": "ソルダクトン",
+   "generic_name": "カンレノ酸カリウム"
+  },
+  {
+   "brand_name": "グルファスト",
+   "generic_name": "ミチグリニド"
+  },
+  {
+   "brand_name": "スターシス",
+   "generic_name": "ナテグリニド"
+  },
+  {
+   "brand_name": "ファスティック",
+   "generic_name": "ナテグリニド"
+  },
+  {
+   "brand_name": "シュアポスト",
+   "generic_name": "レパグリニド"
+  },
+  {
+   "brand_name": "オイグルコン",
+   "generic_name": "グリベンクラミド"
+  },
+  {
+   "brand_name": "ダオニール",
+   "generic_name": "グリベンクラミド"
+  },
+  {
+   "brand_name": "グリミクロン",
+   "generic_name": "グリクラジド"
+  },
+  {
+   "brand_name": "アマリール",
+   "generic_name": "グリメピリド"
+  },
+  {
+   "brand_name": "ラスチノン",
+   "generic_name": "トルブタミド"
+  },
+  {
+   "brand_name": "スイニー",
+   "generic_name": "アナグリプチン"
+  },
+  {
+   "brand_name": "ザファテック",
+   "generic_name": "トレラグリプチン"
+  },
+  {
+   "brand_name": "マリゼブ",
+   "generic_name": "オマリグリプチン"
+  },
+  {
+   "brand_name": "セイブル",
+   "generic_name": "ミグリトール"
+  },
+  {
+   "brand_name": "メトグルコ",
+   "generic_name": "メトホルミン"
+  },
+  {
+   "brand_name": "グリコラン",
+   "generic_name": "メトホルミン"
+  },
+  {
+   "brand_name": "ウゴービ",
+   "generic_name": "セマグルチド"
+  },
+  {
+   "brand_name": "ランタス",
+   "generic_name": "インスリングラルギン"
+  },
+  {
+   "brand_name": "ランタスXR",
+   "generic_name": "インスリングラルギン"
+  },
+  {
+   "brand_name": "トゥジェオ",
+   "generic_name": "インスリングラルギン"
+  },
+  {
+   "brand_name": "ベイサグラー",
+   "generic_name": "インスリングラルギン"
+  },
+  {
+   "brand_name": "トレシーバ",
+   "generic_name": "インスリンデグルデク"
+  },
+  {
+   "brand_name": "レベミル",
+   "generic_name": "インスリンデテミル"
+  },
+  {
+   "brand_name": "ノボラピッド",
+   "generic_name": "インスリンアスパルト"
+  },
+  {
+   "brand_name": "フィアスプ",
+   "generic_name": "インスリンアスパルト"
+  },
+  {
+   "brand_name": "ヒューマログ",
+   "generic_name": "インスリンリスプロ"
+  },
+  {
+   "brand_name": "ルムジェブ",
+   "generic_name": "インスリンリスプロ"
+  },
+  {
+   "brand_name": "アピドラ",
+   "generic_name": "インスリングルリジン"
+  },
+  {
+   "brand_name": "ライゾデグ",
+   "generic_name": "インスリンデグルデク・インスリンアスパルト"
+  },
+  {
+   "brand_name": "ゾルトファイ",
+   "generic_name": "インスリンデグルデク・リラグルチド"
+  },
+  {
+   "brand_name": "ソリクア",
+   "generic_name": "インスリングラルギン・リキシセナチド"
+  },
+  {
+   "brand_name": "リキスミア",
+   "generic_name": "リキシセナチド"
+  },
+  {
+   "brand_name": "バイエッタ",
+   "generic_name": "エキセナチド"
+  },
+  {
+   "brand_name": "ビデュリオン",
+   "generic_name": "エキセナチド"
+  },
+  {
+   "brand_name": "リポバス",
+   "generic_name": "シンバスタチン"
+  },
+  {
+   "brand_name": "ローコール",
+   "generic_name": "フルバスタチン"
+  },
+  {
+   "brand_name": "トライコア",
+   "generic_name": "フェノフィブラート"
+  },
+  {
+   "brand_name": "リピディル",
+   "generic_name": "フェノフィブラート"
+  },
+  {
+   "brand_name": "ベザトールSR",
+   "generic_name": "ベザフィブラート"
+  },
+  {
+   "brand_name": "リポクリン",
+   "generic_name": "クリノフィブラート"
+  },
+  {
+   "brand_name": "エパデール",
+   "generic_name": "イコサペント酸エチル"
+  },
+  {
+   "brand_name": "ロトリガ",
+   "generic_name": "オメガ3脂肪酸エチル"
+  },
+  {
+   "brand_name": "シンレスタール",
+   "generic_name": "プロブコール"
+  },
+  {
+   "brand_name": "コレバイン",
+   "generic_name": "コレスチミド"
+  },
+  {
+   "brand_name": "クエストラン",
+   "generic_name": "コレスチラミン"
+  },
+  {
+   "brand_name": "コレキサミン",
+   "generic_name": "ニコモール"
+  },
+  {
+   "brand_name": "ペリシット",
+   "generic_name": "ニセリトロール"
+  },
+  {
+   "brand_name": "レパーサ",
+   "generic_name": "エボロクマブ"
+  },
+  {
+   "brand_name": "プラルエント",
+   "generic_name": "アリロクマブ"
+  },
+  {
+   "brand_name": "ネクセトール",
+   "generic_name": "ベムペド酸"
+  },
+  {
+   "brand_name": "バファリン配合錠A81",
+   "generic_name": "アスピリン"
+  },
+  {
+   "brand_name": "タケルダ",
+   "generic_name": "アスピリン・ランソプラゾール"
+  },
+  {
+   "brand_name": "キャブピリン",
+   "generic_name": "アスピリン・ボノプラザン"
+  },
+  {
+   "brand_name": "エフィエント",
+   "generic_name": "プラスグレル"
+  },
+  {
+   "brand_name": "ブリリンタ",
+   "generic_name": "チカグレロル"
+  },
+  {
+   "brand_name": "パナルジン",
+   "generic_name": "チクロピジン"
+  },
+  {
+   "brand_name": "アンプラーグ",
+   "generic_name": "サルポグレラート"
+  },
+  {
+   "brand_name": "ドルナー",
+   "generic_name": "ベラプロスト"
+  },
+  {
+   "brand_name": "プロサイリン",
+   "generic_name": "ベラプロスト"
+  },
+  {
+   "brand_name": "オパルモン",
+   "generic_name": "リマプロスト"
+  },
+  {
+   "brand_name": "プロレナール",
+   "generic_name": "リマプロスト"
+  },
+  {
+   "brand_name": "ペルサンチン",
+   "generic_name": "ジピリダモール"
+  },
+  {
+   "brand_name": "アンカロン",
+   "generic_name": "アミオダロン"
+  },
+  {
+   "brand_name": "ベプリコール",
+   "generic_name": "ベプリジル"
+  },
+  {
+   "brand_name": "ソタコール",
+   "generic_name": "ソタロール"
+  },
+  {
+   "brand_name": "サンリズム",
+   "generic_name": "ピルシカイニド"
+  },
+  {
+   "brand_name": "タンボコール",
+   "generic_name": "フレカイニド"
+  },
+  {
+   "brand_name": "プロノン",
+   "generic_name": "プロパフェノン"
+  },
+  {
+   "brand_name": "リスモダン",
+   "generic_name": "ジソピラミド"
+  },
+  {
+   "brand_name": "シベノール",
+   "generic_name": "シベンゾリン"
+  },
+  {
+   "brand_name": "メキシチール",
+   "generic_name": "メキシレチン"
+  },
+  {
+   "brand_name": "ジゴシン",
+   "generic_name": "ジゴキシン"
+  },
+  {
+   "brand_name": "ハーフジゴキシン",
+   "generic_name": "ジゴキシン"
+  },
+  {
+   "brand_name": "シグマート",
+   "generic_name": "ニコランジル"
+  },
+  {
+   "brand_name": "ニトロール",
+   "generic_name": "硝酸イソソルビド"
+  },
+  {
+   "brand_name": "フランドル",
+   "generic_name": "硝酸イソソルビド"
+  },
+  {
+   "brand_name": "アイトロール",
+   "generic_name": "一硝酸イソソルビド"
+  },
+  {
+   "brand_name": "ニトロペン",
+   "generic_name": "ニトログリセリン"
+  },
+  {
+   "brand_name": "ミオコール",
+   "generic_name": "ニトログリセリン"
+  },
+  {
+   "brand_name": "バスタレル",
+   "generic_name": "トリメタジジン"
+  },
+  {
+   "brand_name": "メトリジン",
+   "generic_name": "ミドドリン"
+  },
+  {
+   "brand_name": "ドプス",
+   "generic_name": "ドロキシドパ"
+  },
+  {
+   "brand_name": "リズミック",
+   "generic_name": "アメジニウム"
+  },
+  {
+   "brand_name": "コララン",
+   "generic_name": "イバブラジン"
+  },
+  {
+   "brand_name": "ベリキューボ",
+   "generic_name": "ベルイシグアト"
+  },
+  {
+   "brand_name": "オメプラゾン",
+   "generic_name": "オメプラゾール"
+  },
+  {
+   "brand_name": "ザンタック",
+   "generic_name": "ラニチジン"
+  },
+  {
+   "brand_name": "アシノン",
+   "generic_name": "ニザチジン"
+  },
+  {
+   "brand_name": "アルタット",
+   "generic_name": "ロキサチジン"
+  },
+  {
+   "brand_name": "タガメット",
+   "generic_name": "シメチジン"
+  },
+  {
+   "brand_name": "セルベックス",
+   "generic_name": "テプレノン"
+  },
+  {
+   "brand_name": "アルサルミン",
+   "generic_name": "スクラルファート"
+  },
+  {
+   "brand_name": "ミルラクト",
+   "generic_name": "ソファルコン"
+  },
+  {
+   "brand_name": "プロマック",
+   "generic_name": "ポラプレジンク"
+  },
+  {
+   "brand_name": "アルロイドG",
+   "generic_name": "アルギン酸ナトリウム"
+  },
+  {
+   "brand_name": "ガスロンN",
+   "generic_name": "イルソグラジン"
+  },
+  {
+   "brand_name": "ゲファニール",
+   "generic_name": "ゲファルナート"
+  },
+  {
+   "brand_name": "ノイエル",
+   "generic_name": "セトラキサート"
+  },
+  {
+   "brand_name": "ガナトン",
+   "generic_name": "イトプリド"
+  },
+  {
+   "brand_name": "ナウゼリン",
+   "generic_name": "ドンペリドン"
+  },
+  {
+   "brand_name": "プリンペラン",
+   "generic_name": "メトクロプラミド"
+  },
+  {
+   "brand_name": "アコファイド",
+   "generic_name": "アコチアミド"
+  },
+  {
+   "brand_name": "ドグマチール",
+   "generic_name": "スルピリド"
+  },
+  {
+   "brand_name": "ゾフラン",
+   "generic_name": "オンダンセトロン"
+  },
+  {
+   "brand_name": "カイトリル",
+   "generic_name": "グラニセトロン"
+  },
+  {
+   "brand_name": "イメンド",
+   "generic_name": "アプレピタント"
+  },
+  {
+   "brand_name": "重質酸化マグネシウム",
+   "generic_name": "酸化マグネシウム"
+  },
+  {
+   "brand_name": "ミルマグ",
+   "generic_name": "水酸化マグネシウム"
+  },
+  {
+   "brand_name": "モニラック",
+   "generic_name": "ラクツロース"
+  },
+  {
+   "brand_name": "ラグノス",
+   "generic_name": "ラクツロース"
+  },
+  {
+   "brand_name": "ポルトラック",
+   "generic_name": "ラクチトール"
+  },
+  {
+   "brand_name": "ラキソベロン",
+   "generic_name": "ピコスルファートナトリウム"
+  },
+  {
+   "brand_name": "プルゼニド",
+   "generic_name": "センノシド"
+  },
+  {
+   "brand_name": "センノサイド",
+   "generic_name": "センノシド"
+  },
+  {
+   "brand_name": "アローゼン",
+   "generic_name": "センナ"
+  },
+  {
+   "brand_name": "テレミンソフト",
+   "generic_name": "ビサコジル"
+  },
+  {
+   "brand_name": "モビコール",
+   "generic_name": "ポリエチレングリコール"
+  },
+  {
+   "brand_name": "コロネル",
+   "generic_name": "ポリカルボフィルカルシウム"
+  },
+  {
+   "brand_name": "ポリフル",
+   "generic_name": "ポリカルボフィルカルシウム"
+  },
+  {
+   "brand_name": "セレキノン",
+   "generic_name": "トリメブチン"
+  },
+  {
+   "brand_name": "イリボー",
+   "generic_name": "ラモセトロン"
+  },
+  {
+   "brand_name": "トランコロン",
+   "generic_name": "メペンゾラート"
+  },
+  {
+   "brand_name": "ブスコパン",
+   "generic_name": "ブチルスコポラミン"
+  },
+  {
+   "brand_name": "チアトン",
+   "generic_name": "チキジウム"
+  },
+  {
+   "brand_name": "ロペミン",
+   "generic_name": "ロペラミド"
+  },
+  {
+   "brand_name": "タンナルビン",
+   "generic_name": "タンニン酸アルブミン"
+  },
+  {
+   "brand_name": "ウルソ",
+   "generic_name": "ウルソデオキシコール酸"
+  },
+  {
+   "brand_name": "チノ",
+   "generic_name": "ケノデオキシコール酸"
+  },
+  {
+   "brand_name": "ペンタサ",
+   "generic_name": "メサラジン"
+  },
+  {
+   "brand_name": "アサコール",
+   "generic_name": "メサラジン"
+  },
+  {
+   "brand_name": "リアルダ",
+   "generic_name": "メサラジン"
+  },
+  {
+   "brand_name": "サラゾピリン",
+   "generic_name": "サラゾスルファピリジン"
+  },
+  {
+   "brand_name": "アザルフィジンEN",
+   "generic_name": "サラゾスルファピリジン"
+  },
+  {
+   "brand_name": "ゼンタコート",
+   "generic_name": "ブデソニド"
+  },
+  {
+   "brand_name": "パルミコート",
+   "generic_name": "ブデソニド"
+  },
+  {
+   "brand_name": "ガスコン",
+   "generic_name": "ジメチコン"
+  },
+  {
+   "brand_name": "ラックビー",
+   "generic_name": "ビフィズス菌"
+  },
+  {
+   "brand_name": "ミヤBM",
+   "generic_name": "酪酸菌"
+  },
+  {
+   "brand_name": "ビオフェルミンR",
+   "generic_name": "耐性乳酸菌"
+  },
+  {
+   "brand_name": "エンテロノンR",
+   "generic_name": "耐性乳酸菌"
+  },
+  {
+   "brand_name": "ビオフェルミン",
+   "generic_name": "ラクトミン"
+  },
+  {
+   "brand_name": "ドラマミン",
+   "generic_name": "ジメンヒドリナート"
+  },
+  {
+   "brand_name": "アデホス",
+   "generic_name": "アデノシン三リン酸"
+  },
+  {
+   "brand_name": "イソバイド",
+   "generic_name": "イソソルビド"
+  },
+  {
+   "brand_name": "フルタイド",
+   "generic_name": "フルチカゾン"
+  },
+  {
+   "brand_name": "フルナーゼ",
+   "generic_name": "フルチカゾン"
+  },
+  {
+   "brand_name": "アドエア",
+   "generic_name": "フルチカゾンプロピオン酸エステル・サルメテロール"
+  },
+  {
+   "brand_name": "シムビコート",
+   "generic_name": "ブデソニド・ホルモテロール"
+  },
+  {
+   "brand_name": "レルベア",
+   "generic_name": "フルチカゾンフランカルボン酸エステル・ビランテロール"
+  },
+  {
+   "brand_name": "テリルジー",
+   "generic_name": "フルチカゾンフランカルボン酸エステル・ウメクリジニウム・ビランテロール"
+  },
+  {
+   "brand_name": "エナジア",
+   "generic_name": "モメタゾン・インダカテロール・グリコピロニウム"
+  },
+  {
+   "brand_name": "ビレーズトリ",
+   "generic_name": "ブデソニド・グリコピロニウム・ホルモテロール"
+  },
+  {
+   "brand_name": "オルベスコ",
+   "generic_name": "シクレソニド"
+  },
+  {
+   "brand_name": "アズマネックス",
+   "generic_name": "モメタゾン"
+  },
+  {
+   "brand_name": "ナゾネックス",
+   "generic_name": "モメタゾン"
+  },
+  {
+   "brand_name": "キュバール",
+   "generic_name": "ベクロメタゾン"
+  },
+  {
+   "brand_name": "スピリーバ",
+   "generic_name": "チオトロピウム"
+  },
+  {
+   "brand_name": "エンクラッセ",
+   "generic_name": "ウメクリジニウム"
+  },
+  {
+   "brand_name": "シーブリ",
+   "generic_name": "グリコピロニウム"
+  },
+  {
+   "brand_name": "オンブレス",
+   "generic_name": "インダカテロール"
+  },
+  {
+   "brand_name": "オーキシス",
+   "generic_name": "ホルモテロール"
+  },
+  {
+   "brand_name": "セレベント",
+   "generic_name": "サルメテロール"
+  },
+  {
+   "brand_name": "ホクナリン",
+   "generic_name": "ツロブテロール"
+  },
+  {
+   "brand_name": "メプチン",
+   "generic_name": "プロカテロール"
+  },
+  {
+   "brand_name": "ベネトリン",
+   "generic_name": "サルブタモール"
+  },
+  {
+   "brand_name": "サルタノール",
+   "generic_name": "サルブタモール"
+  },
+  {
+   "brand_name": "テオドール",
+   "generic_name": "テオフィリン"
+  },
+  {
+   "brand_name": "ユニフィル",
+   "generic_name": "テオフィリン"
+  },
+  {
+   "brand_name": "ネオフィリン",
+   "generic_name": "アミノフィリン"
+  },
+  {
+   "brand_name": "シングレア",
+   "generic_name": "モンテルカスト"
+  },
+  {
+   "brand_name": "キプレス",
+   "generic_name": "モンテルカスト"
+  },
+  {
+   "brand_name": "オノン",
+   "generic_name": "プランルカスト"
+  },
+  {
+   "brand_name": "アコレート",
+   "generic_name": "ザフィルルカスト"
+  },
+  {
+   "brand_name": "ゾレア",
+   "generic_name": "オマリズマブ"
+  },
+  {
+   "brand_name": "ヌーカラ",
+   "generic_name": "メポリズマブ"
+  },
+  {
+   "brand_name": "ファセンラ",
+   "generic_name": "ベンラリズマブ"
+  },
+  {
+   "brand_name": "デュピクセント",
+   "generic_name": "デュピルマブ"
+  },
+  {
+   "brand_name": "テゼスパイア",
+   "generic_name": "テゼペルマブ"
+  },
+  {
+   "brand_name": "ビソルボン",
+   "generic_name": "ブロムヘキシン"
+  },
+  {
+   "brand_name": "チスタニン",
+   "generic_name": "L-エチルシステイン"
+  },
+  {
+   "brand_name": "ムコフィリン",
+   "generic_name": "アセチルシステイン"
+  },
+  {
+   "brand_name": "アストミン",
+   "generic_name": "ジメモルファン"
+  },
+  {
+   "brand_name": "フラベリック",
+   "generic_name": "ベンプロペリン"
+  },
+  {
+   "brand_name": "トクレス",
+   "generic_name": "ペントキシベリン"
+  },
+  {
+   "brand_name": "フスタゾール",
+   "generic_name": "クロペラスチン"
+  },
+  {
+   "brand_name": "ミノフィット",
+   "generic_name": "レボドロプロピジン"
+  },
+  {
+   "brand_name": "レスプレン",
+   "generic_name": "エプラジノン"
+  },
+  {
+   "brand_name": "トランサミン",
+   "generic_name": "トラネキサム酸"
+  },
+  {
+   "brand_name": "タリオン",
+   "generic_name": "ベポタスチン"
+  },
+  {
+   "brand_name": "アレジオン",
+   "generic_name": "エピナスチン"
+  },
+  {
+   "brand_name": "ジルテック",
+   "generic_name": "セチリジン"
+  },
+  {
+   "brand_name": "ルパフィン",
+   "generic_name": "ルパタジン"
+  },
+  {
+   "brand_name": "ザジテン",
+   "generic_name": "ケトチフェン"
+  },
+  {
+   "brand_name": "アゼプチン",
+   "generic_name": "アゼラスチン"
+  },
+  {
+   "brand_name": "ゼスラン",
+   "generic_name": "メキタジン"
+  },
+  {
+   "brand_name": "ニポラジン",
+   "generic_name": "メキタジン"
+  },
+  {
+   "brand_name": "エバステル",
+   "generic_name": "エバスチン"
+  },
+  {
+   "brand_name": "レスタミン",
+   "generic_name": "ジフェンヒドラミン"
+  },
+  {
+   "brand_name": "ポララミン",
+   "generic_name": "クロルフェニラミン"
+  },
+  {
+   "brand_name": "アタラックス",
+   "generic_name": "ヒドロキシジン"
+  },
+  {
+   "brand_name": "ペリアクチン",
+   "generic_name": "シプロヘプタジン"
+  },
+  {
+   "brand_name": "セレスタミン",
+   "generic_name": "ベタメタゾン・d-クロルフェニラミン"
+  },
+  {
+   "brand_name": "インタール",
+   "generic_name": "クロモグリク酸"
+  },
+  {
+   "brand_name": "アレギサール",
+   "generic_name": "ペミロラスト"
+  },
+  {
+   "brand_name": "ペミラストン",
+   "generic_name": "ペミロラスト"
+  },
+  {
+   "brand_name": "アイピーディ",
+   "generic_name": "スプラタスト"
+  },
+  {
+   "brand_name": "サワシリン",
+   "generic_name": "アモキシシリン"
+  },
+  {
+   "brand_name": "パセトシン",
+   "generic_name": "アモキシシリン"
+  },
+  {
+   "brand_name": "オーグメンチン",
+   "generic_name": "アモキシシリン・クラブラン酸"
+  },
+  {
+   "brand_name": "クラバモックス",
+   "generic_name": "アモキシシリン・クラブラン酸"
+  },
+  {
+   "brand_name": "ビクシリン",
+   "generic_name": "アンピシリン"
+  },
+  {
+   "brand_name": "ユナシン",
+   "generic_name": "スルタミシリン"
+  },
+  {
+   "brand_name": "ペントシリン",
+   "generic_name": "ピペラシリン"
+  },
+  {
+   "brand_name": "ゾシン",
+   "generic_name": "ピペラシリン・タゾバクタム"
+  },
+  {
+   "brand_name": "ユナシンS",
+   "generic_name": "アンピシリン・スルバクタム"
+  },
+  {
+   "brand_name": "ケフレックス",
+   "generic_name": "セファレキシン"
+  },
+  {
+   "brand_name": "ケフラール",
+   "generic_name": "セファクロル"
+  },
+  {
+   "brand_name": "セフゾン",
+   "generic_name": "セフジニル"
+  },
+  {
+   "brand_name": "フロモックス",
+   "generic_name": "セフカペン"
+  },
+  {
+   "brand_name": "バナン",
+   "generic_name": "セフポドキシム"
+  },
+  {
+   "brand_name": "メイアクト",
+   "generic_name": "セフジトレン"
+  },
+  {
+   "brand_name": "トミロン",
+   "generic_name": "セフテラム"
+  },
+  {
+   "brand_name": "パンスポリン",
+   "generic_name": "セフォチアム"
+  },
+  {
+   "brand_name": "ロセフィン",
+   "generic_name": "セフトリアキソン"
+  },
+  {
+   "brand_name": "セフメタゾン",
+   "generic_name": "セフメタゾール"
+  },
+  {
+   "brand_name": "マキシピーム",
+   "generic_name": "セフェピム"
+  },
+  {
+   "brand_name": "モダシン",
+   "generic_name": "セフタジジム"
+  },
+  {
+   "brand_name": "セファメジン",
+   "generic_name": "セファゾリン"
+  },
+  {
+   "brand_name": "メロペン",
+   "generic_name": "メロペネム"
+  },
+  {
+   "brand_name": "チエナム",
+   "generic_name": "イミペネム・シラスタチン"
+  },
+  {
+   "brand_name": "ファロム",
+   "generic_name": "ファロペネム"
+  },
+  {
+   "brand_name": "オラペネム",
+   "generic_name": "テビペネム"
+  },
+  {
+   "brand_name": "クラリス",
+   "generic_name": "クラリスロマイシン"
+  },
+  {
+   "brand_name": "クラリシッド",
+   "generic_name": "クラリスロマイシン"
+  },
+  {
+   "brand_name": "ジスロマック",
+   "generic_name": "アジスロマイシン"
+  },
+  {
+   "brand_name": "エリスロシン",
+   "generic_name": "エリスロマイシン"
+  },
+  {
+   "brand_name": "ルリッド",
+   "generic_name": "ロキシスロマイシン"
+  },
+  {
+   "brand_name": "ミノマイシン",
+   "generic_name": "ミノサイクリン"
+  },
+  {
+   "brand_name": "ビブラマイシン",
+   "generic_name": "ドキシサイクリン"
+  },
+  {
+   "brand_name": "アクロマイシン",
+   "generic_name": "テトラサイクリン"
+  },
+  {
+   "brand_name": "クラビット",
+   "generic_name": "レボフロキサシン"
+  },
+  {
+   "brand_name": "グレースビット",
+   "generic_name": "シタフロキサシン"
+  },
+  {
+   "brand_name": "アベロックス",
+   "generic_name": "モキシフロキサシン"
+  },
+  {
+   "brand_name": "シプロキサン",
+   "generic_name": "シプロフロキサシン"
+  },
+  {
+   "brand_name": "ジェニナック",
+   "generic_name": "ガレノキサシン"
+  },
+  {
+   "brand_name": "オゼックス",
+   "generic_name": "トスフロキサシン"
+  },
+  {
+   "brand_name": "トスキサシン",
+   "generic_name": "トスフロキサシン"
+  },
+  {
+   "brand_name": "ラスビック",
+   "generic_name": "ラスクフロキサシン"
+  },
+  {
+   "brand_name": "バクシダール",
+   "generic_name": "ノルフロキサシン"
+  },
+  {
+   "brand_name": "バクタ",
+   "generic_name": "ST合剤"
+  },
+  {
+   "brand_name": "バクトラミン",
+   "generic_name": "ST合剤"
+  },
+  {
+   "brand_name": "フラジール",
+   "generic_name": "メトロニダゾール"
+  },
+  {
+   "brand_name": "ダラシン",
+   "generic_name": "クリンダマイシン"
+  },
+  {
+   "brand_name": "ホスミシン",
+   "generic_name": "ホスホマイシン"
+  },
+  {
+   "brand_name": "リフキシマ",
+   "generic_name": "リファキシミン"
+  },
+  {
+   "brand_name": "ダフクロア",
+   "generic_name": "フィダキソマイシン"
+  },
+  {
+   "brand_name": "ニフロキサジド",
+   "generic_name": "ニトロフラントイン"
+  },
+  {
+   "brand_name": "ザイボックス",
+   "generic_name": "リネゾリド"
+  },
+  {
+   "brand_name": "リファジン",
+   "generic_name": "リファンピシン"
+  },
+  {
+   "brand_name": "イスコチン",
+   "generic_name": "イソニアジド"
+  },
+  {
+   "brand_name": "エブトール",
+   "generic_name": "エタンブトール"
+  },
+  {
+   "brand_name": "エサンブトール",
+   "generic_name": "エタンブトール"
+  },
+  {
+   "brand_name": "ピラマイド",
+   "generic_name": "ピラジナミド"
+  },
+  {
+   "brand_name": "タミフル",
+   "generic_name": "オセルタミビル"
+  },
+  {
+   "brand_name": "リレンザ",
+   "generic_name": "ザナミビル"
+  },
+  {
+   "brand_name": "イナビル",
+   "generic_name": "ラニナミビル"
+  },
+  {
+   "brand_name": "ラピアクタ",
+   "generic_name": "ペラミビル"
+  },
+  {
+   "brand_name": "ゾフルーザ",
+   "generic_name": "バロキサビル"
+  },
+  {
+   "brand_name": "バルトレックス",
+   "generic_name": "バラシクロビル"
+  },
+  {
+   "brand_name": "ゾビラックス",
+   "generic_name": "アシクロビル"
+  },
+  {
+   "brand_name": "ファムビル",
+   "generic_name": "ファムシクロビル"
+  },
+  {
+   "brand_name": "アメナリーフ",
+   "generic_name": "アメナメビル"
+  },
+  {
+   "brand_name": "パキロビッド",
+   "generic_name": "ニルマトレルビル・リトナビル"
+  },
+  {
+   "brand_name": "ラゲブリオ",
+   "generic_name": "モルヌピラビル"
+  },
+  {
+   "brand_name": "ゾコーバ",
+   "generic_name": "エンシトレルビル"
+  },
+  {
+   "brand_name": "ベクルリー",
+   "generic_name": "レムデシビル"
+  },
+  {
+   "brand_name": "ジフルカン",
+   "generic_name": "フルコナゾール"
+  },
+  {
+   "brand_name": "イトリゾール",
+   "generic_name": "イトラコナゾール"
+  },
+  {
+   "brand_name": "ブイフェンド",
+   "generic_name": "ボリコナゾール"
+  },
+  {
+   "brand_name": "ラミシール",
+   "generic_name": "テルビナフィン"
+  },
+  {
+   "brand_name": "ネイリン",
+   "generic_name": "ホスラブコナゾール"
+  },
+  {
+   "brand_name": "ファンギゾン",
+   "generic_name": "アムホテリシンB"
+  },
+  {
+   "brand_name": "バラクルード",
+   "generic_name": "エンテカビル"
+  },
+  {
+   "brand_name": "ベムリディ",
+   "generic_name": "テノホビル"
+  },
+  {
+   "brand_name": "テノゼット",
+   "generic_name": "テノホビル"
+  },
+  {
+   "brand_name": "プレドニン",
+   "generic_name": "プレドニゾロン"
+  },
+  {
+   "brand_name": "メドロール",
+   "generic_name": "メチルプレドニゾロン"
+  },
+  {
+   "brand_name": "ソル・メドロール",
+   "generic_name": "メチルプレドニゾロン"
+  },
+  {
+   "brand_name": "デカドロン",
+   "generic_name": "デキサメタゾン"
+  },
+  {
+   "brand_name": "デキサート",
+   "generic_name": "デキサメタゾン"
+  },
+  {
+   "brand_name": "リンデロン",
+   "generic_name": "ベタメタゾン"
+  },
+  {
+   "brand_name": "コートリル",
+   "generic_name": "ヒドロコルチゾン"
+  },
+  {
+   "brand_name": "ソル・コーテフ",
+   "generic_name": "ヒドロコルチゾン"
+  },
+  {
+   "brand_name": "フロリネフ",
+   "generic_name": "フルドロコルチゾン"
+  },
+  {
+   "brand_name": "ケナコルト",
+   "generic_name": "トリアムシノロン"
+  },
+  {
+   "brand_name": "ボルタレン",
+   "generic_name": "ジクロフェナク"
+  },
+  {
+   "brand_name": "ハイペン",
+   "generic_name": "エトドラク"
+  },
+  {
+   "brand_name": "オステラック",
+   "generic_name": "エトドラク"
+  },
+  {
+   "brand_name": "モービック",
+   "generic_name": "メロキシカム"
+  },
+  {
+   "brand_name": "ナイキサン",
+   "generic_name": "ナプロキセン"
+  },
+  {
+   "brand_name": "インテバン",
+   "generic_name": "インドメタシン"
+  },
+  {
+   "brand_name": "ブルフェン",
+   "generic_name": "イブプロフェン"
+  },
+  {
+   "brand_name": "ニフラン",
+   "generic_name": "プラノプロフェン"
+  },
+  {
+   "brand_name": "ロルカム",
+   "generic_name": "ロルノキシカム"
+  },
+  {
+   "brand_name": "クリノリル",
+   "generic_name": "スリンダク"
+  },
+  {
+   "brand_name": "ソレトン",
+   "generic_name": "ザルトプロフェン"
+  },
+  {
+   "brand_name": "フロベン",
+   "generic_name": "フルルビプロフェン"
+  },
+  {
+   "brand_name": "ロコア",
+   "generic_name": "フルルビプロフェン"
+  },
+  {
+   "brand_name": "アセリオ",
+   "generic_name": "アセトアミノフェン"
+  },
+  {
+   "brand_name": "コカール",
+   "generic_name": "アセトアミノフェン"
+  },
+  {
+   "brand_name": "トラマール",
+   "generic_name": "トラマドール"
+  },
+  {
+   "brand_name": "ワントラム",
+   "generic_name": "トラマドール"
+  },
+  {
+   "brand_name": "トラムセット",
+   "generic_name": "トラマドール・アセトアミノフェン"
+  },
+  {
+   "brand_name": "ノルスパン",
+   "generic_name": "ブプレノルフィン"
+  },
+  {
+   "brand_name": "レペタン",
+   "generic_name": "ブプレノルフィン"
+  },
+  {
+   "brand_name": "デュロテップ",
+   "generic_name": "フェンタニル"
+  },
+  {
+   "brand_name": "フェントス",
+   "generic_name": "フェンタニル"
+  },
+  {
+   "brand_name": "オキシコンチン",
+   "generic_name": "オキシコドン"
+  },
+  {
+   "brand_name": "オキノーム",
+   "generic_name": "オキシコドン"
+  },
+  {
+   "brand_name": "MSコンチン",
+   "generic_name": "モルヒネ"
+  },
+  {
+   "brand_name": "オプソ",
+   "generic_name": "モルヒネ"
+  },
+  {
+   "brand_name": "ソセゴン",
+   "generic_name": "ペンタゾシン"
+  },
+  {
+   "brand_name": "ガバペン",
+   "generic_name": "ガバペンチン"
+  },
+  {
+   "brand_name": "ノイロトロピン",
+   "generic_name": "ワクシニアウイルス接種家兎炎症皮膚抽出液"
+  },
+  {
+   "brand_name": "ミオナール",
+   "generic_name": "エペリゾン"
+  },
+  {
+   "brand_name": "テルネリン",
+   "generic_name": "チザニジン"
+  },
+  {
+   "brand_name": "リオレサール",
+   "generic_name": "バクロフェン"
+  },
+  {
+   "brand_name": "ギャバロン",
+   "generic_name": "バクロフェン"
+  },
+  {
+   "brand_name": "ムスカルム",
+   "generic_name": "トルペリゾン"
+  },
+  {
+   "brand_name": "アロフト",
+   "generic_name": "アフロクアロン"
+  },
+  {
+   "brand_name": "ロバキシン",
+   "generic_name": "メトカルバモール"
+  },
+  {
+   "brand_name": "アモバン",
+   "generic_name": "ゾピクロン"
+  },
+  {
+   "brand_name": "レンドルミン",
+   "generic_name": "ブロチゾラム"
+  },
+  {
+   "brand_name": "ハルシオン",
+   "generic_name": "トリアゾラム"
+  },
+  {
+   "brand_name": "エバミール",
+   "generic_name": "ロルメタゼパム"
+  },
+  {
+   "brand_name": "ロラメット",
+   "generic_name": "ロルメタゼパム"
+  },
+  {
+   "brand_name": "リスミー",
+   "generic_name": "リルマザホン"
+  },
+  {
+   "brand_name": "サイレース",
+   "generic_name": "フルニトラゼパム"
+  },
+  {
+   "brand_name": "ベンザリン",
+   "generic_name": "ニトラゼパム"
+  },
+  {
+   "brand_name": "ネルボン",
+   "generic_name": "ニトラゼパム"
+  },
+  {
+   "brand_name": "ユーロジン",
+   "generic_name": "エスタゾラム"
+  },
+  {
+   "brand_name": "クービビック",
+   "generic_name": "ダリドレキサント"
+  },
+  {
+   "brand_name": "デパス",
+   "generic_name": "エチゾラム"
+  },
+  {
+   "brand_name": "ソラナックス",
+   "generic_name": "アルプラゾラム"
+  },
+  {
+   "brand_name": "コンスタン",
+   "generic_name": "アルプラゾラム"
+  },
+  {
+   "brand_name": "ワイパックス",
+   "generic_name": "ロラゼパム"
+  },
+  {
+   "brand_name": "セルシン",
+   "generic_name": "ジアゼパム"
+  },
+  {
+   "brand_name": "ホリゾン",
+   "generic_name": "ジアゼパム"
+  },
+  {
+   "brand_name": "リボトリール",
+   "generic_name": "クロナゼパム"
+  },
+  {
+   "brand_name": "ランドセン",
+   "generic_name": "クロナゼパム"
+  },
+  {
+   "brand_name": "レキソタン",
+   "generic_name": "ブロマゼパム"
+  },
+  {
+   "brand_name": "セパゾン",
+   "generic_name": "クロキサゾラム"
+  },
+  {
+   "brand_name": "エリスパン",
+   "generic_name": "フルジアゼパム"
+  },
+  {
+   "brand_name": "メイラックス",
+   "generic_name": "ロフラゼプ酸エチル"
+  },
+  {
+   "brand_name": "セディール",
+   "generic_name": "タンドスピロン"
+  },
+  {
+   "brand_name": "ジェイゾロフト",
+   "generic_name": "セルトラリン"
+  },
+  {
+   "brand_name": "レクサプロ",
+   "generic_name": "エスシタロプラム"
+  },
+  {
+   "brand_name": "パキシル",
+   "generic_name": "パロキセチン"
+  },
+  {
+   "brand_name": "デプロメール",
+   "generic_name": "フルボキサミン"
+  },
+  {
+   "brand_name": "ルボックス",
+   "generic_name": "フルボキサミン"
+  },
+  {
+   "brand_name": "イフェクサー",
+   "generic_name": "ベンラファキシン"
+  },
+  {
+   "brand_name": "トレドミン",
+   "generic_name": "ミルナシプラン"
+  },
+  {
+   "brand_name": "リフレックス",
+   "generic_name": "ミルタザピン"
+  },
+  {
+   "brand_name": "レメロン",
+   "generic_name": "ミルタザピン"
+  },
+  {
+   "brand_name": "デジレル",
+   "generic_name": "トラゾドン"
+  },
+  {
+   "brand_name": "レスリン",
+   "generic_name": "トラゾドン"
+  },
+  {
+   "brand_name": "トリンテリックス",
+   "generic_name": "ボルチオキセチン"
+  },
+  {
+   "brand_name": "トリプタノール",
+   "generic_name": "アミトリプチリン"
+  },
+  {
+   "brand_name": "ノリトレン",
+   "generic_name": "ノルトリプチリン"
+  },
+  {
+   "brand_name": "トフラニール",
+   "generic_name": "イミプラミン"
+  },
+  {
+   "brand_name": "アナフラニール",
+   "generic_name": "クロミプラミン"
+  },
+  {
+   "brand_name": "アモキサン",
+   "generic_name": "アモキサピン"
+  },
+  {
+   "brand_name": "ルジオミール",
+   "generic_name": "マプロチリン"
+  },
+  {
+   "brand_name": "リーマス",
+   "generic_name": "炭酸リチウム"
+  },
+  {
+   "brand_name": "エビリファイ",
+   "generic_name": "アリピプラゾール"
+  },
+  {
+   "brand_name": "レキサルティ",
+   "generic_name": "ブレクスピプラゾール"
+  },
+  {
+   "brand_name": "セロクエル",
+   "generic_name": "クエチアピン"
+  },
+  {
+   "brand_name": "リスパダール",
+   "generic_name": "リスペリドン"
+  },
+  {
+   "brand_name": "ジプレキサ",
+   "generic_name": "オランザピン"
+  },
+  {
+   "brand_name": "ルーラン",
+   "generic_name": "ペロスピロン"
+  },
+  {
+   "brand_name": "ロナセン",
+   "generic_name": "ブロナンセリン"
+  },
+  {
+   "brand_name": "セレネース",
+   "generic_name": "ハロペリドール"
+  },
+  {
+   "brand_name": "コントミン",
+   "generic_name": "クロルプロマジン"
+  },
+  {
+   "brand_name": "レミニール",
+   "generic_name": "ガランタミン"
+  },
+  {
+   "brand_name": "イクセロン",
+   "generic_name": "リバスチグミン"
+  },
+  {
+   "brand_name": "リバスタッチ",
+   "generic_name": "リバスチグミン"
+  },
+  {
+   "brand_name": "レケンビ",
+   "generic_name": "レカネマブ"
+  },
+  {
+   "brand_name": "ケサンラ",
+   "generic_name": "ドナネマブ"
+  },
+  {
+   "brand_name": "メネシット",
+   "generic_name": "レボドパ・カルビドパ"
+  },
+  {
+   "brand_name": "ネオドパストン",
+   "generic_name": "レボドパ・カルビドパ"
+  },
+  {
+   "brand_name": "マドパー",
+   "generic_name": "レボドパ・ベンセラジド"
+  },
+  {
+   "brand_name": "ネオドパゾール",
+   "generic_name": "レボドパ・ベンセラジド"
+  },
+  {
+   "brand_name": "ミラペックス",
+   "generic_name": "プラミペキソール"
+  },
+  {
+   "brand_name": "ニュープロ",
+   "generic_name": "ロチゴチン"
+  },
+  {
+   "brand_name": "レキップ",
+   "generic_name": "ロピニロール"
+  },
+  {
+   "brand_name": "カバサール",
+   "generic_name": "カベルゴリン"
+  },
+  {
+   "brand_name": "パーロデル",
+   "generic_name": "ブロモクリプチン"
+  },
+  {
+   "brand_name": "ペルマックス",
+   "generic_name": "ペルゴリド"
+  },
+  {
+   "brand_name": "シンメトレル",
+   "generic_name": "アマンタジン"
+  },
+  {
+   "brand_name": "トレリーフ",
+   "generic_name": "ゾニサミド"
+  },
+  {
+   "brand_name": "エクセグラン",
+   "generic_name": "ゾニサミド"
+  },
+  {
+   "brand_name": "エフピー",
+   "generic_name": "セレギリン"
+  },
+  {
+   "brand_name": "アジレクト",
+   "generic_name": "ラサギリン"
+  },
+  {
+   "brand_name": "エクフィナ",
+   "generic_name": "サフィナミド"
+  },
+  {
+   "brand_name": "コムタン",
+   "generic_name": "エンタカポン"
+  },
+  {
+   "brand_name": "ノウリアスト",
+   "generic_name": "イストラデフィリン"
+  },
+  {
+   "brand_name": "アーテン",
+   "generic_name": "トリヘキシフェニジル"
+  },
+  {
+   "brand_name": "アキネトン",
+   "generic_name": "ビペリデン"
+  },
+  {
+   "brand_name": "イーケプラ",
+   "generic_name": "レベチラセタム"
+  },
+  {
+   "brand_name": "デパケン",
+   "generic_name": "バルプロ酸ナトリウム"
+  },
+  {
+   "brand_name": "テグレトール",
+   "generic_name": "カルバマゼピン"
+  },
+  {
+   "brand_name": "ラミクタール",
+   "generic_name": "ラモトリギン"
+  },
+  {
+   "brand_name": "ビムパット",
+   "generic_name": "ラコサミド"
+  },
+  {
+   "brand_name": "アレビアチン",
+   "generic_name": "フェニトイン"
+  },
+  {
+   "brand_name": "ヒダントール",
+   "generic_name": "フェニトイン"
+  },
+  {
+   "brand_name": "フェノバール",
+   "generic_name": "フェノバルビタール"
+  },
+  {
+   "brand_name": "フィコンパ",
+   "generic_name": "ペランパネル"
+  },
+  {
+   "brand_name": "トピナ",
+   "generic_name": "トピラマート"
+  },
+  {
+   "brand_name": "トリレプタル",
+   "generic_name": "オクスカルバゼピン"
+  },
+  {
+   "brand_name": "マクサルト",
+   "generic_name": "リザトリプタン"
+  },
+  {
+   "brand_name": "イミグラン",
+   "generic_name": "スマトリプタン"
+  },
+  {
+   "brand_name": "ゾーミッグ",
+   "generic_name": "ゾルミトリプタン"
+  },
+  {
+   "brand_name": "レルパックス",
+   "generic_name": "エレトリプタン"
+  },
+  {
+   "brand_name": "アマージ",
+   "generic_name": "ナラトリプタン"
+  },
+  {
+   "brand_name": "ミグシス",
+   "generic_name": "ロメリジン"
+  },
+  {
+   "brand_name": "エムガルティ",
+   "generic_name": "ガルカネズマブ"
+  },
+  {
+   "brand_name": "アイモビーグ",
+   "generic_name": "エレヌマブ"
+  },
+  {
+   "brand_name": "アジョビ",
+   "generic_name": "フレマネズマブ"
+  },
+  {
+   "brand_name": "クリアミン",
+   "generic_name": "エルゴタミン"
+  },
+  {
+   "brand_name": "ハルナール",
+   "generic_name": "タムスロシン"
+  },
+  {
+   "brand_name": "ユリーフ",
+   "generic_name": "シロドシン"
+  },
+  {
+   "brand_name": "フリバス",
+   "generic_name": "ナフトピジル"
+  },
+  {
+   "brand_name": "ザルティア",
+   "generic_name": "タダラフィル"
+  },
+  {
+   "brand_name": "シアリス",
+   "generic_name": "タダラフィル"
+  },
+  {
+   "brand_name": "バイアグラ",
+   "generic_name": "シルデナフィル"
+  },
+  {
+   "brand_name": "レバチオ",
+   "generic_name": "シルデナフィル"
+  },
+  {
+   "brand_name": "レビトラ",
+   "generic_name": "バルデナフィル"
+  },
+  {
+   "brand_name": "アボルブ",
+   "generic_name": "デュタステリド"
+  },
+  {
+   "brand_name": "ザガーロ",
+   "generic_name": "デュタステリド"
+  },
+  {
+   "brand_name": "プロペシア",
+   "generic_name": "フィナステリド"
+  },
+  {
+   "brand_name": "プロスカー",
+   "generic_name": "フィナステリド"
+  },
+  {
+   "brand_name": "ベタニス",
+   "generic_name": "ミラベグロン"
+  },
+  {
+   "brand_name": "ベオーバ",
+   "generic_name": "ビベグロン"
+  },
+  {
+   "brand_name": "ベシケア",
+   "generic_name": "ソリフェナシン"
+  },
+  {
+   "brand_name": "ウリトス",
+   "generic_name": "イミダフェナシン"
+  },
+  {
+   "brand_name": "ステーブラ",
+   "generic_name": "イミダフェナシン"
+  },
+  {
+   "brand_name": "トビエース",
+   "generic_name": "フェソテロジン"
+  },
+  {
+   "brand_name": "バップフォー",
+   "generic_name": "プロピベリン"
+  },
+  {
+   "brand_name": "ポラキス",
+   "generic_name": "オキシブチニン"
+  },
+  {
+   "brand_name": "デトルシトール",
+   "generic_name": "トルテロジン"
+  },
+  {
+   "brand_name": "ウブレチド",
+   "generic_name": "ジスチグミン"
+  },
+  {
+   "brand_name": "ベサコリン",
+   "generic_name": "ベタネコール"
+  },
+  {
+   "brand_name": "チウラジール",
+   "generic_name": "プロピルチオウラシル"
+  },
+  {
+   "brand_name": "プロパジール",
+   "generic_name": "プロピルチオウラシル"
+  },
+  {
+   "brand_name": "チラーヂンS",
+   "generic_name": "レボチロキシン"
+  },
+  {
+   "brand_name": "チロナミン",
+   "generic_name": "リオチロニン"
+  },
+  {
+   "brand_name": "チロナジン",
+   "generic_name": "リオチロニン"
+  },
+  {
+   "brand_name": "リカルボン",
+   "generic_name": "ミノドロン酸"
+  },
+  {
+   "brand_name": "ボンビバ",
+   "generic_name": "イバンドロン酸"
+  },
+  {
+   "brand_name": "リクラスト",
+   "generic_name": "ゾレドロン酸"
+  },
+  {
+   "brand_name": "ゾメタ",
+   "generic_name": "ゾレドロン酸"
+  },
+  {
+   "brand_name": "ランマーク",
+   "generic_name": "デノスマブ"
+  },
+  {
+   "brand_name": "テリボン",
+   "generic_name": "テリパラチド"
+  },
+  {
+   "brand_name": "オスタバロ",
+   "generic_name": "アバロパラチド"
+  },
+  {
+   "brand_name": "ワンアルファ",
+   "generic_name": "アルファカルシドール"
+  },
+  {
+   "brand_name": "ロカルトロール",
+   "generic_name": "カルシトリオール"
+  },
+  {
+   "brand_name": "フルスタン",
+   "generic_name": "ファレカルシトリオール"
+  },
+  {
+   "brand_name": "ホーネル",
+   "generic_name": "ファレカルシトリオール"
+  },
+  {
+   "brand_name": "エビスタ",
+   "generic_name": "ラロキシフェン"
+  },
+  {
+   "brand_name": "ビビアント",
+   "generic_name": "バゼドキシフェン"
+  },
+  {
+   "brand_name": "グラケー",
+   "generic_name": "メナテトレノン"
+  },
+  {
+   "brand_name": "フェルム",
+   "generic_name": "乾燥硫酸鉄"
+  },
+  {
+   "brand_name": "インクレミン",
+   "generic_name": "溶性ピロリン酸第二鉄"
+  },
+  {
+   "brand_name": "フォリアミン",
+   "generic_name": "葉酸"
+  },
+  {
+   "brand_name": "ビタメジン",
+   "generic_name": "ビタミンB1"
+  },
+  {
+   "brand_name": "ピドキサール",
+   "generic_name": "ビタミンB6"
+  },
+  {
+   "brand_name": "シナール",
+   "generic_name": "ビタミンC"
+  },
+  {
+   "brand_name": "ユベラ",
+   "generic_name": "ビタミンE"
+  },
+  {
+   "brand_name": "トピロリック",
+   "generic_name": "トピロキソスタット"
+  },
+  {
+   "brand_name": "ウリアデック",
+   "generic_name": "トピロキソスタット"
+  },
+  {
+   "brand_name": "ユリノーム",
+   "generic_name": "ベンズブロマロン"
+  },
+  {
+   "brand_name": "ベネシッド",
+   "generic_name": "プロベネシド"
+  },
+  {
+   "brand_name": "ウラリット",
+   "generic_name": "クエン酸カリウム・クエン酸ナトリウム"
+  },
+  {
+   "brand_name": "ホスレノール",
+   "generic_name": "炭酸ランタン"
+  },
+  {
+   "brand_name": "レナジェル",
+   "generic_name": "セベラマー"
+  },
+  {
+   "brand_name": "フォスブロック",
+   "generic_name": "セベラマー"
+  },
+  {
+   "brand_name": "リオナ",
+   "generic_name": "クエン酸第二鉄"
+  },
+  {
+   "brand_name": "ピートル",
+   "generic_name": "スクロオキシ水酸化鉄"
+  },
+  {
+   "brand_name": "キックリン",
+   "generic_name": "ビキサロマー"
+  },
+  {
+   "brand_name": "カルタン",
+   "generic_name": "沈降炭酸カルシウム"
+  },
+  {
+   "brand_name": "カリメート",
+   "generic_name": "ポリスチレンスルホン酸カルシウム"
+  },
+  {
+   "brand_name": "アーガメイトゼリー",
+   "generic_name": "ポリスチレンスルホン酸カルシウム"
+  },
+  {
+   "brand_name": "ケイキサレート",
+   "generic_name": "ポリスチレンスルホン酸ナトリウム"
+  },
+  {
+   "brand_name": "ベルタッサ",
+   "generic_name": "パチロマー"
+  },
+  {
+   "brand_name": "エベレンゾ",
+   "generic_name": "ロキサデュスタット"
+  },
+  {
+   "brand_name": "ダーブロック",
+   "generic_name": "ダプロデュスタット"
+  },
+  {
+   "brand_name": "バフセオ",
+   "generic_name": "バダデュスタット"
+  },
+  {
+   "brand_name": "エスポー",
+   "generic_name": "エポエチン"
+  },
+  {
+   "brand_name": "ネスプ",
+   "generic_name": "ダルベポエチン"
+  },
+  {
+   "brand_name": "アスパラカリウム",
+   "generic_name": "L-アスパラギン酸カリウム"
+  },
+  {
+   "brand_name": "アスパラK",
+   "generic_name": "L-アスパラギン酸カリウム"
+  },
+  {
+   "brand_name": "グルコンサンK",
+   "generic_name": "グルコン酸カリウム"
+  },
+  {
+   "brand_name": "スローケー",
+   "generic_name": "塩化カリウム"
+  },
+  {
+   "brand_name": "重曹",
+   "generic_name": "炭酸水素ナトリウム"
+  },
+  {
+   "brand_name": "フサン",
+   "generic_name": "ナファモスタット"
+  },
+  {
+   "brand_name": "ヒルドイド",
+   "generic_name": "ヘパリン類似物質"
+  },
+  {
+   "brand_name": "リンデロンV",
+   "generic_name": "ベタメタゾン吉草酸エステル"
+  },
+  {
+   "brand_name": "リンデロンDP",
+   "generic_name": "ベタメタゾンジプロピオン酸エステル"
+  },
+  {
+   "brand_name": "マイザー",
+   "generic_name": "ジフルプレドナート"
+  },
+  {
+   "brand_name": "ロコイド",
+   "generic_name": "ヒドロコルチゾン酪酸エステル"
+  },
+  {
+   "brand_name": "デルモベート",
+   "generic_name": "クロベタゾールプロピオン酸エステル"
+  },
+  {
+   "brand_name": "フルメタ",
+   "generic_name": "モメタゾンフランカルボン酸エステル"
+  },
+  {
+   "brand_name": "ダイアコート",
+   "generic_name": "ジフロラゾン酢酸エステル"
+  },
+  {
+   "brand_name": "ビスダーム",
+   "generic_name": "アムシノニド"
+  },
+  {
+   "brand_name": "メサデルム",
+   "generic_name": "デキサメタゾンプロピオン酸エステル"
+  },
+  {
+   "brand_name": "リドメックス",
+   "generic_name": "プレドニゾロン吉草酸エステル酢酸エステル"
+  },
+  {
+   "brand_name": "ニゾラール",
+   "generic_name": "ケトコナゾール"
+  },
+  {
+   "brand_name": "ルリコン",
+   "generic_name": "ルリコナゾール"
+  },
+  {
+   "brand_name": "ルコナック",
+   "generic_name": "ルリコナゾール"
+  },
+  {
+   "brand_name": "アスタット",
+   "generic_name": "ラノコナゾール"
+  },
+  {
+   "brand_name": "マイコスポール",
+   "generic_name": "ビホナゾール"
+  },
+  {
+   "brand_name": "ブテナロック",
+   "generic_name": "ブテナフィン"
+  },
+  {
+   "brand_name": "メンタックス",
+   "generic_name": "ブテナフィン"
+  },
+  {
+   "brand_name": "ペキロン",
+   "generic_name": "アモロルフィン"
+  },
+  {
+   "brand_name": "クレナフィン",
+   "generic_name": "エフィナコナゾール"
+  },
+  {
+   "brand_name": "エンペシド",
+   "generic_name": "クロトリマゾール"
+  },
+  {
+   "brand_name": "フロリード",
+   "generic_name": "ミコナゾール"
+  },
+  {
+   "brand_name": "リアップ",
+   "generic_name": "ミノキシジル"
+  },
+  {
+   "brand_name": "ゲンタシン",
+   "generic_name": "ゲンタマイシン"
+  },
+  {
+   "brand_name": "フシジンレオ",
+   "generic_name": "フシジン酸"
+  },
+  {
+   "brand_name": "アクアチム",
+   "generic_name": "ナジフロキサシン"
+  },
+  {
+   "brand_name": "ロメフロン",
+   "generic_name": "ロメフロキサシン"
+  },
+  {
+   "brand_name": "プロトピック",
+   "generic_name": "タクロリムス"
+  },
+  {
+   "brand_name": "コレクチム",
+   "generic_name": "デルゴシチニブ"
+  },
+  {
+   "brand_name": "モイゼルト",
+   "generic_name": "ジファミラスト"
+  },
+  {
+   "brand_name": "ケラチナミン",
+   "generic_name": "尿素"
+  },
+  {
+   "brand_name": "パスタロン",
+   "generic_name": "尿素"
+  },
+  {
+   "brand_name": "プロペト",
+   "generic_name": "ワセリン"
+  },
+  {
+   "brand_name": "白色ワセリン",
+   "generic_name": "ワセリン"
+  },
+  {
+   "brand_name": "アズノール",
+   "generic_name": "アズレン"
+  },
+  {
+   "brand_name": "ステリクロン",
+   "generic_name": "クロルヘキシジン"
+  },
+  {
+   "brand_name": "イソジン",
+   "generic_name": "ポビドンヨード"
+  },
+  {
+   "brand_name": "プロスタンディン",
+   "generic_name": "アルプロスタジル"
+  },
+  {
+   "brand_name": "パルクス",
+   "generic_name": "アルプロスタジル"
+  },
+  {
+   "brand_name": "キシロカイン",
+   "generic_name": "リドカイン"
+  },
+  {
+   "brand_name": "ペンレス",
+   "generic_name": "リドカイン"
+  },
+  {
+   "brand_name": "アルツ",
+   "generic_name": "ヒアルロン酸ナトリウム"
+  },
+  {
+   "brand_name": "ヒアレイン",
+   "generic_name": "ヒアルロン酸ナトリウム"
+  },
+  {
+   "brand_name": "プレベナー",
+   "generic_name": "肺炎球菌ワクチン"
+  },
+  {
+   "brand_name": "ニューモバックス",
+   "generic_name": "肺炎球菌ワクチン"
+  },
+  {
+   "brand_name": "キャップバックス",
+   "generic_name": "肺炎球菌ワクチン"
+  },
+  {
+   "brand_name": "シングリックス",
+   "generic_name": "帯状疱疹ワクチン"
+  },
+  {
+   "brand_name": "ビケン",
+   "generic_name": "帯状疱疹ワクチン"
+  },
+  {
+   "brand_name": "アレックスビー",
+   "generic_name": "RSウイルスワクチン"
+  },
+  {
+   "brand_name": "アブリスボ",
+   "generic_name": "RSウイルスワクチン"
+  },
+  {
+   "brand_name": "コミナティ",
+   "generic_name": "新型コロナワクチン"
+  },
+  {
+   "brand_name": "スパイクバックス",
+   "generic_name": "新型コロナワクチン"
+  },
+  {
+   "brand_name": "モーラス",
+   "generic_name": "ケトプロフェンテープ"
+  },
+  {
+   "brand_name": "アダラートCR",
+   "generic_name": "ニフェジピンCR"
+  },
+  {
+   "brand_name": "アダラートL",
+   "generic_name": "ニフェジピンL"
+  },
+  {
+   "brand_name": "ヘルベッサーR",
+   "generic_name": "ジルチアゼム徐放"
+  },
+  {
+   "brand_name": "ビソノテープ",
+   "generic_name": "ビソプロロールテープ"
+  }
+ ],
+ "abbreviations": [],
+ "spoken_forms": [
+  {
+   "alias": "ロキソ",
+   "canonical": "ロキソプロフェン",
+   "alias_type": "spoken"
+  },
+  {
+   "alias": "アムロ",
+   "canonical": "アムロジピン",
+   "alias_type": "spoken"
+  },
+  {
+   "alias": "メトホル",
+   "canonical": "メトホルミン",
+   "alias_type": "spoken"
+  },
+  {
+   "alias": "ピロリ",
+   "canonical": "ピロリ菌感染症",
+   "alias_type": "spoken"
+  },
+  {
+   "alias": "ぜんそく",
+   "canonical": "気管支喘息",
+   "alias_type": "spoken"
+  },
+  {
+   "alias": "こうけつあつ",
+   "canonical": "高血圧",
+   "alias_type": "spoken"
+  }
+ ],
+ "common_stt_errors": []
+}

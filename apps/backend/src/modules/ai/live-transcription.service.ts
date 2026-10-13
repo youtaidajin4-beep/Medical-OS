@@ -5,7 +5,9 @@ import { STT_PROVIDER } from '../../providers/ai/stt.tokens';
 import { SttProvider } from '../../providers/ai/stt.provider';
 import { LLM_PROVIDER } from '../../providers/ai/llm.tokens';
 import { LlmProvider } from '../../providers/ai/llm.provider';
-import { buildWhisperPrompt, resolveMedicalGlossary } from '../../providers/ai/medical-glossary';
+import { resolveMedicalGlossary } from '../../providers/ai/medical-glossary';
+import { VocabularyService } from './vocabulary.service';
+import { getDefaultPhoneticMatcher } from '../medical-knowledge/phonetic-lexicon';
 import { correctMedicalTerms } from '../../providers/ai/medical-term-corrector';
 import { SettingsService } from '../settings/settings.service';
 import {
@@ -77,6 +79,7 @@ export class LiveTranscriptionService {
     @Inject(STT_PROVIDER) private readonly stt: SttProvider,
     @Inject(LLM_PROVIDER) private readonly llm: LlmProvider,
     private readonly settings: SettingsService,
+    private readonly vocabulary: VocabularyService,
   ) {}
 
   async transcribeSegment(params: {
@@ -92,7 +95,20 @@ export class LiveTranscriptionService {
 
     const rules = await this.settings.getPhysicianRules(physicianId).catch(() => undefined);
     const glossary = resolveMedicalGlossary(rules);
-    const vocabularyPrompt = buildWhisperPrompt(glossary);
+    // 直前の流れ（最後の数行）から、すでに話題に出た語を拾う
+    const recent = await this.prisma.transcriptSegment
+      .findMany({
+        where: { consultationId, isFinal: false, sequenceNumber: { lt: Math.max(0, Math.round(startMs)) * MAX_SENTENCES_PER_SEGMENT } },
+        orderBy: { sequenceNumber: 'desc' },
+        take: 8,
+        select: { text: true },
+      })
+      .catch(() => []);
+    const { prompt: vocabularyPrompt, preferred } = await this.vocabulary.promptFor({
+      consultationId,
+      physicianId,
+      recentText: recent.map((r) => r.text).join('\n'),
+    });
     let cleaned = cleanLiveText(
       await this.stt.transcribeConversation(audio, { vocabularyPrompt }),
     );
@@ -108,7 +124,9 @@ export class LiveTranscriptionService {
     if (!cleaned.keep) return { segment: null, dropped: cleaned.reason };
 
     // 同音の取り違え（辞書にある語だけ）。CPUだけで終わるので待ち時間は増えない
-    const text = correctMedicalTerms(cleaned.text, glossary).text;
+    const homophone = correctMedicalTerms(cleaned.text, glossary).text;
+    // 辞書の語に音が近い崩れ（ジャリアンス→ジャディアンス）を直す。直すのは確信が高いものだけ
+    const text = getDefaultPhoneticMatcher().correct(homophone, preferred).text;
     const sentences = capSentences(splitSentences(text));
 
     const base = Math.max(0, Math.round(startMs)) * MAX_SENTENCES_PER_SEGMENT;
