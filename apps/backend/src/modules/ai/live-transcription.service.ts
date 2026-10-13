@@ -93,17 +93,24 @@ export class LiveTranscriptionService {
     // 専用の経路がない（モック等）ときは、何もしない。診察そのものは止めない
     if (!this.stt.transcribeConversation) return { segment: null, dropped: 'unsupported' };
 
-    const rules = await this.settings.getPhysicianRules(physicianId).catch(() => undefined);
+    // 待ち時間を縮めるため、先生の設定・直前の流れ・語彙の材料を同時に取る
+    const [rules, recent] = await Promise.all([
+      this.settings.getPhysicianRules(physicianId).catch(() => undefined),
+      this.prisma.transcriptSegment
+        .findMany({
+          where: {
+            consultationId,
+            isFinal: false,
+            sequenceNumber: { lt: Math.max(0, Math.round(startMs)) * MAX_SENTENCES_PER_SEGMENT },
+          },
+          orderBy: { sequenceNumber: 'desc' },
+          take: 8,
+          select: { text: true },
+        })
+        .catch(() => []),
+    ]);
     const glossary = resolveMedicalGlossary(rules);
     // 直前の流れ（最後の数行）から、すでに話題に出た語を拾う
-    const recent = await this.prisma.transcriptSegment
-      .findMany({
-        where: { consultationId, isFinal: false, sequenceNumber: { lt: Math.max(0, Math.round(startMs)) * MAX_SENTENCES_PER_SEGMENT } },
-        orderBy: { sequenceNumber: 'desc' },
-        take: 8,
-        select: { text: true },
-      })
-      .catch(() => []);
     const { prompt: vocabularyPrompt, preferred } = await this.vocabulary.promptFor({
       consultationId,
       physicianId,

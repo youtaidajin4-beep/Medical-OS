@@ -43,6 +43,10 @@ export function ConsultationWorkflow({
 }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>('loading');
+  /** 診察を終えるボタンを押してから、サーバーの処理が始まるまで。この間は録音画面へ戻さない */
+  const stoppingRef = useRef(false);
+  /** 終了ボタンを押した時刻。経過時間はここから数える（サーバーの開始時刻を待たない） */
+  const [stoppedAt, setStoppedAt] = useState<string | null>(null);
   const loadedOnceRef = useRef(false);
   // 録音前のマイク確認。録音が始まったら閉じて、マイクを二重に掴まないようにする。
   // ここで選んだマイクを、そのまま録音でも使う（診察室に置いた外付けマイクで録るため）
@@ -206,6 +210,11 @@ export function ConsultationWorkflow({
         return;
       }
 
+      // 終了の処理中は、サーバーがまだ録音中のままでも、録音画面へ戻さない
+      if (stoppingRef.current) {
+        setPhase('processing');
+        return;
+      }
       // 録音前（DRAFT）・録音中（RECORDING）。ここで初めて録音画面を出す
       setPhase('recording');
     } catch (error) {
@@ -258,10 +267,28 @@ export function ConsultationWorkflow({
     return () => clearInterval(timer);
   }, [phase, loadConsultation]);
 
+  /**
+   * 診察を終える。ボタンを押した瞬間に作成中の画面へ移り、音声の仕上げと送信はその裏で行う。
+   * 以前は、最後の文字が揃うのを待ってから画面が変わったので、6秒ほど録音画面のまま止まって見えた。
+   */
   async function handleStop() {
-    await recording.stop();
-    setPhase('processing');
+    stoppingRef.current = true;
     setErrorMessage('');
+    setStoppedAt(new Date().toISOString());
+    setPipelineStep(null);
+    setPhase('processing');
+    try {
+      await recording.stop();
+    } catch (error) {
+      stoppingRef.current = false;
+      setErrorMessage(
+        error instanceof Error ? error.message : '診察の終了処理に失敗しました。もう一度お試しください。',
+      );
+      setCanReprocess(false);
+      setPhase('error');
+      return;
+    }
+    stoppingRef.current = false;
   }
 
   async function handleApprove() {
@@ -512,7 +539,8 @@ export function ConsultationWorkflow({
       <ProcessingPhase
         density={density}
         pipelineStep={pipelineStep}
-        pipelineStartedAt={pipelineStartedAt}
+        pipelineStartedAt={stoppedAt ?? pipelineStartedAt}
+        stopStage={recording.stopStage}
       />
     );
   }

@@ -29,9 +29,9 @@ export type CutterOptions = {
 };
 
 export const DEFAULT_CUTTER: CutterOptions = {
-  minMs: 2500,
-  maxMs: 9000,
-  silenceMs: 450,
+  minMs: 1500,
+  maxMs: 6000,
+  silenceMs: 400,
   speechRms: 0.012,
   preRollMs: 300,
   minSpeechMs: 240,

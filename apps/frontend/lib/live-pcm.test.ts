@@ -41,9 +41,9 @@ describe('SegmentCutter', () => {
 
   it('短すぎる間では切らない（言葉の途中のためらいを区切りにしない）', () => {
     const cutter = new SegmentCutter();
-    // 声 1秒 → 無音 0.6秒 → 声 1秒（合わせて2.6秒だが、最初の無音の時点ではminMs未満）
+    // 声 0.8秒 → 無音 0.6秒 → 声 1秒（最初の無音の時点ではminMs未満）
     const out = [
-      ...cutter.push(voice(1000, 0.3)),
+      ...cutter.push(voice(800, 0.3)),
       ...cutter.push(tone(600, 0)),
       ...cutter.push(voice(1000, 0.3)),
     ];
@@ -52,10 +52,11 @@ describe('SegmentCutter', () => {
 
   it('無音を待たずに喋り続けても、上限で区切る', () => {
     const cutter = new SegmentCutter();
-    const out = cutter.push(voice(10_000, 0.3));
-    expect(out).toHaveLength(1);
-    const ms = out[0]!.endMs - out[0]!.startMs;
-    expect(ms).toBeLessThanOrEqual(DEFAULT_CUTTER.maxMs + 40);
+    const out = cutter.push(voice(14_000, 0.3));
+    expect(out.length).toBeGreaterThanOrEqual(1);
+    for (const seg of out) {
+      expect(seg.endMs - seg.startMs).toBeLessThanOrEqual(DEFAULT_CUTTER.maxMs + 40);
+    }
   });
 
   it('声がまったく無い時間は区間にしない', () => {

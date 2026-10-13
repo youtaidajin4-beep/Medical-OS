@@ -30,6 +30,9 @@ import {
 
 type RecordingState = 'idle' | 'recording' | 'paused' | 'stopped';
 
+/** 診察を終えてから、SOAPの作成が始まるまでの段階。作成中の画面に出す */
+export type StopStage = 'finishing' | 'saving' | 'submitting' | null;
+
 /** 診察中に流れる書き起こしの1行。pending は、音声を送って文字になるのを待っている行 */
 export type LiveLine = {
   id: string;
@@ -43,7 +46,8 @@ export type LiveLine = {
 /** この文字数に満たないときは、診察中の文字だけでSOAPを作らず、従来どおり録音全体から作る */
 const MIN_LIVE_CHARS = 30;
 /** 診察を終えるとき、最後の区間が文字になるのを待つ上限 */
-const LIVE_SETTLE_MS = 6000;
+/** 画面は待たずに作成中の表示へ進むので、長めに待ってよい（遅れた区間があっても速い経路で作れる） */
+const LIVE_SETTLE_MS = 12000;
 const MAX_RECORDING_SECONDS = 60 * 60;
 const CHUNK_MS = 3000;
 
@@ -67,6 +71,7 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
   const [micVerdict, setMicVerdict] = useState<MicVerdict>('ok');
   const [micLabel, setMicLabel] = useState<string | null>(null);
   const [liveLines, setLiveLines] = useState<LiveLine[]>([]);
+  const [stopStage, setStopStage] = useState<StopStage>(null);
   const liveTap = useRef<LiveTap | null>(null);
   /** 診察中の文字の送受信の集計。全部そろっているかの判断に使う */
   const liveStats = useRef({ failed: 0, chars: 0 });
@@ -166,8 +171,10 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
           (a, b) => a.startMs - b.startMs,
         ),
       );
-      const task = api
-        .liveTranscribe(consultationId, segment.wav, segment.startMs, segment.endMs)
+      // 一時的な通信の失敗で行が欠けないよう、1回だけ送り直す
+      const attempt = () => api.liveTranscribe(consultationId, segment.wav, segment.startMs, segment.endMs);
+      const task = attempt()
+        .catch(() => new Promise((r) => setTimeout(r, 1200)).then(attempt))
         .then((res) => {
           if (res.segment) liveStats.current.chars += res.segment.text.length;
           setLiveLines((prev) =>
@@ -232,14 +239,17 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
         rawStream.current = null;
         setState('stopped');
         // 診察中の文字が全部そろうのを、少しだけ待つ（最後の区間は、止めた直後に送られる）
+        setStopStage('finishing');
         const settled = await Promise.race([
           Promise.allSettled(liveInflight.current).then(() => true),
           new Promise<boolean>((r) => setTimeout(() => r(false), LIVE_SETTLE_MS)),
         ]);
         const fromLive =
           settled && liveStats.current.failed === 0 && liveStats.current.chars >= MIN_LIVE_CHARS;
+        setStopStage('saving');
         await Promise.allSettled(inFlightUploads.current);
         await flushPendingChunks(true);
+        setStopStage('submitting');
         if (fromLive) {
           // 診察中の文字からSOAPを作る。録音の保存は、待たずに裏で行う
           void uploadFinalBlob().catch(() => undefined);
@@ -252,6 +262,7 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
           }
           await api.stopRecording(consultationId);
         }
+        setStopStage(null);
         resolve();
       };
       if (recorder.state !== 'inactive') {
@@ -413,6 +424,7 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
     pause,
     resume,
     stop,
+    stopStage,
     formatDuration,
   };
 }

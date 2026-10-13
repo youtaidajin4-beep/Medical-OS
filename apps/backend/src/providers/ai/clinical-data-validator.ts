@@ -1,6 +1,16 @@
 import { WarningSeverity } from '@prisma/client';
 import { StructuredClinicalDataPayload } from './llm.provider';
 import { MedicalGlossary } from './medical-glossary.types';
+import { knowledgePackDrugSurfaces } from '../../modules/medical-knowledge/data/load-knowledge-pack';
+
+/**
+ * 辞書にある薬の表記（一般名・商品名、追加語彙を含む）。
+ * これまでの照合は、先生の設定と固定の約40語だけを見ていたので、ふつうの薬でも
+ * 「辞書未登録」と出ていた（実診察でジャディアンス・タケキャブ・エディロールが出た）。
+ */
+const KNOWN_DRUG_SURFACES = [
+  ...new Set(knowledgePackDrugSurfaces().map((d) => d.surface).filter((x) => x.length >= 3)),
+];
 
 export type ClinicalValidationWarning = {
   category: string;
@@ -15,6 +25,7 @@ function normalizeTerm(value: string): string {
 function matchesGlossaryDrug(medication: string, drugNames: string[]): boolean {
   const normalized = normalizeTerm(medication);
   if (!normalized || normalized.includes('要確認')) return true;
+  if (KNOWN_DRUG_SURFACES.some((drug) => normalized.includes(drug))) return true;
   return drugNames.some(
     (drug) => normalized.includes(drug) || drug.includes(normalized),
   );
