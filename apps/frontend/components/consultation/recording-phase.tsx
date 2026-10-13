@@ -180,7 +180,7 @@ function LiveTranscriptPanel({ lines, recording }: { lines: LiveLine[]; recordin
         {lines.length === 0 ? (
           <div className="flex h-full min-h-[10rem] flex-col items-center justify-center text-center">
             <p className="text-sm text-clinic-ink-muted">話し始めると、ここに文字が流れます</p>
-            <p className="mt-1 text-xs text-clinic-ink-muted/70">話し終えて数秒後に出ます</p>
+            <p className="mt-1 text-xs text-clinic-ink-muted/70">話し終えると、すぐに文字が出ます</p>
           </div>
         ) : (
           <ul className="space-y-3.5">
@@ -194,6 +194,14 @@ function LiveTranscriptPanel({ lines, recording }: { lines: LiveLine[]; recordin
               >
                 {line.pending ? (
                   <span className="animate-pulse text-sm text-clinic-ink-muted">聞き取り中…</span>
+                ) : line.preview ? (
+                  // ストリーミングの下書き。話者を判別した確定行が届くと、そちらに置き換わる
+                  <div className="flex items-baseline gap-2.5">
+                    <span className="inline-flex w-9 shrink-0 justify-center rounded-md bg-clinic-line/60 px-1 py-0.5 text-[10px] font-semibold text-clinic-ink-muted">
+                      …
+                    </span>
+                    <span className="text-clinic-ink/70">{line.text}</span>
+                  </div>
                 ) : line.parts && line.parts.length > 0 ? (
                   <ul className="space-y-1.5">
                     {line.parts.map((part, k) => {

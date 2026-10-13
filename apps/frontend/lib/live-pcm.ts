@@ -276,7 +276,12 @@ export type LiveTap = {
 export function startLiveTap(
   stream: MediaStream,
   onSegment: (segment: LiveSegment) => void,
-  options: { offsetMs?: number; cutter?: Partial<CutterOptions> } = {},
+  options: {
+    offsetMs?: number;
+    cutter?: Partial<CutterOptions>;
+    /** 16kHzにそろえた音を、そのまま受け取る（ストリーミング表示用）。startMs は区間の時間と同じ物差し */
+    onAudio?: (samples: Float32Array, startMs: number) => void;
+  } = {},
 ): LiveTap | null {
   const Ctor: typeof AudioContext | undefined =
     typeof AudioContext !== 'undefined'
@@ -294,6 +299,8 @@ export function startLiveTap(
   const cutter = new SegmentCutter(options.cutter, options.offsetMs ?? 0);
   const resampler = new Resampler(context.sampleRate);
   let paused = false;
+  /** ここまでに受けたサンプル数（区間の時間と同じ数え方） */
+  let fed = 0;
 
   const emit = (seg: PcmSegment | null) => {
     if (!seg) return;
@@ -308,7 +315,12 @@ export function startLiveTap(
   processor.onaudioprocess = (e) => {
     if (paused) return;
     const input = e.inputBuffer.getChannelData(0);
-    for (const seg of cutter.push(resampler.process(new Float32Array(input)))) emit(seg);
+    const resampled = resampler.process(new Float32Array(input));
+    if (options.onAudio) {
+      options.onAudio(resampled, (options.offsetMs ?? 0) + (fed * 1000) / LIVE_SAMPLE_RATE);
+    }
+    fed += resampled.length;
+    for (const seg of cutter.push(resampled)) emit(seg);
   };
   source.connect(processor);
   processor.connect(mute);

@@ -4,6 +4,7 @@ import { AiPipelineService } from './ai-pipeline.service';
 import { LiveTranscriptionService } from './live-transcription.service';
 import { LiveTranscriptController } from './live-transcript.controller';
 import { VocabularyService } from './vocabulary.service';
+import { LiveStreamTokenService } from './live-stream-token.service';
 import { TranscriptModule } from '../transcript/transcript.module';
 import { RecordingModule } from '../recording/recording.module';
 import { SettingsModule } from '../settings/settings.module';
@@ -20,6 +21,7 @@ import { LLM_PROVIDER } from '../../providers/ai/llm.tokens';
     AiPipelineService,
     LiveTranscriptionService,
     VocabularyService,
+    LiveStreamTokenService,
     {
       provide: LLM_PROVIDER,
       useFactory: (config: ConfigService) => {

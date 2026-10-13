@@ -421,6 +421,12 @@ export const api = {
    * 診察中のリアルタイム書き起こし。声の切れ目ごとの短い音声（WAV）を1区間ずつ送る。
    * 無音・定型句と判断された区間は segment が null で返る。
    */
+  /** 診察中のストリーミング表示につなぐための、使い捨ての鍵 */
+  liveStreamToken: (consultationId: string) =>
+    request<{ enabled: boolean; clientSecret?: string; prompt?: string }>(
+      `/consultations/${consultationId}/transcript/stream-token`,
+      { method: 'POST' },
+    ),
   liveTranscribe: (consultationId: string, wav: Blob, startMs: number, endMs: number) => {
     const form = new FormData();
     form.append('audio', wav, `live-${startMs}.wav`);

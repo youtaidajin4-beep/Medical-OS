@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { LiveStream, type StreamItem } from '@/lib/live-stream';
+import { useCallback, useMemo, useEffect, useRef, useState } from 'react';
 import { formatDuration } from '@medical-os/shared';
 import { api } from '@/lib/api-client';
 import {
@@ -41,6 +42,9 @@ export type LiveLine = {
   pending: boolean;
   /** 文ごとの話者（判別できたとき）。画面で「医師」「患者」を付ける */
   parts?: Array<{ speaker: 'physician' | 'patient' | 'other' | 'unknown'; text: string }>;
+  endMs?: number;
+  /** ストリーミングで先に出した下書き。話者つきの確定行が届くと置き換わる */
+  preview?: boolean;
 };
 
 /** この文字数に満たないときは、診察中の文字だけでSOAPを作らず、従来どおり録音全体から作る */
@@ -72,6 +76,12 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
   const [micLabel, setMicLabel] = useState<string | null>(null);
   const [liveLines, setLiveLines] = useState<LiveLine[]>([]);
   const [stopStage, setStopStage] = useState<StopStage>(null);
+  const [streamItems, setStreamItems] = useState<StreamItem[]>([]);
+  /** 確定行（または落とした区間）が届いた時間の範囲。ここに入る下書きは消す */
+  const [resolved, setResolved] = useState<Array<{ startMs: number; endMs: number }>>([]);
+  const [clock, setClock] = useState(0);
+  const streamRef = useRef<LiveStream | null>(null);
+  const streamSeen = useRef(new Map<string, number>());
   const liveTap = useRef<LiveTap | null>(null);
   /** 診察中の文字の送受信の集計。全部そろっているかの判断に使う */
   const liveStats = useRef({ failed: 0, chars: 0 });
@@ -167,7 +177,7 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
     (segment: LiveSegment) => {
       const id = `live-${Math.round(segment.startMs)}`;
       setLiveLines((prev) =>
-        [...prev.filter((l) => l.id !== id), { id, startMs: segment.startMs, text: '', pending: true }].sort(
+        [...prev.filter((l) => l.id !== id), { id, startMs: segment.startMs, endMs: segment.endMs, text: '', pending: true }].sort(
           (a, b) => a.startMs - b.startMs,
         ),
       );
@@ -177,12 +187,14 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
         .catch(() => new Promise((r) => setTimeout(r, 1200)).then(attempt))
         .then((res) => {
           if (res.segment) liveStats.current.chars += res.segment.text.length;
+          // この区間の下書き（ストリーミング）は、確定行に置き換わる。落とした区間の下書きも消す
+          setResolved((prev) => [...prev, { startMs: segment.startMs, endMs: segment.endMs }]);
           setLiveLines((prev) =>
             prev.flatMap((l) =>
               l.id !== id
                 ? [l]
                 : res.segment
-                  ? [{ ...l, text: res.segment.text, parts: res.segment.parts, pending: false }]
+                  ? [{ ...l, text: res.segment.text, parts: res.segment.parts, endMs: segment.endMs, pending: false }]
                   : [],
             ),
           );
@@ -229,6 +241,8 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
         // 残っている声を最後の区間として送って、止める
         liveTap.current?.stop();
         liveTap.current = null;
+        streamRef.current?.close();
+        streamRef.current = null;
         if (timer.current) clearInterval(timer.current);
         stopMeter();
         recorder.stream.getTracks().forEach((t) => t.stop());
@@ -337,8 +351,24 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
       setLiveLines([]);
       liveStats.current = { failed: 0, chars: 0 };
     }
+    // ストリーミング表示：同じ音を、リアルタイム文字起こしへそのまま流す（話し終えて約1秒で文字が出る）
+    streamRef.current?.close();
+    streamRef.current = new LiveStream(
+      () => api.liveStreamToken(consultationId),
+      (items) => {
+        const now = Date.now();
+        for (const it of items) if (!streamSeen.current.has(it.id)) streamSeen.current.set(it.id, now);
+        setStreamItems(items);
+      },
+    );
+    if (!options?.appendFromSequence) {
+      setStreamItems([]);
+      setResolved([]);
+      streamSeen.current.clear();
+    }
     liveTap.current = startLiveTap(target, sendLiveSegment, {
       offsetMs: options?.appendFromSequence ? secondsRef.current * 1000 : 0,
+      onAudio: (samples, ms) => streamRef.current?.feed(samples, ms),
     });
     // 続きを録るときは、サーバー側で既に RECORDING へ戻してある。
     // ここで startRecording を呼ぶと startedAt が今に戻り、前半の録音時間が消える
@@ -406,9 +436,45 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
       stopMeter();
       liveTap.current?.stop();
       liveTap.current = null;
+      streamRef.current?.close();
+      streamRef.current = null;
       mediaRecorder.current?.stream.getTracks().forEach((t) => t.stop());
     };
   }, [flushPendingChunks, refreshPendingCount, stopMeter]);
+
+  // 録音中は数秒おきに時計を進める。確定行が届かないまま残った下書きを、あとで消すため
+  useEffect(() => {
+    if (state !== 'recording') return;
+    const t = setInterval(() => setClock((c) => c + 1), 5000);
+    return () => clearInterval(t);
+  }, [state]);
+
+  /**
+   * 画面に出す行。確定行（話者つき）と、ストリーミングの下書きを時間順に並べる。
+   * 下書きは、同じ時間の確定行が届くか、30秒たつと消える。区間の「聞き取り中…」は、
+   * すでに下書きが出ているときは隠す（同じ内容が二重に見えるため）。
+   */
+  const displayLines = useMemo<LiveLine[]>(() => {
+    const now = Date.now();
+    const covered = (ms: number) =>
+      resolved.some((w) => ms >= w.startMs - 500 && ms <= w.endMs + 500);
+    const previews: LiveLine[] = streamItems
+      .filter((it) => !covered(it.startMs))
+      .filter((it) => now - (streamSeen.current.get(it.id) ?? now) < 30_000)
+      .map((it) => ({
+        id: `stream-${it.id}`,
+        startMs: it.startMs,
+        text: it.text,
+        pending: false,
+        preview: true,
+      }));
+    const hasPreviewIn = (l: LiveLine) =>
+      previews.some((p) => p.startMs >= l.startMs - 500 && p.startMs <= (l.endMs ?? l.startMs) + 500);
+    const base = liveLines.filter((l) => !(l.pending && hasPreviewIn(l)));
+    return [...base, ...previews].sort((a, b) => a.startMs - b.startMs);
+    // clock は、時間切れの下書きを消すために再計算させる
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveLines, streamItems, resolved, clock]);
 
   return {
     state,
@@ -418,7 +484,7 @@ export function useRecording(consultationId: string, deviceId?: string | null) {
     level,
     micVerdict,
     micLabel,
-    liveLines,
+    liveLines: displayLines,
     start,
     startAppend,
     pause,
