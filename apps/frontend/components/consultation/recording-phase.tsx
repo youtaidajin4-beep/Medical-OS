@@ -510,7 +510,7 @@ export function RecordingPhase({
                   checked={consentGiven}
                   onChange={(e) => onConsentChange(e.target.checked)}
                 />
-                <span>患者の同意を得た上で診療音声を記録します。音声はSOAP生成後に削除されます。</span>
+                <span>患者の同意を得た上で診療音声を記録します。音声はSOAP生成後、24時間以内に自動で削除されます。</span>
               </label>
 
               <Button
