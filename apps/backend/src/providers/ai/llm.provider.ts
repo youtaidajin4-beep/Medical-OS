@@ -38,6 +38,10 @@ const optionalStringArray = z.preprocess(
  *   differentials    … 医師が口に出した鑑別（林さんの亜鉛・甲状腺・貧血・咳喘息）
  *   familyReport     … 江口さんの、本人の話と家族の話の区別
  *   orderedTests     … この診察で出した検査オーダー（林さんの採血項目）
+ *   reportedResults  … 医師が説明した検査結果（前回の採血・MRI・心電図など）。
+ *                      10/9に先生が指摘した「S・Oの抜け（MRI結果など）」の置き場。
+ *                      inClinicTests は「今日その場でやった検査」で、結果の説明を入れる欄が無かった
+ *                      （2026-10-15、再診の台本で「HbA1c 6.8（前回7.1）・LDL 110」のLDLと前回値が落ちて発覚）
  */
 export const StructuredClinicalDataSchema = z.object({
   chiefComplaint: optionalString,
@@ -55,6 +59,8 @@ export const StructuredClinicalDataSchema = z.object({
   inClinicTests: optionalStringArray,
   /** この診察で出した検査オーダーと、その項目 */
   orderedTests: optionalStringArray,
+  /** 医師が説明した検査結果。今日以前に行った採血・画像・心電図などの結果（数値・前回比・「問題なし」も） */
+  reportedResults: optionalStringArray,
   /** 医師が口に出した鑑別。確定診断ではない */
   differentials: optionalStringArray,
   assessment: optionalString,
@@ -232,7 +238,9 @@ export class MockLlmProvider implements LlmProvider {
           .join('\n')
       : floor?.subjective ?? '';
     const objective = hasExam
-      ? [data.vitals, data.physicalExam, ...(data.inClinicTests ?? [])].filter(Boolean).join('\n')
+      ? [data.vitals, data.physicalExam, ...(data.inClinicTests ?? []), ...(data.reportedResults ?? [])]
+          .filter(Boolean)
+          .join('\n')
       : floor?.objective ?? '';
 
     let assessment = hasAssessment ? (data.assessment ?? '') : floor?.assessment ?? '';
@@ -268,6 +276,7 @@ export class MockLlmProvider implements LlmProvider {
       data.adherence && `【服薬状況】${data.adherence}`,
       data.physicalExam && `【所見】${data.physicalExam}`,
       data.inClinicTests?.length && `【院内で実施】${data.inClinicTests.join('、')}`,
+      data.reportedResults?.length && `【検査結果の説明】${data.reportedResults.join('、')}`,
       data.differentials?.length && `【鑑別】${data.differentials.join('、')}`,
       data.assessment && `【評価】${data.assessment}`,
       data.plan && `【方針】${data.plan}`,

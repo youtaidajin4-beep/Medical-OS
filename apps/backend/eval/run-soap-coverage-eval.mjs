@@ -193,6 +193,7 @@ async function runPipeline(kase, variant) {
     }`,
     1200,
   );
+  if (process.env.EVAL_SHOW === '2') console.log(`   --- 構造化 ---\n${JSON.stringify(structured, null, 1)}`);
   // after は床をモデルに渡さず、空いた欄に後から入れる（soap-floor-gate.ts と同じ）。
   // before は当時のまま、床を必ず渡す
   const styleBlock = `visitType: ${kase.visitType}${
@@ -290,7 +291,10 @@ for (const kase of corpus.cases) {
     const runs = [];
     for (let i = 0; i < TRIALS; i++) {
       try {
-        runs.push(score(await runPipeline(kase, variant), kase));
+        const produced = await runPipeline(kase, variant);
+        // EVAL_SHOW=1 で、1回目に出たSOAPの本文を見せる（落ちた的が「書かれていない」のか「言い換えで当たらない」のかを見分ける）
+        if (process.env.EVAL_SHOW && i === 0) console.log(`   --- ${variant} の出力（1回目）---\n${produced}\n   ---`);
+        runs.push(score(produced, kase));
       } catch (e) {
         console.error(`   ${variant} 失敗: ${e.message}`);
       }

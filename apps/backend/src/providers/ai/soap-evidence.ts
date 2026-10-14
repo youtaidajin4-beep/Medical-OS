@@ -84,6 +84,7 @@ export function hasClinicalFacts(structured: StructuredClinicalDataPayload): boo
     structured.allergies,
     structured.inClinicTests,
     structured.orderedTests,
+    structured.reportedResults,
     structured.differentials,
     structured.reviewOfSystems,
   ];
