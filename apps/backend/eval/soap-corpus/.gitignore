@@ -3,3 +3,5 @@
 *
 !.gitignore
 !README.md
+# 合成の保留症例（検査結果・特記所見入り）。架空の会話で、実患者のデータではない
+!cases-heldout.json

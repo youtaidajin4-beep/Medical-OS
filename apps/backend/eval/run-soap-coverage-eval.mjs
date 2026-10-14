@@ -28,7 +28,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const CORPUS = join(HERE, 'soap-corpus', 'cases.json');
+const CORPUS = process.env.EVAL_CORPUS ?? join(HERE, 'soap-corpus', 'cases.json');
 
 if (!existsSync(CORPUS)) {
   console.error(
@@ -268,15 +268,18 @@ const summary = {};
 for (const kase of corpus.cases) {
   console.log(`── ${kase.label}  （的 ${kase.targets.length} 個）`);
 
-  const base = score(kase.baselineZoomGpt, kase);
-  console.log(
-    `   zoom+gpt   転記 ${pct(base.hit.length, kase.targets.length).padStart(4)}  捏造 ${base.fabricated.length}`,
-  );
-  (summary['zoom+gpt'] ??= { hit: 0, total: 0, fab: 0 });
-  summary['zoom+gpt'].hit += base.hit.length;
-  summary['zoom+gpt'].total += kase.targets.length;
-  summary['zoom+gpt'].fab += base.fabricated.length;
-  if (base.miss.length) console.log(`              落ち: ${base.miss.join('、')}`);
+  // 基準線（Zoom+GPT）が無い症例（合成の保留症例など）は、基準線を出さない
+  if (kase.baselineZoomGpt) {
+    const base = score(kase.baselineZoomGpt, kase);
+    console.log(
+      `   zoom+gpt   転記 ${pct(base.hit.length, kase.targets.length).padStart(4)}  捏造 ${base.fabricated.length}`,
+    );
+    (summary['zoom+gpt'] ??= { hit: 0, total: 0, fab: 0 });
+    summary['zoom+gpt'].hit += base.hit.length;
+    summary['zoom+gpt'].total += kase.targets.length;
+    summary['zoom+gpt'].fab += base.fabricated.length;
+    if (base.miss.length) console.log(`              落ち: ${base.miss.join('、')}`);
+  }
 
   if (!KEY) {
     console.log('');
