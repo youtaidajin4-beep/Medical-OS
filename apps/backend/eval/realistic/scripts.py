@@ -444,6 +444,12 @@ S3 = {
 
 SCRIPTS = [S1, S2, S3]
 
+TERMS = {
+    "r1-first-visit": ["アムロジピン", "ロスバスタチン|ロスバスタチ", "ニトログリセリン", "狭心症", "心筋梗塞", "152|百五十二", "94|九十四", "78|七十八", "2.5|二・五|二点五", "5mg|五ミリ|5ミリ", "15分|十五分", "5分|五分", "心電図", "扁桃", "循環器"],
+    "r2-care-opinion": ["アムロジピン", "フロセミド", "ドネペジル", "アルツハイマー", "134|百三十四", "78|七十八", "46|四十六", "ポータブルトイレ", "デイサービス", "ケアマネ", "20mg|二十ミリ", "5mg|五ミリ|5ミリ", "2.5|二・五|二点五"],
+    "r3-routine": ["メトホルミン", "アムロジピン", "ロキソプロフェン", "五十肩|50肩", "HbA1c|A1c|エーワンシー|A1C", "6.8|六・八|六点八", "7.1|七・一|七点一", "110|百十|百十", "80度|八十度", "インフルエンザ"],
+}
+
 
 # ───────────────────────── 音声 ─────────────────────────
 def say_wav(text, voice, gain_db, path):
@@ -581,6 +587,9 @@ if __name__ == "__main__":
             for s in SCRIPTS
         ]
         print(json.dumps(cases, ensure_ascii=False))
+    elif cmd == "terms":
+        import json
+        print(json.dumps(TERMS, ensure_ascii=False))
     elif cmd == "stats":
         for s in SCRIPTS:
             chars = sum(len(ln[1]) for ln in s["lines"] if ln[0] != P)
