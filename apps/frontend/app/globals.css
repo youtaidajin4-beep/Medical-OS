@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  @apply bg-[#eef3f0] text-slate-900 antialiased;
+  @apply bg-aura-paper text-aura-ink antialiased;
   font-feature-settings: 'palt';
 }
 
@@ -33,4 +33,14 @@ body {
 /* Unified focus ring for keyboard navigation */
 :focus-visible {
   @apply outline-none ring-2 ring-brand-500 ring-offset-1;
+}
+
+/* 動きを減らす設定の人には、呼吸・ゆらぎ・光の走りを止める */
+@media (prefers-reduced-motion: reduce) {
+  .animate-orb-breathe,
+  .animate-orb-drift,
+  .animate-orb-ripple,
+  .animate-shimmer {
+    animation: none !important;
+  }
 }

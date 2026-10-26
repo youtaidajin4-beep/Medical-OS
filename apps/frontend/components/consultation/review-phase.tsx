@@ -348,6 +348,11 @@ export function ReviewPhase({
     setTab(next);
     setDrawerOpen(true);
   }
+  // 書類の画面（/documents）から来たときは、書類のパネルを開いた状態で始める
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('docs') === '1') openDrawer('docs');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [warningsOpen, setWarningsOpen] = useState(true);
   const [copying, setCopying] = useState(false);
   const [modKey, setModKey] = useState('Ctrl');
