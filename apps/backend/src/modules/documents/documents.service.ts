@@ -31,6 +31,11 @@ import {
 import { finalizeCareOpinion1, finalizeCareOpinion2 } from './care-opinion-template';
 import { finalizeCertificate } from './certificate-template';
 import { ClinicProfile, resolveClinicProfile } from './clinic';
+import {
+  buildDocumentNegationWarnings,
+  findAffirmedButNegated,
+  findNegationInversions,
+} from '../../providers/ai/soap-negation-guard';
 
 @Injectable()
 export class DocumentsService {
@@ -269,8 +274,22 @@ export class DocumentsService {
         referralPatientContextFrom(context),
         context.clinic,
         resolveReferralFixedText(context.physicianRules),
+        new Date(),
+        // 述べられた記録（医師のサブカルテ・SOAP・会話・問診票）。ここに根拠が無い判定・自立度・発症年は書かない
+        [
+          context.physicianSubkarte,
+          context.soap.subjective,
+          context.soap.objective,
+          context.soap.assessment,
+          context.soap.plan,
+          context.transcriptExcerpt ?? '',
+          context.questionnaireText ?? '',
+        ].join('\n'),
       ),
     );
+
+    // ある／なし の反転を、書類にも当てる（徘徊なし→あり、左肩の重さ あり→「なし」の並び）
+    await this.warnAboutNegation(consultationId, content, context).catch(() => undefined);
 
     const latest = await this.prisma.generatedDocument.findFirst({
       where: { consultationId, type },
@@ -299,6 +318,42 @@ export class DocumentsService {
     };
   }
 
+  /** 書類の文章を、会話・SOAPと突き合わせて、ある／なし の反転を「要確認」に出す。書類は止めない */
+  private async warnAboutNegation(
+    consultationId: string,
+    content: Record<string, unknown>,
+    ctx: DocumentGenerationContext,
+  ) {
+    const leaves: string[] = [];
+    const walk = (v: unknown) => {
+      if (typeof v === 'string') leaves.push(v);
+      else if (Array.isArray(v)) v.forEach(walk);
+      else if (v && typeof v === 'object') Object.values(v as Record<string, unknown>).forEach(walk);
+    };
+    walk(content);
+    const docText = leaves.join('\n');
+    const soapText = [ctx.soap.subjective, ctx.soap.objective, ctx.soap.assessment, ctx.soap.plan].join('\n');
+    const inversions = findNegationInversions(
+      { subjective: docText, objective: '', assessment: '', plan: '' },
+      [ctx.transcriptExcerpt ?? '', soapText].join('\n'),
+    );
+    const affirmed = findAffirmedButNegated(docText, soapText);
+    const warnings = buildDocumentNegationWarnings(inversions, affirmed);
+    if (!warnings.length) return;
+    // 同じ書類を作り直すたびに同じ警告が積み上がらないよう、同じ文言は足さない
+    const existing = await this.prisma.clinicalWarning.findMany({
+      where: { consultationId, category: 'document_negation' },
+      select: { message: true },
+    });
+    const have = new Set(existing.map((w) => w.message));
+    const fresh = warnings.filter((w) => !have.has(w.message));
+    if (fresh.length) {
+      await this.prisma.clinicalWarning.createMany({
+        data: fresh.map((w) => ({ consultationId, ...w })),
+      });
+    }
+  }
+
   /**
    * 紙の様式が決まっている書類（紹介状・情報提供書＋処方・主治医意見書①②）に、様式を当てる。
    *
@@ -312,12 +367,14 @@ export class DocumentsService {
     clinic: ClinicProfile,
     fixedText: ReferralFixedText = REFERRAL_FIXED_TEXT,
     issuedAt: Date = new Date(),
+    /** この診察で述べられた記録。判定・自立度・発症年を、記録に根拠があるものだけに絞るのに使う */
+    sourceText?: string,
   ): Record<string, unknown> {
     if (frontendType === 'certificate') {
-      return finalizeCertificate(content, patient, issuedAt, clinic);
+      return finalizeCertificate(content, patient, issuedAt, clinic, sourceText);
     }
     if (frontendType === 'care-opinion-1') {
-      return finalizeCareOpinion1(content, patient, issuedAt, clinic);
+      return finalizeCareOpinion1(content, patient, issuedAt, clinic, sourceText);
     }
     if (frontendType === 'care-opinion-2') {
       return finalizeCareOpinion2(content, issuedAt, clinic);

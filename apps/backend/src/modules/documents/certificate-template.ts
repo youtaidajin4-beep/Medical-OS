@@ -16,6 +16,7 @@
 import { CLINIC, ClinicProfile } from './clinic';
 import { formatReiwaDate } from './care-opinion-template';
 import { calcAge, ReferralPatientContext, toText } from './referral-template';
+import { judgementStated } from './document-guards';
 
 /** 様式左下の判断基準 */
 export const JUDGEMENTS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
@@ -84,13 +85,21 @@ export function normalizeExamDate(value: unknown): string {
   return formatReiwaDate(date);
 }
 
+function stripJudge(v: ExamValue, keep: boolean): ExamValue {
+  return keep ? v : { ...v, judgement: '' };
+}
+
 export function finalizeCertificate(
   raw: Record<string, unknown> | null | undefined,
   patient: ReferralPatientContext,
   issuedAt: Date = new Date(),
   clinic: ClinicProfile = CLINIC,
+  /** この診察で述べられた記録。渡されたとき、医師が述べていない「判定（A〜G）」は空欄にする */
+  sourceText?: string,
 ): Record<string, unknown> {
   const ai = raw ?? {};
+  const keepJudgements = sourceText === undefined || judgementStated(sourceText);
+  const judge = (value: unknown) => (keepJudgements ? judgement(value) : '');
   const hearing = (ai.hearing && typeof ai.hearing === 'object' ? ai.hearing : {}) as Record<
     string,
     unknown
@@ -116,7 +125,7 @@ export function finalizeCertificate(
 
   const blood: Record<string, ExamValue> = {};
   for (const key of BLOOD_TEST_KEYS) {
-    blood[key] = examValue(ai[key]);
+    blood[key] = stripJudge(examValue(ai[key]), keepJudgements);
   }
 
   return {
@@ -127,7 +136,10 @@ export function finalizeCertificate(
     age: calcAge(patient.dateOfBirth, issuedAt) ?? patient.age,
     // 右下の日付は作成日。健診日は先生が入れる（言われていなければ空欄）
     issuedDate: formatReiwaDate(issuedAt),
-    examDate: normalizeExamDate(ai.examDate),
+    // 健診日は先生が述べた日付。述べていなくても、今日測った血圧・脈・心電図が入っているなら、それは今日の診察日
+    examDate:
+      normalizeExamDate(ai.examDate) ||
+      (toText(bp.systolic) || toText(pulse.rate) || toText(ecg.abnormality) ? formatReiwaDate(issuedAt) : ''),
 
     // 問診票から
     interview: toText(ai.interview),
@@ -135,28 +147,28 @@ export function finalizeCertificate(
     symptoms: toText(ai.symptoms),
 
     // 左列
-    height: examValue(ai.height),
-    weight: examValue(ai.weight),
-    waist: examValue(ai.waist),
-    bmi: examValue(ai.bmi),
+    height: stripJudge(examValue(ai.height), keepJudgements),
+    weight: stripJudge(examValue(ai.weight), keepJudgements),
+    waist: stripJudge(examValue(ai.waist), keepJudgements),
+    bmi: stripJudge(examValue(ai.bmi), keepJudgements),
     hearing: {
       right1000: normalOrAbnormal(hearing.right1000),
       right4000: normalOrAbnormal(hearing.right4000),
       left1000: normalOrAbnormal(hearing.left1000),
       left4000: normalOrAbnormal(hearing.left4000),
-      judgement: judgement(hearing.judgement),
+      judgement: judge(hearing.judgement),
     },
     vision: {
       right: toText(vision.right),
       rightCorrected: toText(vision.rightCorrected),
       left: toText(vision.left),
       leftCorrected: toText(vision.leftCorrected),
-      judgement: judgement(vision.judgement),
+      judgement: judge(vision.judgement),
     },
     bloodPressure: {
       systolic: toText(bp.systolic),
       diastolic: toText(bp.diastolic),
-      judgement: judgement(bp.judgement),
+      judgement: judge(bp.judgement),
     },
     pulse: {
       rate: toText(pulse.rate),
@@ -164,12 +176,12 @@ export function finalizeCertificate(
         toText(pulse.rhythm) === 'regular' || toText(pulse.rhythm) === 'irregular'
           ? toText(pulse.rhythm)
           : '',
-      judgement: judgement(pulse.judgement),
+      judgement: judge(pulse.judgement),
     },
     urinalysis: {
       glucose: toText(urinalysis.glucose),
       protein: toText(urinalysis.protein),
-      judgement: judgement(urinalysis.judgement),
+      judgement: judge(urinalysis.judgement),
     },
 
     // 右列
@@ -178,19 +190,19 @@ export function finalizeCertificate(
       abnormalityDetail: toText(chestXray.abnormalityDetail),
       tuberculosis: noneOrPresent(chestXray.tuberculosis),
       tuberculosisDetail: toText(chestXray.tuberculosisDetail),
-      judgement: judgement(chestXray.judgement),
+      judgement: judge(chestXray.judgement),
     },
     ecg: {
       abnormality: noneOrPresent(ecg.abnormality),
       abnormalityDetail: toText(ecg.abnormalityDetail),
-      judgement: judgement(ecg.judgement),
+      judgement: judge(ecg.judgement),
     },
     ...blood,
 
     // 先生が入れる
     remarks: toText(ai.remarks),
     doctorDiagnosis: toText(ai.doctorDiagnosis),
-    overallJudgement: judgement(ai.overallJudgement),
+    overallJudgement: judge(ai.overallJudgement),
 
     // 毎回同じ
     clinicAddress: clinic.address,

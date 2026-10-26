@@ -14,6 +14,7 @@
  */
 import { CLINIC, ClinicProfile } from './clinic';
 import { calcAge, formatBirthDate, ReferralPatientContext, toText } from './referral-template';
+import { adlLevelStated, cleanOnsetDate, dementiaLevelStated } from './document-guards';
 
 const CLINIC_TIME_ZONE = 'Asia/Tokyo';
 
@@ -178,6 +179,12 @@ export function finalizeCareOpinion1(
   patient: ReferralPatientContext,
   issuedAt: Date = new Date(),
   clinic: ClinicProfile = CLINIC,
+  /**
+   * この診察で述べられた記録（サブカルテ・SOAP・会話・問診票）。渡されたときは、
+   * 医師の判断にあたる欄（自立度・発症年）を、記録に根拠があるものだけに絞る。
+   * 渡されない経路（医師がチャットで直した内容を保存するとき）は、医師の指定なのでそのまま通す
+   */
+  sourceText?: string,
 ): Record<string, unknown> {
   const ai = raw ?? {};
   const today = formatReiwaDate(issuedAt);
@@ -189,7 +196,12 @@ export function finalizeCareOpinion1(
     const d = (diagnosesRaw[i] && typeof diagnosesRaw[i] === 'object'
       ? diagnosesRaw[i]
       : {}) as Record<string, unknown>;
-    return { name: toText(d.name), onsetDate: toText(d.onsetDate) };
+    const name = toText(d.name);
+    const onset = toText(d.onsetDate);
+    return {
+      name,
+      onsetDate: sourceText === undefined || !name ? onset : cleanOnsetDate(onset, name, sourceText, issuedAt),
+    };
   });
 
   return {
@@ -235,8 +247,13 @@ export function finalizeCareOpinion1(
     specialResponses: onlyFromForm(ai.specialResponses, SPECIAL_RESPONSES),
     incontinenceResponses: onlyFromForm(ai.incontinenceResponses, INCONTINENCE_RESPONSES),
 
-    adlLevel: oneOfLabel(ai.adlLevel, ADL_LEVELS),
-    dementiaLevel: oneOfLabel(ai.dementiaLevel, DEMENTIA_LEVELS),
+    // 自立度は医師の判断。述べられていなければ空欄（歩けている・話せているからの推測は書かない）
+    adlLevel:
+      sourceText !== undefined && !adlLevelStated(sourceText) ? '' : oneOfLabel(ai.adlLevel, ADL_LEVELS),
+    dementiaLevel:
+      sourceText !== undefined && !dementiaLevelStated(sourceText)
+        ? ''
+        : oneOfLabel(ai.dementiaLevel, DEMENTIA_LEVELS),
     shortTermMemory: oneOfLabel(ai.shortTermMemory, SHORT_TERM_MEMORY),
     decisionCapacity: oneOfLabel(ai.decisionCapacity, DECISION_CAPACITY),
     communicationAbility: oneOfLabel(ai.communicationAbility, COMMUNICATION_ABILITY),

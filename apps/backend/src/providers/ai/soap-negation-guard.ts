@@ -66,3 +66,57 @@ export function buildNegationInversionWarnings(hits: NegationInversion[]): Clini
     severity: WarningSeverity.WARNING,
   }));
 }
+
+/**
+ * 書類の側の反転。SOAPで「ある」とされたことが、書類では「〜なし」の並びに入っていないか。
+ * （2026-10-27、診断書に「左肩の重さや冷汗、吐き気はなし」。SOAPは「左の肩が重い感じがする時がある。
+ *  冷や汗や気持ち悪さはなし」で、左肩の重さは「ある」だった）
+ */
+const KANJI = /[一-鿿々]/g;
+
+function kanjiSet(text: string): Set<string> {
+  return new Set(text.match(KANJI) ?? []);
+}
+
+export function findAffirmedButNegated(
+  docText: string,
+  soapText: string,
+): Array<{ item: string; line: string }> {
+  const positive = sentences(soapText).filter((l) => POSITIVE.test(l) && !NEGATIVE.test(l));
+  if (!positive.length) return [];
+  const hits: Array<{ item: string; line: string }> = [];
+  for (const sentence of sentences(docText)) {
+    const m = sentence.match(/(なし|ない|ありません|認めない)\s*$/);
+    if (!m) continue;
+    const list = sentence.slice(0, m.index).replace(/は$/, '');
+    for (const raw of list.split(/[、や，,と]/)) {
+      const item = raw.replace(/の(有無|症状)$/, '').trim();
+      const kanji = kanjiSet(item);
+      if (item.length < 3 || kanji.size < 2) continue;
+      const line = positive.find((l) => {
+        const lk = kanjiSet(l);
+        return [...kanji].every((c) => lk.has(c));
+      });
+      if (line && !hits.some((h) => h.item === item)) hits.push({ item, line });
+    }
+  }
+  return hits;
+}
+
+export function buildDocumentNegationWarnings(
+  inversions: NegationInversion[],
+  affirmed: Array<{ item: string; line: string }>,
+): ClinicalValidationWarning[] {
+  return [
+    ...inversions.map((h) => ({
+      category: 'document_negation',
+      message: `要確認（書類）：会話では「${h.phrase}」は否定されていますが、書類では「あり」と読める書き方です（${h.line.slice(0, 40)}）。`,
+      severity: WarningSeverity.WARNING,
+    })),
+    ...affirmed.map((h) => ({
+      category: 'document_negation',
+      message: `要確認（書類）：「${h.item}」が「なし」の並びに入っていますが、SOAPでは「あり」と読めます（${h.line.slice(0, 40)}）。`,
+      severity: WarningSeverity.WARNING,
+    })),
+  ];
+}

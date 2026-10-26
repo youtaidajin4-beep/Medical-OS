@@ -157,11 +157,13 @@ const PROMPTS: Record<GeneratedDocumentType, { system: string; schema: string }>
 
 - 数値は、医師サブカルテに貼られた検査結果・SOAP・問診票に**書かれているものだけ**
 - 書かれていない検査は空文字。「正常」「異常なし」で埋めない
-- 判定（A〜G）は、様式左下の判断基準から選ぶ：
+- 判定（A〜G）は、**医師が述べたときだけ**。様式左下の判断基準：
   A 異常なし／B 軽度異常／C 要注意（要再検査含）／D 病院受診（要精検査含）／
   E 治療継続・経過観察要／F 通院受診／G 判定不能
-  値が無い項目に判定を付けない（空文字）
-- 問診（既往歴）・喫煙歴/服薬歴・自覚他覚症状は、問診票と診療記録から転記する
+  医師が判定を述べていなければ、すべて空文字（総合判定も）。血圧が高いからE、のように自分で付けない
+- 問診（既往歴）・喫煙歴/服薬歴・自覚他覚症状は、問診票と診療記録から転記する。
+  自覚・他覚症状は、SOAPのSの言い回しに沿う。「Aがあり、BとCはなし」と並べるときは、
+  SOAPで「ある」とされたものを「なし」の並びに入れない（肯定と否定を入れ替えない）
 - 健診日は、医師が述べた日付だけ。述べていなければ空文字
 - 備考・医師の診断・総合判定は、医師サブカルテの内容から書く。医師が述べていなければ空文字
 
@@ -217,7 +219,8 @@ const PROMPTS: Record<GeneratedDocumentType, { system: string; schema: string }>
 
 あなたが書く項目:
 - diagnoses（1(1) 診断名及び発症年月日）… 最大3つ。**1番目は生活機能低下の直接の原因となっている傷病**を書く。
-  正式な病名にする。発症年月日は分かるものだけ（「平成30年頃」のように分かる粒度で。不明なら空文字）
+  正式な病名にする。発症年月日は、記録に出てくる年・「N年前」だけから（「3年前」は今年から3を引いた年。
+  計算に自信が無ければ「約3年前」のまま書く）。記録に無ければ空文字。想像で年を書かない
 - stability（1(2) 症状としての安定性）… "stable" | "unstable" | "unknown"。
   **基本は stable。** がんの末期・急性増悪・転倒を繰り返している・数週間で状態が変わっているなど、
   介護の計画がすぐ変わりうる状態のときだけ unstable。医師が「不安定」と述べていればそれに従う
@@ -230,10 +233,13 @@ const PROMPTS: Record<GeneratedDocumentType, { system: string; schema: string }>
 - otherDepartmentVisit / otherDepartments … 他科受診。診療記録・問診票に受診が出てくるときだけ
 - procedures / specialResponses / incontinenceResponses（2 特別な医療）…
   **過去14日以内に受けた医療だけ**。様式の語からそのまま選ぶ。医師サブカルテと問診票に根拠があるものだけ
-- adlLevel / dementiaLevel / shortTermMemory / decisionCapacity / communicationAbility /
-  peripheralPresence / peripheralSymptoms / psychSymptomPresence（3(1)〜(4)）…
+- adlLevel / dementiaLevel（3(1) 障害高齢者・認知症高齢者の日常生活自立度）… **医師が述べたときだけ**。
+  サブカルテ・SOAP・会話・問診票のどこにも自立度（J1・A2・Ⅱa など）が出てこなければ**空文字**。
+  「歩けている」「話せている」から推測して選ばない（自立度は医師の判定で、診療の事実ではない）
+- shortTermMemory / decisionCapacity / communicationAbility /
+  peripheralPresence / peripheralSymptoms / psychSymptomPresence（3(2)〜(4)）…
   問診票と診療記録に根拠があるものだけ。**根拠が無ければ空文字（空の配列）**。
-  歩けている・会話ができていると読み取れるなら、それに沿った選択肢を選んでよい
+  「〜することもない」と確認した結果（徘徊なし・昼夜逆転なし）は、あったことに書かない。なしは none
 - otherDepartmentVisit（他科受診の有無）… **他院にかかっている記述があるときだけ**。
   これから紹介する予定は「受診済み」ではありません。記述が無ければ空文字
 
