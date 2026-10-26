@@ -1,9 +1,8 @@
 'use client';
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Camera, ChevronRight, FileText, Mic, UserPlus, X } from 'lucide-react';
+import { ArrowLeft, Camera, Mic, UserPlus, X } from 'lucide-react';
 import { api, getToken, isUnauthorizedError } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -68,11 +67,11 @@ function statusChip(status: string): { label: string; tone: 'done' | 'wait' | 'b
   return { label: '録音前', tone: 'busy' };
 }
 
-type Stage = 'idle' | 'choose' | 'ready';
+type Stage = 'choose' | 'ready';
 
 export default function HomePage() {
   const router = useRouter();
-  const [stage, setStage] = useState<Stage>('idle');
+  const [stage, setStage] = useState<Stage>('choose');
   const [patientId, setPatientId] = useState('');
   /** 患者を選ばずに始める（一時診療）。選んだつもりで違う人の診察を始めないよう、明示的に選ばせる */
   const [anonymous, setAnonymous] = useState(false);
@@ -120,8 +119,6 @@ export default function HomePage() {
 
   useEffect(() => {
     if (/Mac|iPhone|iPad/.test(navigator.platform)) setModKey('⌘');
-    // サイドナビの「SOAPをつくる」から来たときは、すぐ患者選びへ
-    if (new URLSearchParams(window.location.search).get('start') === '1') setStage('choose');
   }, []);
 
   useEffect(() => {
@@ -140,18 +137,11 @@ export default function HomePage() {
   const patient = patients.find((p) => p.id === patientId) ?? null;
   const canStart = Boolean(patient || anonymous);
 
-  // 最近の患者（患者ごとに、いちばん新しい診療だけ）
-  const recent = useMemo(() => {
-    const seen = new Set<string>();
-    const out: LogItem[] = [];
-    for (const l of logs) {
-      if (seen.has(l.label)) continue;
-      seen.add(l.label);
-      out.push(l);
-      if (out.length >= 4) break;
-    }
-    return out;
-  }, [logs]);
+  // 続きがある診療（確認待ち・作成中）。選び直さずに、ここから開ける
+  const unfinished = useMemo(
+    () => logs.filter((l) => l.status === 'REVIEW' || l.status === 'PROCESSING').slice(0, 3),
+    [logs],
+  );
 
   function choose(p: PatientOption) {
     setPatientId(p.id);
@@ -247,55 +237,36 @@ export default function HomePage() {
   }, [consentGiven, canStart, starting, patient, visitType, questionnaireFile, addOpen, stage]);
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-8rem)] w-full max-w-2xl flex-col items-center justify-center py-6">
-      {stage === 'idle' && (
-        <div key="idle" className="w-full animate-fade-in-up text-center">
-          <p className="text-[12px] font-semibold tracking-[0.3em] text-aura-teal-500">TODAY</p>
-          <h1 className="mt-3 text-[34px] font-semibold leading-tight tracking-tight text-aura-ink min-[640px]:text-[40px]">
-            診療をはじめましょう。
-          </h1>
-          <p className="mt-3 text-[15px] text-aura-ink-soft">話すだけで、SOAPと書類ができあがります。</p>
+    <div className="mx-auto flex w-full max-w-2xl flex-col items-center py-6 min-[900px]:pt-[7vh]">
+      {stage === 'choose' && (
+        <div key="choose" className="w-full animate-fade-in-up">
+          <div className="mb-8 text-center">
+            <p className="text-[12px] font-semibold tracking-[0.3em] text-aura-teal-500">NEW SOAP</p>
+            <h1 className="mt-3 text-[32px] font-semibold leading-tight tracking-tight text-aura-ink min-[640px]:text-[38px]">
+              どの患者さんですか？
+            </h1>
+            <p className="mt-3 text-[15px] text-aura-ink-soft">選ぶと録音の準備へ進みます。話すだけで、SOAPができあがります。</p>
+          </div>
+          <PatientSearch
+            patients={patients}
+            loading={loading}
+            selectedId={patientId}
+            autoFocus
+            onSelect={choose}
+            onAddNew={openAdd}
+            maxHeightClass="max-h-[22rem]"
+            onAnonymous={() => {
+              setAnonymous(true);
+              setPatientId('');
+              setStage('ready');
+            }}
+          />
 
-          {/* 中央の主役。押すと患者選びへ */}
-          <button
-            type="button"
-            onClick={() => setStage('choose')}
-            className="group relative mx-auto mt-10 block w-full max-w-md overflow-hidden rounded-[2.25rem] border border-white/80 bg-white/80 px-8 py-10 text-center shadow-float-lg backdrop-blur transition duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_2px_2px_rgb(36_48_46/0.03),0_24px_56px_-14px_rgb(36_48_46/0.18),0_48px_96px_-36px_rgb(31_138_133/0.28)] active:translate-y-0 active:scale-[0.99]"
-          >
-            <span
-              aria-hidden
-              className="pointer-events-none absolute -top-24 left-1/2 h-56 w-56 -translate-x-1/2 rounded-full bg-gradient-to-b from-aura-mint-200/60 to-transparent blur-2xl"
-            />
-            <span className="relative mx-auto flex h-24 w-24 items-center justify-center">
-              <span className="absolute inset-0 animate-orb-ripple rounded-full bg-aura-mint-300/40" />
-              <span className="absolute inset-0 animate-orb-breathe rounded-full bg-gradient-to-br from-aura-cyan-300 via-aura-mint-300 to-aura-teal-400 shadow-glow" />
-              <span className="absolute inset-[5px] rounded-full bg-gradient-to-br from-white/60 to-transparent" />
-              <Mic className="relative h-9 w-9 text-white drop-shadow transition-transform duration-300 group-hover:scale-110" />
-            </span>
-            <span className="relative mt-7 block text-[22px] font-semibold tracking-tight text-aura-ink">
-              SOAPを作成する
-            </span>
-            <span className="relative mt-2 block text-[14px] leading-relaxed text-aura-ink-soft">
-              診察を録音するとAIが
-              <br />
-              SOAPを自動作成します
-            </span>
-          </button>
-
-          <Link
-            href="/documents"
-            className="mx-auto mt-5 inline-flex items-center gap-2 rounded-full border border-aura-line bg-white/70 px-5 py-2.5 text-[14px] font-medium text-aura-ink-soft backdrop-blur transition duration-200 hover:-translate-y-px hover:bg-white hover:text-aura-ink hover:shadow-float"
-          >
-            <FileText className="h-4 w-4 text-aura-teal-500" />
-            書類を作成する
-          </Link>
-
-          {/* 最近の患者。管理画面ではなく、次の一歩のための短い一覧 */}
-          {recent.length > 0 && (
-            <div className="mx-auto mt-14 w-full max-w-md text-left">
-              <p className="mb-2 px-2 text-[11px] font-semibold tracking-[0.2em] text-aura-ink-muted">最近の患者</p>
+          {unfinished.length > 0 && (
+            <div className="mt-10 w-full text-left">
+              <p className="mb-2 px-2 text-[11px] font-semibold tracking-[0.2em] text-aura-ink-muted">続きがある診療</p>
               <ul className="space-y-0.5">
-                {recent.map((r) => {
+                {unfinished.map((r) => {
                   const chip = statusChip(r.status);
                   return (
                     <li key={r.id}>
@@ -309,12 +280,11 @@ export default function HomePage() {
                         <span
                           className={cn(
                             'inline-flex w-[5.5rem] items-center justify-end gap-1.5 text-[12px] font-medium',
-                            chip.tone === 'done' && 'text-aura-teal-600',
                             chip.tone === 'wait' && 'text-amber-600',
-                            chip.tone === 'busy' && 'text-aura-ink-muted',
+                            chip.tone !== 'wait' && 'text-aura-ink-muted',
                           )}
                         >
-                          {chip.tone === 'done' ? '✓' : '●'} {chip.label}
+                          ● {chip.label}
                         </span>
                       </button>
                     </li>
@@ -323,35 +293,6 @@ export default function HomePage() {
               </ul>
             </div>
           )}
-        </div>
-      )}
-
-      {stage === 'choose' && (
-        <div key="choose" className="w-full animate-fade-in-up">
-          <button
-            type="button"
-            onClick={() => setStage('idle')}
-            className="mb-6 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] text-aura-ink-muted transition hover:bg-aura-mist hover:text-aura-ink"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            もどる
-          </button>
-          <h1 className="mb-6 text-center text-[28px] font-semibold tracking-tight text-aura-ink">
-            どの患者さんですか？
-          </h1>
-          <PatientSearch
-            patients={patients}
-            loading={loading}
-            selectedId={patientId}
-            autoFocus
-            onSelect={choose}
-            onAddNew={openAdd}
-            onAnonymous={() => {
-              setAnonymous(true);
-              setPatientId('');
-              setStage('ready');
-            }}
-          />
         </div>
       )}
 

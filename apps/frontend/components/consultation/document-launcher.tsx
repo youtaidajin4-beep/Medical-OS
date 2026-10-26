@@ -93,6 +93,13 @@ export function DocumentLauncher({
     void loadRecipients();
   }, [loadRecipients]);
 
+  // 書類の入口から来たときは、選んだ書類の宛先選びを開いておく（作るのは、押してから）
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get('kind');
+    const kind = DOCUMENT_KINDS.find((k) => k.id === wanted);
+    if (kind?.needsRecipient) setOpenFor(kind.id);
+  }, []);
+
   function handleClick(kind: DocumentKind) {
     if (disabled) return;
     if (!kind.needsRecipient) {

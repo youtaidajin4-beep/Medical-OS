@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Search } from 'lucide-react';
 import { api, getToken, isUnauthorizedError } from '@/lib/api-client';
 import { DocumentCard } from '@/components/aura/document-card';
 import { DOCUMENT_KINDS } from '@/components/consultation/document-launcher';
@@ -24,6 +24,7 @@ export default function DocumentsPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [kind, setKind] = useState<string>('referral');
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     if (!getToken()) {
@@ -36,7 +37,7 @@ export default function DocumentsPage() {
         setRows(
           list
             .filter((c) => ['REVIEW', 'APPROVED', 'COMPLETED'].includes(c.status))
-            .slice(0, 12)
+            .slice(0, 60)
             .map((c) => ({
               id: c.id,
               label: c.patient?.name ?? c.anonymousCase?.displayName ?? '診療',
@@ -51,6 +52,9 @@ export default function DocumentsPage() {
       })
       .finally(() => setLoading(false));
   }, [router]);
+
+  const shown = query.trim() ? rows.filter((r) => r.label.includes(query.trim())) : rows.slice(0, 12);
+  const kindLabel = DOCUMENT_KINDS.find((k) => k.id === kind)?.label ?? '';
 
   return (
     <div className="mx-auto w-full max-w-3xl py-4">
@@ -68,21 +72,36 @@ export default function DocumentsPage() {
       </section>
 
       <section className="mt-10">
-        <p className="mb-3 text-[12px] font-semibold tracking-[0.2em] text-aura-ink-muted">2. どの診療から作りますか</p>
+        <p className="mb-3 text-[12px] font-semibold tracking-[0.2em] text-aura-ink-muted">
+          2. 誰の、いつの診療から作りますか
+        </p>
+        <div className="relative mb-3">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-aura-ink-muted" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="患者名で絞り込む"
+            aria-label="患者名で絞り込む"
+            className="h-11 w-full rounded-full border border-aura-line bg-white pl-11 pr-4 text-[14px] text-aura-ink outline-none transition focus:border-aura-mint-300 focus:shadow-float"
+          />
+        </div>
         {loading ? (
           <p className="px-2 py-6 text-sm text-aura-ink-muted">読み込み中…</p>
         ) : rows.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-aura-line px-6 py-10 text-center">
             <p className="text-sm text-aura-ink-soft">SOAPができた診療が、まだありません。</p>
-            <p className="mt-1 text-xs text-aura-ink-muted">サイドナビの「SOAPをつくる」から、診療をはじめましょう。</p>
+            <p className="mt-1 text-xs text-aura-ink-muted">左上の「SOAPをつくる」から、診療をはじめましょう。</p>
           </div>
+        ) : shown.length === 0 ? (
+          <p className="px-2 py-6 text-sm text-aura-ink-muted">「{query}」の診療が見つかりません。</p>
         ) : (
           <ul className="space-y-1">
-            {rows.map((r) => (
+            {shown.map((r) => (
               <li key={r.id}>
                 <button
                   type="button"
-                  onClick={() => router.push(`/consultation/${r.id}?docs=1`)}
+                  onClick={() => router.push(`/consultation/${r.id}?docs=1&kind=${kind}`)}
                   className="group flex w-full items-center gap-4 rounded-3xl border border-transparent px-4 py-3 text-left transition duration-200 hover:-translate-y-px hover:border-aura-line hover:bg-white hover:shadow-float"
                 >
                   <PatientAvatar name={r.label} />
@@ -99,6 +118,7 @@ export default function DocumentsPage() {
                     {r.status === 'REVIEW' ? '● 確認待ち' : '✓ SOAP完成'}
                     {r.hasDocuments ? ' · 書類あり' : ''}
                   </span>
+                  <span className="hidden text-[12px] text-aura-ink-muted min-[640px]:inline">{kindLabel}を作る</span>
                   <ChevronRight className="h-4 w-4 text-aura-ink-muted/50 transition group-hover:translate-x-0.5 group-hover:text-aura-teal-500" />
                 </button>
               </li>

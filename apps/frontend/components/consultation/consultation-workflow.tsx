@@ -25,6 +25,8 @@ type Phase = 'loading' | 'recording' | 'processing' | 'error' | 'review';
 const CLIENT_STALE_NO_PROGRESS_MS = 15 * 60 * 1000;
 const CLIENT_ABSOLUTE_MAX_MS = 40 * 60 * 1000;
 const CLIENT_POLL_FAIL_LIMIT = 5;
+/** 終了を押してから、サーバーがまだ「録音中」のままでも作成中に留めておく上限 */
+const STOP_HANDOFF_MAX_MS = 2 * 60 * 1000;
 const CLIENT_STALE_MESSAGE =
   '処理がタイムアウトしました。もう一度処理するか、録り直してください。録音が長い場合は数分かかることがあります。';
 const CLIENT_POLL_FAIL_MESSAGE =
@@ -52,6 +54,10 @@ export function ConsultationWorkflow({
   /** 終了ボタンを押した時刻。経過時間はここから数える（サーバーの開始時刻を待たない） */
   const [stoppedAt, setStoppedAt] = useState<string | null>(null);
   const loadedOnceRef = useRef(false);
+  /** 読み込みの順番。遅れて返ってきた古い応答が、新しい画面を上書きして行き来させない */
+  const loadSeqRef = useRef(0);
+  const appliedSeqRef = useRef(0);
+  const stoppedAtMsRef = useRef<number | null>(null);
   // 録音前のマイク確認。録音が始まったら閉じて、マイクを二重に掴まないようにする。
   // ここで選んだマイクを、そのまま録音でも使う（診察室に置いた外付けマイクで録るため）
   const [micCheckOpen, setMicCheckOpen] = useState(true);
@@ -133,8 +139,12 @@ export function ConsultationWorkflow({
   }
 
   const loadConsultation = useCallback(async () => {
+    const seq = ++loadSeqRef.current;
     try {
       const data = await api.getConsultation(id);
+      // 後から出した読み込みがすでに反映されていたら、この古い応答は捨てる
+      if (seq < appliedSeqRef.current) return;
+      appliedSeqRef.current = seq;
       loadedOnceRef.current = true;
       setPollFailCount(0);
       const patientName = data.patient?.name ?? data.anonymousCase?.displayName ?? '症例';
@@ -200,33 +210,45 @@ export function ConsultationWorkflow({
           setPhase('error');
           return;
         }
-        // 作成中の画面から来たときは、できあがりを一瞬だけ見せる（静かに、約1秒）
+        const applyReviewData = () => {
+          if (data.soapDocuments?.[0]) {
+            setSoap(data.soapDocuments[0]);
+            setSavedSoap(data.soapDocuments[0]);
+            setDocumentInput((prev) => ({ ...prev, soap: data.soapDocuments![0]! }));
+          }
+          if (data.clinicalNotes?.[0]) setNote(data.clinicalNotes[0].content);
+          if (data.warnings) setWarnings(data.warnings);
+          if (data.transcriptSegments) setTranscript(data.transcriptSegments);
+          if (data.revisions) setRevisions(data.revisions);
+          setApproved(data.status === 'APPROVED' || data.status === 'COMPLETED');
+          setCopied(data.status === 'COMPLETED');
+        };
+        // 作成中の画面から来たときは、中身だけ先に用意して、画面は動かさない。
+        // 4つの段を見せ終えた作成中の画面が、自分で「記録ができました。」を見せてから、確認の画面へ移る
         if (phaseRef.current === 'processing') {
           if (completingRef.current) return;
           completingRef.current = true;
+          applyReviewData();
           setCompleting(true);
-          await new Promise((r) => setTimeout(r, 1200));
-          completingRef.current = false;
-          setCompleting(false);
+          return;
         }
-        if (data.soapDocuments?.[0]) {
-          setSoap(data.soapDocuments[0]);
-          setSavedSoap(data.soapDocuments[0]);
-          setDocumentInput((prev) => ({ ...prev, soap: data.soapDocuments![0]! }));
-        }
-        if (data.clinicalNotes?.[0]) setNote(data.clinicalNotes[0].content);
-        if (data.warnings) setWarnings(data.warnings);
-        if (data.transcriptSegments) setTranscript(data.transcriptSegments);
-        if (data.revisions) setRevisions(data.revisions);
+        applyReviewData();
         setPhase('review');
-        setApproved(data.status === 'APPROVED' || data.status === 'COMPLETED');
-        setCopied(data.status === 'COMPLETED');
         return;
       }
 
-      // 終了の処理中は、サーバーがまだ録音中のままでも、録音画面へ戻さない
-      if (stoppingRef.current) {
-        setPhase('processing');
+      // 終了を押したあと、サーバーがまだ「録音中」のままの間は、録音画面へ戻さない。
+      // 作成中の画面は、サーバーが処理中に変わるまで静かに待つ（行き来しない）。
+      // 戻すのは、録り直し・続きの録音を自分で選んだときだけ（その操作が直接画面を切り替える）
+      if (phaseRef.current === 'processing' || stoppingRef.current) {
+        const waited = stoppedAtMsRef.current ? Date.now() - stoppedAtMsRef.current : 0;
+        if (stoppingRef.current || waited < STOP_HANDOFF_MAX_MS) {
+          setPhase('processing');
+          return;
+        }
+        setErrorMessage('作成を始められませんでした。もう一度処理するか、録り直してください。');
+        setCanReprocess(Boolean(data.hasAudio));
+        setPhase('error');
         return;
       }
       // 録音前（DRAFT）・録音中（RECORDING）。ここで初めて録音画面を出す
@@ -287,6 +309,7 @@ export function ConsultationWorkflow({
    */
   async function handleStop() {
     stoppingRef.current = true;
+    stoppedAtMsRef.current = Date.now();
     setErrorMessage('');
     setStoppedAt(new Date().toISOString());
     setPipelineStep(null);
@@ -304,6 +327,13 @@ export function ConsultationWorkflow({
     }
     stoppingRef.current = false;
   }
+
+  /** 作成中の画面が、4つの段と「記録ができました。」を見せ終えた。確認の画面へ移る */
+  const handleProcessingDone = useCallback(() => {
+    completingRef.current = false;
+    setCompleting(false);
+    setPhase('review');
+  }, []);
 
   async function handleApprove() {
     await api.approve(id);
@@ -445,6 +475,7 @@ export function ConsultationWorkflow({
     setErrorBusy(true);
     try {
       await api.reprocessConsultation(id);
+      stoppedAtMsRef.current = Date.now();
       setErrorMessage('');
       setPollFailCount(0);
       setPipelineStep(null);
@@ -556,6 +587,7 @@ export function ConsultationWorkflow({
         pipelineStartedAt={stoppedAt ?? pipelineStartedAt}
         stopStage={recording.stopStage}
         complete={completing}
+        onDone={handleProcessingDone}
       />
     );
   }

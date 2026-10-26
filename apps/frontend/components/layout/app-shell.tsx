@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { api, clearToken } from '@/lib/api-client';
@@ -16,6 +16,39 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [userName, setUserName] = useState('');
+  const [collapsed, setCollapsed] = useState(false);
+
+  // 閉じた状態は覚えておく（読めなければ開いたまま）
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('sidebar-collapsed') === '1') setCollapsed(true);
+    } catch {
+      // 覚えられなくても、開閉はできる
+    }
+  }, []);
+
+  const toggleSidebar = useCallback(() => {
+    setCollapsed((v) => {
+      const next = !v;
+      try {
+        localStorage.setItem('sidebar-collapsed', next ? '1' : '0');
+      } catch {
+        // 覚えられなくても、開閉はできる
+      }
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        toggleSidebar();
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [toggleSidebar]);
 
   useEffect(() => {
     void api
@@ -31,12 +64,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="relative min-h-screen bg-aura-paper">
-      <DemoBanner />
-      <AiStatusBanner />
       <div className="relative flex">
-        <AppSidebar userName={userName} onLogout={logout} />
+        <AppSidebar userName={userName} onLogout={logout} collapsed={collapsed} onToggle={toggleSidebar} />
 
-        <div className="relative min-w-0 flex-1 overflow-hidden">
+        <div className="relative min-h-screen min-w-0 flex-1 overflow-hidden">
+          {/* 接続の表示は、サイドバーの右（メイン側）の上に置く。サイドバーを画面の高さに収めるため */}
+          <div className="relative">
+            <DemoBanner />
+            <AiStatusBanner />
+          </div>
+
           {/* 背景の光。内容の後ろで、ゆっくりだけ動く */}
           <div aria-hidden className="pointer-events-none absolute inset-0 -z-0 print:hidden">
             <div className="absolute -right-40 -top-40 h-[34rem] w-[34rem] animate-orb-drift rounded-full bg-aura-cyan-200/40 blur-3xl" />

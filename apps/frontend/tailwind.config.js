@@ -77,17 +77,18 @@ module.exports = {
         'card-hover': '0 4px 12px -2px rgb(15 23 42 / 0.10), 0 2px 6px -2px rgb(15 23 42 / 0.06)',
       },
       keyframes: {
+        // 終わったあとに transform を残さない（残すと、中の position: fixed が画面でなくこの要素を基準にして、パネルが半分で切れる）
         'fade-in': {
           from: { opacity: '0', transform: 'translateY(4px)' },
-          to: { opacity: '1', transform: 'translateY(0)' },
+          to: { opacity: '1', transform: 'none' },
         },
         'fade-in-up': {
           from: { opacity: '0', transform: 'translateY(12px)' },
-          to: { opacity: '1', transform: 'translateY(0)' },
+          to: { opacity: '1', transform: 'none' },
         },
         'scale-in': {
           from: { opacity: '0', transform: 'scale(0.96)' },
-          to: { opacity: '1', transform: 'scale(1)' },
+          to: { opacity: '1', transform: 'none' },
         },
         'pulse-ring': {
           '0%': { transform: 'scale(1)', opacity: '0.6' },
@@ -121,9 +122,9 @@ module.exports = {
         },
       },
       animation: {
-        'fade-in': 'fade-in 0.25s ease-out both',
-        'fade-in-up': 'fade-in-up 0.35s ease-out both',
-        'scale-in': 'scale-in 0.2s ease-out both',
+        'fade-in': 'fade-in 0.25s ease-out backwards',
+        'fade-in-up': 'fade-in-up 0.35s ease-out backwards',
+        'scale-in': 'scale-in 0.2s ease-out backwards',
         'pulse-ring': 'pulse-ring 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'sound-bar': 'sound-bar 0.9s ease-in-out infinite',
         'toast-in': 'toast-in 0.25s ease-out both',
