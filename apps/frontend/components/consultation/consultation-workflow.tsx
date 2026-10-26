@@ -45,12 +45,17 @@ export function ConsultationWorkflow({
   const [phase, setPhase] = useState<Phase>('loading');
   /** 診察を終えるボタンを押してから、サーバーの処理が始まるまで。この間は録音画面へ戻さない */
   const stoppingRef = useRef(false);
+  /** 作成中の画面でSOAPができたとき、「記録ができました。」を少しだけ見せる */
+  const [completing, setCompleting] = useState(false);
+  const completingRef = useRef(false);
+  const phaseRef = useRef<Phase>('loading');
   /** 終了ボタンを押した時刻。経過時間はここから数える（サーバーの開始時刻を待たない） */
   const [stoppedAt, setStoppedAt] = useState<string | null>(null);
   const loadedOnceRef = useRef(false);
   // 録音前のマイク確認。録音が始まったら閉じて、マイクを二重に掴まないようにする。
   // ここで選んだマイクを、そのまま録音でも使う（診察室に置いた外付けマイクで録るため）
   const [micCheckOpen, setMicCheckOpen] = useState(true);
+  phaseRef.current = phase;
   const mic = useMicCheck(phase === 'recording' && micCheckOpen);
   const recording = useRecording(id, mic.deviceId);
   const transcriptPreview = useTranscriptPreview(
@@ -194,6 +199,15 @@ export function ConsultationWorkflow({
           setCanReprocess(Boolean(data.hasAudio));
           setPhase('error');
           return;
+        }
+        // 作成中の画面から来たときは、できあがりを一瞬だけ見せる（静かに、約1秒）
+        if (phaseRef.current === 'processing') {
+          if (completingRef.current) return;
+          completingRef.current = true;
+          setCompleting(true);
+          await new Promise((r) => setTimeout(r, 1200));
+          completingRef.current = false;
+          setCompleting(false);
         }
         if (data.soapDocuments?.[0]) {
           setSoap(data.soapDocuments[0]);
@@ -541,6 +555,7 @@ export function ConsultationWorkflow({
         pipelineStep={pipelineStep}
         pipelineStartedAt={stoppedAt ?? pipelineStartedAt}
         stopStage={recording.stopStage}
+        complete={completing}
       />
     );
   }

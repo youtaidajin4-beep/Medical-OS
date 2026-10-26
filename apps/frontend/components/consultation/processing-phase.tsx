@@ -8,9 +8,9 @@ import type { StopStage } from '@/hooks/use-recording';
 /**
  * 診察を終えてから、カルテ原稿ができるまでの画面。
  *
- * 見せたいのは「いま何が起きているか」。診察中の文字から書く速い経路でも、録音全体から作る
- * 従来の経路でも、4つの段に収まるようにした。段は実際の処理の進みに合わせて進み、
- * 見せかけの進捗は出さない（サーバーからの知らせが無いあいだは、手前の段に留まる）。
+ * 録音のオーブが、静かに4枚のカード（S・O・A・P）へ変わっていく。段は実際の処理の進みに合わせて進み、
+ * 見せかけの進捗は出さない。できあがると、カードが落ち着いて「記録ができました。」と出る。
+ * 派手な演出（紙吹雪など）はしない。変形は 0.7 秒ほど。
  */
 const STEPS = [
   { key: 'gather', label: '発話をまとめる', hint: '診察の会話を、ひとつの記録にそろえています' },
@@ -19,14 +19,14 @@ const STEPS = [
   { key: 'finish', label: '診療記録を仕上げる', hint: '最後の確認用の項目を整えています' },
 ] as const;
 
-const ROWS = [
-  { letter: 'S', title: '主観的情報', lines: ['92%', '78%', '54%'] },
-  { letter: 'O', title: '客観的情報', lines: ['84%', '61%'] },
-  { letter: 'A', title: '評価', lines: ['88%', '47%'] },
-  { letter: 'P', title: '計画', lines: ['95%', '72%', '39%'] },
+const CARDS = [
+  { letter: 'S', title: 'Subjective', lines: ['92%', '78%', '54%'] },
+  { letter: 'O', title: 'Objective', lines: ['84%', '61%'] },
+  { letter: 'A', title: 'Assessment', lines: ['88%', '47%'] },
+  { letter: 'P', title: 'Plan', lines: ['95%', '72%', '39%'] },
 ] as const;
 
-function pipelineStepToIndex(step: string | null | undefined, stopStage: StopStage): number {
+function pipelineStepToIndex(step: string | null | undefined): number {
   if (!step) return 0;
   switch (step) {
     case 'pipeline_start':
@@ -50,7 +50,7 @@ function pipelineStepToIndex(step: string | null | undefined, stopStage: StopSta
     case 'pipeline_complete':
       return 3;
     default:
-      return stopStage ? 0 : 0;
+      return 0;
   }
 }
 
@@ -74,11 +74,14 @@ export function ProcessingPhase({
   pipelineStep = null,
   pipelineStartedAt = null,
   stopStage = null,
+  complete = false,
 }: {
   density?: 'compact' | 'full';
   pipelineStep?: string | null;
   pipelineStartedAt?: string | null;
   stopStage?: StopStage;
+  /** SOAPができた。カードが落ち着いて「記録ができました。」を出す */
+  complete?: boolean;
 }) {
   const compact = density === 'compact';
   const [now, setNow] = useState(() => Date.now());
@@ -88,118 +91,108 @@ export function ProcessingPhase({
     return () => clearInterval(timer);
   }, []);
 
-  const stepIndex = pipelineStepToIndex(pipelineStep, stopStage);
+  const stepIndex = complete ? STEPS.length - 1 : pipelineStepToIndex(pipelineStep);
   const elapsed = useMemo(() => formatElapsed(pipelineStartedAt, now), [pipelineStartedAt, now]);
-  const progress = ((stepIndex + 0.5) / STEPS.length) * 100;
-  const writing = stepIndex >= 2;
-  const done = stepIndex >= 3;
+  // 録音のオーブは、整理の段に入ったところで4枚のカードへ変わる
+  const morphed = complete || stepIndex >= 1;
+  const writing = stepIndex >= 2 && !complete;
 
   return (
     <section
       aria-live="polite"
       className={cn(
-        'mx-auto flex w-full max-w-xl flex-col items-center gap-6 px-1 text-center',
+        'mx-auto flex w-full max-w-xl flex-col items-center px-1 text-center',
         compact ? 'py-6' : 'min-h-[62dvh] justify-center py-10',
       )}
     >
       <style>{`
         @keyframes mo-shimmer { 0% { background-position: -240px 0 } 100% { background-position: 240px 0 } }
-        @keyframes mo-pulse { 0%,100% { opacity: .55; transform: scale(1) } 50% { opacity: 1; transform: scale(1.06) } }
-        @keyframes mo-rise { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
-        .mo-line { background-image: linear-gradient(90deg, rgba(255,255,255,.10) 0, rgba(255,255,255,.34) 50%, rgba(255,255,255,.10) 100%); background-size: 240px 100%; animation: mo-shimmer 1.4s linear infinite; }
-        .mo-line-done { background: rgba(255,255,255,.38); animation: none; }
-        .mo-line-idle { background: rgba(255,255,255,.12); animation: none; }
-        .mo-badge-live { animation: mo-pulse 1.2s ease-in-out infinite; }
-        .mo-rise { animation: mo-rise .5s ease-out both; }
-        @media (prefers-reduced-motion: reduce) { .mo-line, .mo-badge-live, .mo-rise { animation: none } }
+        .mo-line { background-image: linear-gradient(90deg, rgba(31,138,133,.10) 0, rgba(31,138,133,.26) 50%, rgba(31,138,133,.10) 100%); background-size: 240px 100%; animation: mo-shimmer 1.5s linear infinite; }
+        .mo-line-done { background: rgba(31,138,133,.22); }
+        .mo-line-idle { background: rgba(31,138,133,.10); }
+        @media (prefers-reduced-motion: reduce) { .mo-line { animation: none } }
       `}</style>
 
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#6f8f88]">診察を終了しました</p>
-        <h2 className={cn('mt-2 font-semibold text-[#0c2f2c]', compact ? 'text-lg' : 'text-2xl')}>
-          カルテ原稿を作っています
-        </h2>
-        <p className="mt-2 min-h-[1.5rem] text-sm text-slate-500">{stageMessage(stopStage, stepIndex)}</p>
-      </div>
+      <p className="text-[12px] font-semibold tracking-[0.3em] text-aura-teal-500">
+        {complete ? 'DONE' : '診察を終了しました'}
+      </p>
+      <h2 className={cn('mt-2 font-semibold tracking-tight text-aura-ink', compact ? 'text-xl' : 'text-[28px]')}>
+        {complete ? '記録ができました。' : 'カルテ原稿を作っています'}
+      </h2>
+      <p className="mt-2 min-h-[1.5rem] text-sm text-aura-ink-soft">
+        {complete ? 'S・O・A・P を確認しましょう。' : stageMessage(stopStage, stepIndex)}
+      </p>
 
-      {/* 書かれていく原稿のイメージ。段が進むほど明るく、書き終えると落ち着く */}
-      <div className="w-full overflow-hidden rounded-[28px] bg-gradient-to-b from-[#12433e] to-[#071f1c] p-5 text-left shadow-[0_24px_48px_-24px_rgba(7,31,28,0.7)]">
-        <div className="mb-4 flex items-end justify-between">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8fb3aa]">カルテ原稿</span>
-          <span className="font-mono text-2xl tabular-nums text-white" aria-label="経過時間">
-            {elapsed}
-          </span>
+      {/* オーブ → 4枚のカード。同じ場所で、形だけが変わる */}
+      <div className="relative mt-8 flex h-[21rem] w-full items-center justify-center">
+        <div
+          aria-hidden
+          className={cn(
+            'absolute h-44 w-44 rounded-full bg-gradient-to-br from-aura-cyan-200 via-aura-mint-200 to-aura-teal-400 shadow-[0_24px_60px_-18px_rgba(31,138,133,0.55)]',
+            'transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]',
+            morphed ? 'scale-50 opacity-0 blur-md' : 'animate-orb-breathe scale-100 opacity-100',
+          )}
+        >
+          <div className="absolute inset-[3px] rounded-full bg-gradient-to-b from-white/50 via-transparent to-transparent" />
         </div>
-        <ul className="space-y-3">
-          {ROWS.map((row, i) => {
-            const lit = writing || stepIndex >= 1;
-            const lineClass = done ? 'mo-line-done' : writing ? 'mo-line' : stepIndex >= 1 ? 'mo-line' : 'mo-line-idle';
-            return (
-              <li
-                key={row.letter}
-                className="mo-rise flex items-start gap-3 rounded-2xl bg-white/[0.05] p-3"
-                style={{ animationDelay: `${i * 90}ms` }}
-              >
+
+        <div className="grid w-full grid-cols-2 gap-3">
+          {CARDS.map((card, i) => (
+            <div
+              key={card.letter}
+              className={cn(
+                'rounded-3xl border border-white/80 bg-white/90 p-4 text-left shadow-float',
+                'transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]',
+                morphed ? 'translate-y-0 scale-100 opacity-100' : 'scale-50 opacity-0',
+                complete && 'shadow-float-lg',
+              )}
+              style={{ transitionDelay: morphed ? `${i * 90}ms` : '0ms' }}
+            >
+              <div className="flex items-center gap-2.5">
                 <span
                   className={cn(
-                    'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold',
-                    done ? 'bg-[#e8c98a] text-[#0c2f2c]' : lit ? 'mo-badge-live bg-[#e8c98a] text-[#0c2f2c]' : 'bg-white/10 text-[#8fb3aa]',
+                    'flex h-8 w-8 items-center justify-center rounded-xl text-[13px] font-bold transition-colors duration-500',
+                    complete ? 'bg-aura-teal-500 text-white' : 'bg-aura-mint-100 text-aura-teal-600',
                   )}
-                  style={lit && !done ? { animationDelay: `${i * 160}ms` } : undefined}
                 >
-                  {done ? <Check className="h-4 w-4" /> : row.letter}
+                  {complete ? <Check className="h-4 w-4" /> : card.letter}
                 </span>
-                <div className="flex-1 space-y-2 pt-1">
-                  <p className="text-[11px] font-medium text-[#8fb3aa]">{row.title}</p>
-                  {row.lines.map((w, j) => (
-                    <div
-                      key={j}
-                      className={cn('h-2.5 rounded-full', lineClass)}
-                      style={{ width: w, animationDelay: `${(i * 3 + j) * 120}ms` }}
-                    />
-                  ))}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-        <div className="mt-5 h-1 overflow-hidden rounded-full bg-white/10">
-          <div
-            className="h-full rounded-full bg-[#e8c98a] transition-all duration-700 ease-out"
-            style={{ width: `${progress}%` }}
-          />
+                <span className="text-[11px] font-medium tracking-wide text-aura-ink-muted">{card.title}</span>
+              </div>
+              <div className="mt-3.5 space-y-2">
+                {card.lines.map((w, j) => (
+                  <div
+                    key={j}
+                    className={cn('h-2.5 rounded-full', complete ? 'mo-line-done' : writing ? 'mo-line' : 'mo-line-idle')}
+                    style={{ width: w, animationDelay: `${(i * 3 + j) * 110}ms` }}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      <ol className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4">
-        {STEPS.map((step, i) => {
-          const complete = i < stepIndex;
-          const current = i === stepIndex;
-          return (
-            <li
+      <div className="mt-6 flex items-center gap-3 text-[13px] text-aura-ink-muted">
+        <span className="font-mono tabular-nums text-aura-ink-soft" aria-label="経過時間">
+          {elapsed}
+        </span>
+        <span className="h-3 w-px bg-aura-line" />
+        <span>
+          {STEPS.map((step, i) => (
+            <span
               key={step.key}
               className={cn(
-                'flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs leading-tight transition-colors',
-                complete && 'border-emerald-200 bg-emerald-50 text-emerald-800',
-                current && 'border-[#0c2f2c] bg-[#0c2f2c] text-white',
-                !complete && !current && 'border-[#dbe5e0] bg-white text-slate-400',
+                'mr-3 transition-colors duration-500 last:mr-0',
+                i < stepIndex || complete ? 'text-aura-teal-600' : i === stepIndex ? 'font-semibold text-aura-ink' : '',
               )}
             >
-              <span
-                className={cn(
-                  'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold',
-                  complete && 'bg-emerald-200 text-emerald-800',
-                  current && 'bg-[#e8c98a] text-[#0c2f2c]',
-                  !complete && !current && 'bg-[#eef3f0] text-slate-400',
-                )}
-              >
-                {complete ? <Check className="h-3 w-3" /> : i + 1}
-              </span>
-              <span className="font-medium">{step.label}</span>
-            </li>
-          );
-        })}
-      </ol>
+              {i < stepIndex || complete ? '✓ ' : ''}
+              {step.label}
+            </span>
+          ))}
+        </span>
+      </div>
     </section>
   );
 }
