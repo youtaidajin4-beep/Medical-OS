@@ -1,3 +1,4 @@
+import { mineTermEdits } from '../medical-knowledge/term-edit-miner';
 import { Inject, Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { ConsultationStatus, DocumentType, VisitType } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
@@ -573,7 +574,46 @@ export class ConsultationsService {
             changedById: userId,
           },
         });
+        await this.learnFromEdit(consultationId, beforeVal, afterVal);
       }
+    }
+  }
+
+  /**
+   * 先生が直した語を、辞書の「学習候補」に貯める。診察のたびに更新される入り口。
+   * 貯まった語は、次の診察の聞き取りのヒントに入る（VocabularyService）。失敗しても診療は止めない。
+   */
+  private async learnFromEdit(consultationId: string, before: string, after: string) {
+    try {
+      const edits = mineTermEdits(before, after);
+      if (!edits.length) return;
+      const consultation = await this.prisma.consultation.findUnique({
+        where: { id: consultationId },
+        select: { clinicId: true },
+      });
+      if (!consultation) return;
+      for (const edit of edits) {
+        await this.prisma.dictionaryLearningCandidate.upsert({
+          where: {
+            clinicId_originalTerm_correctedTerm: {
+              clinicId: consultation.clinicId,
+              originalTerm: edit.wrong,
+              correctedTerm: edit.correct,
+            },
+          },
+          create: {
+            clinicId: consultation.clinicId,
+            originalTerm: edit.wrong,
+            correctedTerm: edit.correct,
+            category: edit.category as never,
+            occurrenceCount: 1,
+            status: 'pending',
+          },
+          update: { occurrenceCount: { increment: 1 } },
+        });
+      }
+    } catch {
+      // 学習できなくても、保存そのものは成功させる
     }
   }
 }

@@ -122,7 +122,20 @@ export class VocabularyService {
           select: { preferredWrittenForm: true },
         }),
       ]);
-      learned.push(...doctorTerms.map((t) => t.preferredWrittenForm), ...clinicTerms.map((t) => t.canonicalName));
+      // 先生がSOAPで直した語（学習候補）。承認を待たず、直した時点で次の診察のヒントに入れる
+      const edited = await this.prisma.dictionaryLearningCandidate
+        .findMany({
+          where: { clinicId: consultation.clinicId, status: { in: ['pending', 'approved'] } },
+          orderBy: { occurrenceCount: 'desc' },
+          take: 30,
+          select: { correctedTerm: true },
+        })
+        .catch(() => []);
+      learned.push(
+        ...edited.map((t) => t.correctedTerm),
+        ...doctorTerms.map((t) => t.preferredWrittenForm),
+        ...clinicTerms.map((t) => t.canonicalName),
+      );
     }
 
     const chart: ChartVocabulary = {

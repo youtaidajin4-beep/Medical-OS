@@ -23,3 +23,20 @@ export function ensureFollowUp(plan: string, followUp: string | undefined | null
   const line = `再診：${interval}`;
   return plan.trim() ? `${plan.trimEnd()}\n${line}` : line;
 }
+
+const DAYS = /([0-9]+)\s*(日分|日間|週間分|週間|か月分|ヶ月分|カ月分)/;
+
+/** 言われた処方日数がPに無ければ足す（文字起こしだけでSOAPを書くときの取りこぼし対策） */
+export function ensurePrescriptionDays(plan: string, days: string | undefined | null): string {
+  const text = days?.trim();
+  if (!text) return plan;
+  const wanted = normalizeNumbers(text).match(DAYS);
+  const normalizedPlan = normalizeNumbers(plan).replace(/\s/g, '');
+  if (wanted) {
+    if (normalizedPlan.includes(`${wanted[1]}${wanted[2]}`) || normalizedPlan.includes(`${wanted[1]}日`)) return plan;
+  } else if (plan.includes(text)) {
+    return plan;
+  }
+  const line = `処方日数：${text}`;
+  return plan.trim() ? `${plan.trimEnd()}\n${line}` : line;
+}

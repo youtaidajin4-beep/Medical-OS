@@ -18,6 +18,8 @@ import { buildTranscriptQualityWarnings } from '../../providers/ai/transcript-qu
 import {
   assessSoapEvidence,
   buildMissingEvidenceWarning,
+  requiredTranscriptChars,
+  usableTranscriptLength,
 } from '../../providers/ai/soap-evidence';
 import {
   buildUngroundedNumberWarnings,
@@ -27,7 +29,7 @@ import {
   buildNegationInversionWarnings,
   findNegationInversions,
 } from '../../providers/ai/soap-negation-guard';
-import { ensureFollowUp } from '../../providers/ai/soap-followup';
+import { ensureFollowUp, ensurePrescriptionDays } from '../../providers/ai/soap-followup';
 import { rejectInventedExams } from '../medical-knowledge/invented-exam-guard';
 import {
   numberTranscriptLines,
@@ -309,11 +311,34 @@ export class AiPipelineService {
         const llmCorrectStart = Date.now();
         const beforeLlm = segmentTexts;
         // 番号付きで渡して、番号付きで戻してもらう。行数がずれても対応が崩れない
-        const llmCorrected = await this.llmProvider.correctTranscript(
-          numberTranscriptLines(segmentTexts),
-          glossaryWithHits,
-          consultationId,
+        // 校正は、通常は2〜6秒。外れ値で40秒かかった回があった（2026-10-27の測定）。
+        // 診察後の待ちを守るため、上限を決めて、間に合わなければ校正なしで進める
+        // （診察中の文字には、語彙ヒントと辞書の補正がすでに当たっている）
+        const correctionBudgetMs = Number(
+          process.env.LLM_CORRECTION_BUDGET_MS ?? (useLive ? 3500 : 15000),
         );
+        const correctionTimedOut = Symbol('timeout');
+        const raced = await Promise.race([
+          this.llmProvider.correctTranscript(
+            numberTranscriptLines(segmentTexts),
+            glossaryWithHits,
+            consultationId,
+          ),
+          new Promise<typeof correctionTimedOut>((resolve) =>
+            setTimeout(() => resolve(correctionTimedOut), correctionBudgetMs),
+          ),
+        ]);
+        if (raced === correctionTimedOut) {
+          this.logger.warn(`LLM校正が${correctionBudgetMs}ms を超えたため、校正なしで進めます`);
+          await logAiExecution(this.prisma, {
+            consultationId,
+            step: 'llm_correction_timeout',
+            provider: this.llmProvider.name,
+            status: 'skipped',
+            errorMessage: `budget=${correctionBudgetMs}ms`,
+          });
+        }
+        const llmCorrected = raced === correctionTimedOut ? '' : raced;
         const redistributed = redistributeCorrectedLines(beforeLlm, llmCorrected);
         // 校正が「していない検査」を書き足すことがある。
         // 実測: 聞き取れなかった「ほら強烈で」（洞調律）が「ホルター心電図で」になった。
@@ -409,6 +434,51 @@ export class AiPipelineService {
         soapSource = `${soapSource}\n\n${reviewFlags.join('\n')}`;
       }
 
+      const soapRevisions = await this.prisma.revisionHistory.findMany({
+        where: {
+          changedById: consultation.physicianId,
+          documentType: { in: [DocumentType.SOAP, DocumentType.CLINICAL_NOTE] },
+        },
+        orderBy: { changedAt: 'desc' },
+        take: 12,
+      });
+      const soapRevisionExamples = soapRevisions
+        .map((r) => `[${r.fieldName}] 「${r.beforeValue}」→「${r.afterValue}」`)
+        .join('\n');
+      const visitType = resolveSoapVisitType(consultation.visitType);
+      const templateFloor = SOAP_TEMPLATE_FLOORS[visitType];
+      // 通常診察では床をモデルに渡さない。渡すと、材料の足りない欄を会話ではなく床で
+      // 埋める（実測 2026-10-01：食生活の相談だけの症例で O に「心音・呼吸音異常なし」）。
+      // 空で返ってきた欄に、根拠のある床だけを後から入れる（soap-floor-gate.ts）。
+      // 健診は床そのものが先生の指定した書式（CXR・ECGの2行）なので従来どおり渡す
+      const passFloorToModel = visitType === 'CHECKUP';
+
+
+      // 診察後の待ちを縮める：SOAPを、抽出の結果を待たずに、文字起こしから直接書き始める。
+      // 抽出（構造化）は書類や警告のために並べて走らせる。評価では待ちが3〜6秒縮み、転記は同等以上
+      // （実診察に寄せた3台本 88%→94%、未見の合成 95%→98%、捏造0）。SOAP_PARALLEL=off で従来の順に戻せる。
+      const parallelSoap =
+        !isMock &&
+        process.env.SOAP_PARALLEL !== 'off' &&
+        usableTranscriptLength(soapSource) >= requiredTranscriptChars(recordingDurationSec);
+      const soapOptions = {
+        transcript: soapSource,
+        revisionExamples: soapRevisionExamples || undefined,
+        customInstruction: physicianRules.summaryStyle?.instruction,
+        greeting: physicianRules.fixedPhrases?.greeting,
+        closing: physicianRules.fixedPhrases?.closing,
+        visitType,
+        templateFloor: passFloorToModel ? templateFloor : undefined,
+      };
+      const earlySoapStart = Date.now();
+      const earlySoap: Promise<{ subjective: string; objective: string; assessment: string; plan: string }> | null =
+        parallelSoap
+          ? this.withProgressHeartbeat(consultationId, 'soap_progress', this.llmProvider.name, () =>
+              this.llmProvider.generateSoap({}, consultationId, { ...soapOptions, transcriptOnly: true }),
+            )
+          : null;
+      earlySoap?.catch(() => undefined); // 待つのは後ろ。それまでに失敗しても未処理にしない
+
       await logAiExecution(this.prisma, {
         consultationId,
         step: 'extract_started',
@@ -471,25 +541,6 @@ export class AiPipelineService {
         provider: this.llmProvider.name,
         status: 'started',
       });
-      const soapRevisions = await this.prisma.revisionHistory.findMany({
-        where: {
-          changedById: consultation.physicianId,
-          documentType: { in: [DocumentType.SOAP, DocumentType.CLINICAL_NOTE] },
-        },
-        orderBy: { changedAt: 'desc' },
-        take: 12,
-      });
-      const soapRevisionExamples = soapRevisions
-        .map((r) => `[${r.fieldName}] 「${r.beforeValue}」→「${r.afterValue}」`)
-        .join('\n');
-      const visitType = resolveSoapVisitType(consultation.visitType);
-      const templateFloor = SOAP_TEMPLATE_FLOORS[visitType];
-      // 通常診察では床をモデルに渡さない。渡すと、材料の足りない欄を会話ではなく床で
-      // 埋める（実測 2026-10-01：食生活の相談だけの症例で O に「心音・呼吸音異常なし」）。
-      // 空で返ってきた欄に、根拠のある床だけを後から入れる（soap-floor-gate.ts）。
-      // 健診は床そのものが先生の指定した書式（CXR・ECGの2行）なので従来どおり渡す
-      const passFloorToModel = visitType === 'CHECKUP';
-
       // 材料が無いときはモデルを呼ばない。呼べば必ず床が埋められて返ってくるため、
       // ここで止めないと「診察していない所見」がカルテに残る
       // SOAPも診療録も同じ構造化データだけを材料にしていて、互いに依存しない。
@@ -505,23 +556,14 @@ export class AiPipelineService {
           )
         : Promise.resolve('');
       const generatedSoap = evidence.usable
-        ? await this.withProgressHeartbeat(
-            consultationId,
-            'soap_progress',
-            this.llmProvider.name,
-            () =>
-              this.llmProvider.generateSoap(structured, consultationId, {
-                // 構造化でこぼれた事実を、SOAPの段で拾い直せるようにする。
-                // 渡していなかった頃が「転記が乏しい」(9/25)・「30〜50%」(9/29) の正体
-                transcript: soapSource,
-                revisionExamples: soapRevisionExamples || undefined,
-                customInstruction: physicianRules.summaryStyle?.instruction,
-                greeting: physicianRules.fixedPhrases?.greeting,
-                closing: physicianRules.fixedPhrases?.closing,
-                visitType,
-                templateFloor: passFloorToModel ? templateFloor : undefined,
-              }),
-          )
+        ? earlySoap
+          ? await earlySoap
+          : await this.withProgressHeartbeat(
+              consultationId,
+              'soap_progress',
+              this.llmProvider.name,
+              () => this.llmProvider.generateSoap(structured, consultationId, soapOptions),
+            )
         : { subjective: '', objective: '', assessment: '', plan: '' };
       // 空いた欄に、会話が裏づける床だけを入れる。
       // 「脈拍異常なし」は聴診した会話があるときだけ。無ければ入れず、
@@ -566,7 +608,13 @@ export class AiPipelineService {
       const phrased = applyPhrasingToSoap(floorResult?.soap ?? generatedSoap, physicianRules);
       // 言われた再診の時期は、Pに無ければ足す（書き忘れ対策）
       const soap = evidence.usable
-        ? { ...phrased, plan: ensureFollowUp(phrased.plan, structured.followUpInterval) }
+        ? {
+            ...phrased,
+            plan: ensurePrescriptionDays(
+              ensureFollowUp(phrased.plan, structured.followUpInterval),
+              earlySoap ? structured.prescriptionDays : undefined,
+            ),
+          }
         : phrased;
       // 原文を渡した分、言われていない数字が紛れ込む余地も増える。
       // 江口さんの「1か月」が「半年」になった型の事故は、ここで機械的に拾う
@@ -633,24 +681,35 @@ export class AiPipelineService {
         errorMessage: evidence.usable
           ? `transcript=${evidence.measuredChars}字 / 必要=${evidence.requiredChars}字`
           : evidence.reason,
-        durationMs: Date.now() - soapStart,
-        promptVersion: isMock ? 'mock-v1' : 'openai-soap-v1',
+        durationMs: Date.now() - (earlySoap ? earlySoapStart : soapStart),
+        promptVersion: isMock ? 'mock-v1' : earlySoap ? 'openai-soap-v1-parallel' : 'openai-soap-v1',
         ...this.getLlmUsage(),
       });
 
       const noteStart = Date.now();
-      // SOAPと並べて走らせてある（材料が無いときは空文字のまま返る）
-      const clinicalNote = await notePromise;
-      await logAiExecution(this.prisma, {
-        consultationId,
-        step: 'note_complete',
-        provider: this.llmProvider.name,
-        status: evidence.usable ? 'completed' : 'skipped',
-        errorMessage: evidence.usable ? undefined : evidence.reason,
-        durationMs: Date.now() - noteStart,
-        promptVersion: isMock ? 'mock-v1' : 'openai-note-v1',
-        ...this.getLlmUsage(),
-      });
+      // 診療記録は、画面のSOAPより後でよい（診察後に先生が最初に見るのはSOAP）。
+      // 並列方式のときは、長くても1.5秒しか待たず、間に合わなければ空で置いて、できしだい書き込む
+      const noteLate = Symbol('late');
+      const noteNow = earlySoap
+        ? await Promise.race([
+            notePromise,
+            new Promise<typeof noteLate>((r) => setTimeout(() => r(noteLate), 1500)),
+          ])
+        : await notePromise;
+      const clinicalNote = noteNow === noteLate ? '' : (noteNow as string);
+      const noteIsLate = noteNow === noteLate;
+      const logNote = async () =>
+        logAiExecution(this.prisma, {
+          consultationId,
+          step: 'note_complete',
+          provider: this.llmProvider.name,
+          status: evidence.usable ? 'completed' : 'skipped',
+          errorMessage: evidence.usable ? undefined : evidence.reason,
+          durationMs: Date.now() - noteStart,
+          promptVersion: isMock ? 'mock-v1' : 'openai-note-v1',
+          ...this.getLlmUsage(),
+        });
+      if (!noteIsLate) await logNote();
 
       // 「続きを録る」で2回目を通すと、前半のSOAPが既にある。版を上げて積む。
       // 消してしまうと、先生が前半で直した内容が履歴ごと消える
@@ -666,7 +725,7 @@ export class AiPipelineService {
           select: { version: true },
         }),
       ]);
-      await this.prisma.$transaction([
+      const saved = await this.prisma.$transaction([
         this.prisma.soapDocument.create({
           data: {
             consultationId,
@@ -688,6 +747,24 @@ export class AiPipelineService {
           data: { status: ConsultationStatus.REVIEW },
         }),
       ]);
+
+      // 間に合わなかった診療記録は、できしだい書き込む（先生が先に書き換えていたら上書きしない）
+      if (noteIsLate) {
+        const noteRowId = (saved[1] as { id: string }).id;
+        void notePromise
+          .then(async (content) => {
+            await this.prisma.clinicalNote.updateMany({
+              where: { id: noteRowId, content: '' },
+              data: { content },
+            });
+            await logNote();
+          })
+          .catch((error) =>
+            this.logger.warn(
+              `診療記録の後書きに失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+            ),
+          );
+      }
 
       // SOAPの転記率を裏で測る（会話に出た事実のうち、SOAPに書かれた割合）。待たない
       if (!isMock && this.quality) {

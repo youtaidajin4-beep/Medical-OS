@@ -458,7 +458,11 @@ export class OpenAiLlmProvider implements LlmProvider {
     const result = await this.chatJsonWithModel(
       this.soapModel,
       SOAP_SYSTEM,
-      `構造化データ（骨組み。ここにある事実は必ずSOAPに出す）:\n${JSON.stringify(data, null, 2)}\n${styleBlock ? `\n${styleBlock}\n` : ''}${transcriptBlock}\nkeys: subjective, objective, assessment, plan のSOAPをJSONで生成。各値は1行1事実のプレーンテキスト。会話で扱われた事実を落とさないこと。`,
+      `${
+        styleHints?.transcriptOnly
+          ? '構造化データ: 今回は渡されていません。診察の文字起こしだけを出典として、会話に出た事実を落とさずに書く。'
+          : `構造化データ（骨組み。ここにある事実は必ずSOAPに出す）:\n${JSON.stringify(data, null, 2)}`
+      }\n${styleBlock ? `\n${styleBlock}\n` : ''}${transcriptBlock}\nkeys: subjective, objective, assessment, plan のSOAPをJSONで生成。各値は1行1事実のプレーンテキスト。会話で扱われた事実を落とさないこと。`,
       SOAP_MAX_TOKENS,
     );
     const parsed = JSON.parse(result.content) as Record<string, unknown>;

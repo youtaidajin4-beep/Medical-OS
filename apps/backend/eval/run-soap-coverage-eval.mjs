@@ -183,7 +183,34 @@ function score(soapText, kase) {
   return { hit, miss, fabricated };
 }
 
+/**
+ * fast：SOAPを、抽出の結果を待たずに、文字起こしから直接書く（抽出と同時に走らせる）。
+ * 診察後の待ちを縮める案。抽出（構造化）は書類や警告のために並べて走らせるが、SOAPの材料にはしない。
+ * 精度が落ちないかを、同じ症例で測る。
+ */
+async function runFast(kase) {
+  const started = Date.now();
+  const extractP = chat(
+    EXTRACT_MODEL,
+    EXTRACTION_SYSTEM,
+    `文字起こし:\n${kase.transcript}\n\n次のスキーマに従い構造化データをJSONで抽出:\n${EXTRACTION_SCHEMA}`,
+    1200,
+  );
+  const soapP = chat(
+    'gpt-4o',
+    SOAP_SYSTEM,
+    `構造化データ（今回は渡されていない。文字起こしから直接書く）:\n{}\n\nvisitType: ${kase.visitType}\n\n診察の文字起こし（これが唯一の出典。ここに無いことは書かない）:\n${kase.transcript}\n\nkeys: subjective, objective, assessment, plan のSOAPをJSONで生成。`,
+    1500,
+  );
+  const [, soap] = await Promise.all([extractP, soapP]);
+  lastMs = Date.now() - started;
+  return flatten(applyFloor(soap, kase.transcript));
+}
+let lastMs = 0;
+
 async function runPipeline(kase, variant) {
+  if (variant === 'fast') return runFast(kase);
+  const started = Date.now();
   const before = variant === 'before';
   const structured = await chat(
     before ? 'gpt-4o-mini' : EXTRACT_MODEL,
@@ -213,6 +240,7 @@ async function runPipeline(kase, variant) {
     )}\n\n${styleBlock}\n${transcriptBlock}\nkeys: subjective, objective, assessment, plan のSOAPをJSONで生成。`,
     1500,
   );
+  lastMs = Date.now() - started;
   return before ? flatten(soap) : flatten(applyFloor(soap, kase.transcript));
 }
 
@@ -289,9 +317,11 @@ for (const kase of corpus.cases) {
 
   for (const variant of variants) {
     const runs = [];
+    const times = [];
     for (let i = 0; i < TRIALS; i++) {
       try {
         const produced = await runPipeline(kase, variant);
+        times.push(lastMs);
         // EVAL_SHOW=1 で、1回目に出たSOAPの本文を見せる（落ちた的が「書かれていない」のか「言い換えで当たらない」のかを見分ける）
         if (process.env.EVAL_SHOW && i === 0) console.log(`   --- ${variant} の出力（1回目）---\n${produced}\n   ---`);
         runs.push(score(produced, kase));
@@ -305,7 +335,7 @@ for (const kase of corpus.cases) {
     const lo = Math.min(...runs.map((r) => r.hit.length));
     const hi = Math.max(...runs.map((r) => r.hit.length));
     console.log(
-      `   ${variant.padEnd(10)} 転記 ${pct(hit, kase.targets.length).padStart(4)}  捏造 ${fab.toFixed(1)}  （${lo}〜${hi}/${kase.targets.length}）`,
+      `   ${variant.padEnd(10)} 転記 ${pct(hit, kase.targets.length).padStart(4)}  捏造 ${fab.toFixed(1)}  （${lo}〜${hi}/${kase.targets.length}）  待ち ${(times.reduce((a, b) => a + b, 0) / Math.max(1, times.length) / 1000).toFixed(1)}秒`,
     );
     // 毎回落ちた的だけを出す。たまたま落ちたものは次の手がかりにならない
     const alwaysMissed = runs[0].miss.filter((m) => runs.every((r) => r.miss.includes(m)));

@@ -307,6 +307,28 @@ export function ConsultationWorkflow({
    * 診察を終える。ボタンを押した瞬間に作成中の画面へ移り、音声の仕上げと送信はその裏で行う。
    * 以前は、最後の文字が揃うのを待ってから画面が変わったので、6秒ほど録音画面のまま止まって見えた。
    */
+  // 診療記録は、SOAPより少し遅れてできることがある（診察後の待ちを縮めるため、SOAPを先に出している）。
+  // 空のまま確認画面に入ったときは、できるのを待って、空のままのときだけ差し替える
+  useEffect(() => {
+    if (phase !== 'review' || note.trim()) return;
+    let tries = 0;
+    const timer = setInterval(async () => {
+      tries += 1;
+      try {
+        const data = await api.getConsultation(id);
+        const content = data.clinicalNotes?.[0]?.content;
+        if (content) {
+          setNote((current) => (current.trim() ? current : content));
+          clearInterval(timer);
+        }
+      } catch {
+        // 次の回でまた見る
+      }
+      if (tries >= 8) clearInterval(timer);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [phase, note, id]);
+
   async function handleStop() {
     stoppingRef.current = true;
     stoppedAtMsRef.current = Date.now();

@@ -100,6 +100,11 @@ export type SoapStyleHints = {
    * 骨組みは構造化データ、肉付けの出典はこの原文、という二段で使う。
    */
   transcript?: string;
+  /**
+   * 構造化データを待たずに、文字起こしだけを出典としてSOAPを書く（抽出と同時に走らせて待ちを縮める）。
+   * 評価では、待ちが 3〜6秒縮み、転記は同等以上だった（2026-10-27）
+   */
+  transcriptOnly?: boolean;
   revisionExamples?: string;
   /** 先生が指定した書き方（形式・文体・粒度）。事実は変えない */
   customInstruction?: string;
