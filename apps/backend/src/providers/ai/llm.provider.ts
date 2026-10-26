@@ -49,6 +49,12 @@ export const StructuredClinicalDataSchema = z.object({
   /** 前回受診以降の変化・増悪・改善。「自己中止後に再上昇」のような筋道をそのまま置く */
   course: optionalString,
   pastHistory: optionalString,
+  /**
+   * 生活歴・社会背景。職業、睡眠、体重の変化、運動、食事、喫煙・飲酒、市販薬・サプリ。
+   * 2026-10-26 の初診15分の検証で、営業職・睡眠5時間・体重3kg増・運動しなくなった・市販の痛み止めが、
+   * 置く欄が無くSOAPから落ちた。
+   */
+  lifestyle: optionalString,
   medications: optionalStringArray,
   /** 服薬できているか、飲み忘れ・自己中止の有無 */
   adherence: optionalString,

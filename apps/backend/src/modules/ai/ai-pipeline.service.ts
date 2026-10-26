@@ -346,10 +346,15 @@ export class AiPipelineService {
       }
 
       // Preserve diarized speakers — update display text per segment only
-      const updatedSegments = await this.transcriptService.updateFinalSegmentTexts(
+      // 補正後の文字をDBへ書き戻す。1行ずつ順に書くので、長い診察では約8秒かかっていた
+      // （15分の診察の実測）。SOAPの材料は手元の文字でそろうので、書き込みは待たずに抽出へ進み、
+      // 診察の完了を記録する前に終わらせる
+      const segmentWrite = this.transcriptService.updateFinalSegmentTexts(
         consultationId,
         segments.map((seg, i) => ({ id: seg.id, text: segmentTexts[i] ?? seg.text })),
       );
+      segmentWrite.catch(() => undefined); // 待つのは後ろ。それまでに失敗しても未処理にしない
+      const updatedSegments = segments.map((seg, i) => ({ ...seg, text: segmentTexts[i] ?? seg.text }));
 
       // SOAPを書くモデルへ渡す「要確認」。**聞き取りが不確かな医療の語**だけにする。
       // 数値・単位・否定の書き換え（「5ミリ→5mg」「ではない→なし」）は不確かさではなく表記の正規化で、
@@ -691,6 +696,7 @@ export class AiPipelineService {
         await this.recordingService.purgeExpiredAudio().catch(() => undefined);
       }
 
+      await segmentWrite;
       await logAiExecution(this.prisma, {
         consultationId,
         step: 'pipeline_complete',

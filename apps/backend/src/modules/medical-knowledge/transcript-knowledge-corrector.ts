@@ -242,8 +242,10 @@ export function correctTranscriptWithKnowledge(
       confidence: 0.99,
       startPosition: start + symptom.length,
       endPosition: start + m[0].length,
-      needsReview: true,
-      riskLevel: 'critical',
+      // 「はない→なし」は言い回しをそろえただけで、医師が確かめることではない。
+      // ここを要確認にすると、診察1件で10件以上が並び、本当に確かめる語（薬・用量）が埋もれる
+      needsReview: false,
+      riskLevel: 'low',
       candidates: [{ candidateValue: 'なし', score: 0.99, candidateSource: 'negation_rule' }],
     });
   }

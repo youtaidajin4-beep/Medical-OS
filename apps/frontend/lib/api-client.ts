@@ -652,6 +652,7 @@ export const api = {
         rawValue: string;
         normalizedValue: string | null;
         confidence: number | null;
+        startPosition?: number | null;
         needsReview: boolean;
         riskLevel: string;
         candidates: Array<{ candidateValue: string; score: number; candidateSource: string }>;
@@ -660,6 +661,7 @@ export const api = {
         id: string;
         originalTerm: string | null;
         correctedTerm: string | null;
+        category?: string | null;
         confidence: number | null;
         correctionSource: string;
         approvedByDoctor: boolean;
