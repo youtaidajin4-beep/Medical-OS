@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { formatDuration } from '@medical-os/shared';
 import { ChevronDown, Mic, Pause, Play, Settings2, Square } from 'lucide-react';
+import { RecordingOrb } from '@/components/aura/recording-orb';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
@@ -58,9 +59,9 @@ type RecordingPhaseProps = {
 };
 
 const VERDICT_FILL: Record<MicVerdict, string> = {
-  silent: 'bg-red-500',
+  silent: 'bg-red-400',
   faint: 'bg-amber-400',
-  ok: 'bg-emerald-400',
+  ok: 'bg-aura-teal-400',
 };
 
 /**
@@ -69,13 +70,13 @@ const VERDICT_FILL: Record<MicVerdict, string> = {
  */
 function LevelBar({ level, verdict }: { level: number; verdict: MicVerdict }) {
   return (
-    <div className="relative h-3 w-full overflow-hidden rounded-full bg-white/15">
+    <div className="relative h-3 w-full overflow-hidden rounded-full bg-aura-cloud">
       <div
         className={cn('h-full rounded-full transition-[width] duration-75', VERDICT_FILL[verdict])}
         style={{ width: `${Math.round(Math.min(1, level) * 100)}%` }}
       />
       <span
-        className="absolute top-0 h-full w-px bg-white/70"
+        className="absolute top-0 h-full w-px bg-aura-ink/40"
         style={{ left: `${VOICE_LEVEL_THRESHOLD * 100}%` }}
         aria-hidden
       />
@@ -115,7 +116,7 @@ function WaveBars({
 
   return (
     <div
-      className="flex h-16 w-full items-center justify-center gap-[3px]"
+      className="flex h-10 w-full items-center justify-center gap-[3px]"
       role="img"
       aria-label="入力の波形"
     >
@@ -309,53 +310,68 @@ export function RecordingPhase({
     >
     <section
       className={cn(
-        'flex flex-col items-center justify-center rounded-[2rem] px-6 py-10 text-[#f3efe4] shadow-[0_40px_80px_-40px_rgba(12,47,44,0.8)]',
+        'relative flex flex-col items-center justify-center overflow-hidden rounded-[2rem] border border-white/80 px-6 py-10 text-aura-ink shadow-float-lg',
         live ? 'min-[1024px]:h-[calc(100dvh-8.5rem)] min-[1024px]:min-h-[30rem]' : compact ? 'min-h-[62dvh]' : 'min-h-[72dvh]',
-        'bg-[radial-gradient(circle_at_50%_20%,#1a5c55,transparent_55%),linear-gradient(180deg,#0c2f2c,#071c1a)]',
+        'bg-[radial-gradient(circle_at_50%_18%,rgba(185,233,214,0.55),transparent_60%),linear-gradient(180deg,rgba(255,255,255,0.92),rgba(238,250,245,0.85))]',
       )}
     >
-      <div className="flex w-full max-w-md flex-col items-center">
+      <div className="relative flex w-full max-w-md flex-col items-center">
         {/* 状態と患者 */}
         <div className="flex items-center gap-2.5">
           <span
             className={cn(
               'inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold tracking-[0.2em]',
               state === 'paused'
-                ? 'bg-amber-400/20 text-amber-200'
+                ? 'bg-amber-100 text-amber-700'
                 : live
-                  ? 'bg-red-500/20 text-red-200'
-                  : 'bg-white/10 text-[#c9ddd8]',
+                  ? 'bg-aura-mint-100 text-aura-teal-600'
+                  : 'bg-aura-cloud text-aura-ink-soft',
             )}
           >
             <span
               className={cn(
                 'h-2 w-2 rounded-full',
                 state === 'paused'
-                  ? 'bg-amber-300'
+                  ? 'bg-amber-400'
                   : live
-                    ? 'animate-pulse bg-red-400'
-                    : 'bg-[#9fc0b9]',
+                    ? 'animate-pulse bg-aura-teal-500'
+                    : 'bg-aura-ink-muted',
               )}
             />
             {state === 'paused' ? 'PAUSED' : live ? 'RECORDING' : 'READY'}
           </span>
-          <span className="text-sm text-[#c9ddd8]">{caseName}</span>
+          <span className="text-sm text-aura-ink-soft">{caseName}</span>
         </div>
+
+        {/* 主役のオーブ */}
+        <RecordingOrb
+          className="mt-8"
+          size={live ? 188 : 168}
+          level={liveLevel}
+          state={state === 'recording' ? 'recording' : state === 'paused' ? 'paused' : 'idle'}
+        />
 
         <p
           className={cn(
-            'mt-5 font-mono font-light tabular-nums tracking-tight',
-            compact ? 'text-5xl' : 'text-6xl min-[480px]:text-7xl',
+            'mt-7 font-mono font-light tabular-nums tracking-tight text-aura-ink',
+            compact ? 'text-4xl' : 'text-5xl min-[480px]:text-6xl',
           )}
         >
           {formatDuration(seconds)}
         </p>
+        <p className="mt-2 text-[14px] text-aura-ink-soft">
+          {state === 'recording'
+            ? '診察を記録しています'
+            : state === 'paused'
+              ? '一時停止しています'
+              : 'ボタンを押すと、記録をはじめます'}
+        </p>
 
         {/* 録音中：いま声が拾えているかを、波形で見せる */}
         {live && (
-          <div className="mt-6 w-full rounded-2xl border border-white/10 bg-white/5 px-4 pb-3 pt-3">
+          <div className="mt-6 w-full rounded-2xl border border-aura-line bg-white/70 px-4 pb-3 pt-3">
             <WaveBars level={liveLevel} verdict={liveVerdict} active={state === 'recording'} />
-            <div className="mt-2 flex items-baseline justify-between gap-3 text-xs text-[#c9ddd8]">
+            <div className="mt-2 flex items-baseline justify-between gap-3 text-xs text-aura-ink-soft">
               <span className="flex items-center gap-1.5">
                 <span
                   className={cn(
@@ -364,9 +380,9 @@ export function RecordingPhase({
                   )}
                 />
                 入力レベル
-                <span className="text-[#9fc0b9]">· {verdictLabel}</span>
+                <span className="text-aura-ink-muted">· {verdictLabel}</span>
               </span>
-              <span className="truncate text-right text-[#9fc0b9]">{liveMicLabel ?? 'マイク'}</span>
+              <span className="truncate text-right text-aura-ink-muted">{liveMicLabel ?? 'マイク'}</span>
             </div>
           </div>
         )}
@@ -398,18 +414,18 @@ export function RecordingPhase({
         )}
 
         {!openAi && preview && live && (
-          <p className="mt-4 max-w-md text-center text-xs leading-relaxed text-[#c9ddd8]">{preview}</p>
+          <p className="mt-4 max-w-md text-center text-xs leading-relaxed text-aura-ink-soft">{preview}</p>
         )}
 
         <div className="mt-8 flex w-full flex-col gap-3">
           {state === 'idle' && (
             <>
               {mic && (
-                <div className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3.5 text-sm text-[#d5e6e1]">
+                <div className="w-full rounded-2xl border border-aura-line bg-white/80 px-4 py-3.5 text-sm text-aura-ink-soft">
                   <div className="mb-2.5 flex items-center gap-2">
-                    <Mic className="h-4 w-4 text-[#e8c98a]" />
-                    <p className="font-semibold text-[#f3efe4]">録音前にマイクを確認する</p>
-                    <span className="ml-auto truncate text-[11px] text-[#9fc0b9]">
+                    <Mic className="h-4 w-4 text-aura-teal-500" />
+                    <p className="font-semibold text-aura-ink">録音前にマイクを確認する</p>
+                    <span className="ml-auto truncate text-[11px] text-aura-ink-muted">
                       {mic.activeLabel ?? ''}
                     </span>
                   </div>
@@ -417,7 +433,7 @@ export function RecordingPhase({
                   {/* 患者さんの位置から声を出して、バーが白い線を越えるかを見る */}
                   <LevelBar level={mic.level} verdict={mic.verdict} />
 
-                  <p className="mt-2.5 text-xs leading-relaxed text-[#c9ddd8]">
+                  <p className="mt-2.5 text-xs leading-relaxed text-aura-ink-soft">
                     患者さんが座る位置から声を出してもらい、バーが白い線を越えて緑になることを確かめてください。
                   </p>
 
@@ -445,7 +461,7 @@ export function RecordingPhase({
                     type="button"
                     onClick={() => setMicSettingsOpen((v) => !v)}
                     aria-expanded={micSettingsOpen}
-                    className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-medium text-[#c9ddd8] hover:text-white"
+                    className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-medium text-aura-ink-soft hover:text-aura-ink"
                   >
                     <Settings2 className="h-3.5 w-3.5" />
                     マイクの設定
@@ -457,7 +473,7 @@ export function RecordingPhase({
                   <div className={cn('mt-3 space-y-3', !micSettingsOpen && 'hidden')}>
                     {mic.devices.length > 0 && (
                       <select
-                        className="w-full rounded-xl border border-white/20 bg-[#0c2f2c] px-3 py-2 text-sm text-[#f3efe4]"
+                        className="w-full rounded-xl border border-aura-line bg-white px-3 py-2 text-sm text-aura-ink"
                         value={mic.deviceId ?? ''}
                         onChange={(e) => mic.selectDevice(e.target.value || null)}
                         aria-label="使用するマイク"
@@ -474,7 +490,7 @@ export function RecordingPhase({
                     {/* 自動ゲインを切ったぶん、小さい声はこちらで持ち上げる。
                         バーも判定も、ここで選んだ増幅を掛けた後の音で出している */}
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-[11px] text-[#9fc0b9]">入力の増幅</span>
+                      <span className="text-[11px] text-aura-ink-muted">入力の増幅</span>
                       {(['auto', 1, 2, 4, 8] as const).map((choice) => {
                         const selected = mic.gainSetting === choice;
                         return (
@@ -483,8 +499,8 @@ export function RecordingPhase({
                             type="button"
                             className={
                               selected
-                                ? 'rounded-full bg-[#e8c98a] px-2.5 py-1 text-[11px] font-semibold text-[#0c2f2c]'
-                                : 'rounded-full border border-white/20 px-2.5 py-1 text-[11px] text-[#c9ddd8] hover:bg-white/10'
+                                ? 'rounded-full bg-aura-teal-500 px-2.5 py-1 text-[11px] font-semibold text-white'
+                                : 'rounded-full border border-aura-line px-2.5 py-1 text-[11px] text-aura-ink-soft hover:bg-white'
                             }
                             onClick={() => mic.selectGain(choice)}
                           >
@@ -492,21 +508,21 @@ export function RecordingPhase({
                           </button>
                         );
                       })}
-                      <span className="text-[11px] text-[#9fc0b9]">
+                      <span className="text-[11px] text-aura-ink-muted">
                         （いま ×{mic.appliedGain.toFixed(1)}）
                       </span>
                     </div>
-                    <p className="text-[11px] leading-relaxed text-[#9fc0b9]">
+                    <p className="text-[11px] leading-relaxed text-aura-ink-muted">
                       小さいままなら増幅を上げてください（録音そのものが大きくなります）。
                     </p>
                   </div>
                 </div>
               )}
 
-              <label className="flex w-full cursor-pointer items-start gap-3 rounded-2xl border border-white/15 bg-white/5 px-4 py-3.5 text-sm leading-relaxed text-[#d5e6e1]">
+              <label className="flex w-full cursor-pointer items-start gap-3 rounded-2xl border border-aura-line bg-white/80 px-4 py-3.5 text-sm leading-relaxed text-aura-ink-soft">
                 <input
                   type="checkbox"
-                  className="mt-0.5 h-4 w-4 rounded accent-[#e8c98a]"
+                  className="mt-0.5 h-4 w-4 rounded accent-[#1f8a85]"
                   checked={consentGiven}
                   onChange={(e) => onConsentChange(e.target.checked)}
                 />
@@ -515,8 +531,7 @@ export function RecordingPhase({
 
               <Button
                 size="lg"
-                variant="danger"
-                className="w-full rounded-full"
+                className="w-full rounded-full bg-gradient-to-b from-aura-mint-400 to-aura-teal-500 shadow-glow transition duration-300 hover:-translate-y-0.5 hover:brightness-105 disabled:bg-none disabled:shadow-none"
                 icon={<Mic />}
                 disabled={!consentGiven}
                 onClick={onStart}
@@ -534,8 +549,7 @@ export function RecordingPhase({
               {/* 診察が終わったら、これを押すだけ */}
               <Button
                 size="lg"
-                variant="danger"
-                className="w-full rounded-full"
+                className="w-full rounded-full bg-aura-ink shadow-float transition duration-300 hover:-translate-y-0.5 hover:bg-aura-ink-soft"
                 icon={<Square />}
                 onClick={onStop}
               >
@@ -547,7 +561,7 @@ export function RecordingPhase({
               <Button
                 variant="secondary"
                 size="lg"
-                className="w-full rounded-full"
+                className="w-full rounded-full bg-white/80"
                 icon={state === 'paused' ? <Play /> : <Pause />}
                 onClick={state === 'paused' ? onResume : onPause}
               >

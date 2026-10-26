@@ -33,6 +33,7 @@ import {
 import { PaperCapturePanel } from '@/components/consultation/paper-capture-panel';
 import { KnowledgeTranscriptPanel } from '@/components/consultation/knowledge-transcript-panel';
 import { cn } from '@/lib/utils';
+import { SOAPCard } from '@/components/aura/soap-card';
 import { api } from '@/lib/api-client';
 import {
   CUSTOM_PRESET_ID,
@@ -84,10 +85,10 @@ const SPEAKER_OPTIONS = [
 ] as const;
 
 const SOAP_FIELDS = [
-  { key: 'subjective', label: 'S', name: '主観的情報' },
-  { key: 'objective', label: 'O', name: '客観的情報' },
-  { key: 'assessment', label: 'A', name: '評価' },
-  { key: 'plan', label: 'P', name: '計画' },
+  { key: 'subjective', label: 'S', name: '主観的情報', english: 'Subjective' },
+  { key: 'objective', label: 'O', name: '客観的情報', english: 'Objective' },
+  { key: 'assessment', label: 'A', name: '評価', english: 'Assessment' },
+  { key: 'plan', label: 'P', name: '計画', english: 'Plan' },
 ] as const;
 
 /**
@@ -138,27 +139,27 @@ function Section({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="no-print overflow-hidden rounded-2xl border border-clinic-line bg-white">
+    <div className="no-print overflow-hidden rounded-2xl border border-aura-line bg-white">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 px-3.5 py-3 text-left hover:bg-clinic-tint"
+        className="flex w-full items-center gap-2 px-3.5 py-3 text-left hover:bg-aura-mist"
       >
-        <span className="text-clinic-ink-muted">{icon}</span>
-        <span className="text-[13px] font-semibold text-clinic-ink">{title}</span>
+        <span className="text-aura-ink-muted">{icon}</span>
+        <span className="text-[13px] font-semibold text-aura-ink">{title}</span>
         {typeof count === 'number' && count > 0 && (
-          <span className="rounded-full bg-clinic-tint px-2 py-0.5 text-[11px] font-semibold text-clinic-ink-muted">
+          <span className="rounded-full bg-aura-mist px-2 py-0.5 text-[11px] font-semibold text-aura-ink-muted">
             {count}
           </span>
         )}
         <ChevronDown
           className={cn(
-            'ml-auto h-4 w-4 text-clinic-ink-muted transition-transform',
+            'ml-auto h-4 w-4 text-aura-ink-muted transition-transform',
             open && 'rotate-180',
           )}
         />
       </button>
-      {open && <div className="border-t border-clinic-line px-3.5 py-3">{children}</div>}
+      {open && <div className="border-t border-aura-line px-3.5 py-3">{children}</div>}
     </div>
   );
 }
@@ -259,6 +260,9 @@ export function ReviewPhase({
   const [tab, setTab] = useState<'source' | 'docs' | 'more'>('source');
   /** 原文・書類・その他を出す横のパネル。普段は閉じて、カルテ原稿だけを見せる */
   const [drawerOpen, setDrawerOpen] = useState(false);
+  /** 開いた時点のSOAP。ここから変わった欄を「医師が編集」と見せる */
+  const initialSoap = useRef<Soap>(soap);
+  const [confirming, setConfirming] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const [copyStyle, setCopyStyle] = useState<CopyStyle>(defaultCopyStyle(visitType));
@@ -348,6 +352,11 @@ export function ReviewPhase({
     setTab(next);
     setDrawerOpen(true);
   }
+  // 書類の画面（/documents）から来たときは、書類のパネルを開いた状態で始める
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('docs') === '1') openDrawer('docs');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [warningsOpen, setWarningsOpen] = useState(true);
   const [copying, setCopying] = useState(false);
   const [modKey, setModKey] = useState('Ctrl');
@@ -493,20 +502,20 @@ export function ReviewPhase({
       <Toast toast={toast} />
 
       {/* 患者・状態・この画面でする一番のこと（電子カルテへコピー） */}
-      <header className="no-print sticky top-0 z-20 -mx-4 mb-5 border-b border-clinic-line bg-clinic-paper/90 px-4 py-3 backdrop-blur min-[480px]:-mx-6 min-[480px]:px-6">
+      <header className="no-print sticky top-0 z-20 -mx-4 mb-5 border-b border-aura-line bg-aura-paper/90 px-4 py-3 backdrop-blur min-[480px]:-mx-6 min-[480px]:px-6">
         <div className="flex items-center gap-2.5">
           <Link
             href={backHref}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-clinic-line bg-white text-clinic-ink hover:bg-clinic-tint"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-aura-line bg-white text-aura-ink hover:bg-aura-mist"
             aria-label="戻る"
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[16px] font-semibold leading-tight text-clinic-ink">
+            <p className="truncate text-[16px] font-semibold leading-tight text-aura-ink">
               {caseName}
             </p>
-            <p className="mt-0.5 flex items-center gap-2 text-[11px] text-clinic-ink-muted">
+            <p className="mt-0.5 flex items-center gap-2 text-[11px] text-aura-ink-muted">
               {visitLabel}
               <span
                 className={cn(
@@ -523,7 +532,7 @@ export function ReviewPhase({
           <button
             type="button"
             onClick={() => openDrawer('source')}
-            className="hidden h-10 shrink-0 items-center gap-1.5 rounded-xl border border-clinic-line bg-white px-3 text-[12px] font-semibold text-clinic-ink hover:bg-clinic-tint min-[560px]:inline-flex"
+            className="hidden h-10 shrink-0 items-center gap-1.5 rounded-xl border border-aura-line bg-white px-3 text-[12px] font-semibold text-aura-ink hover:bg-aura-mist min-[560px]:inline-flex"
           >
             <Mic className="h-3.5 w-3.5" />
             原文
@@ -531,12 +540,12 @@ export function ReviewPhase({
           <button
             type="button"
             onClick={() => openDrawer('docs')}
-            className="hidden h-10 shrink-0 items-center gap-1.5 rounded-xl border border-clinic-line bg-white px-3 text-[12px] font-semibold text-clinic-ink hover:bg-clinic-tint min-[560px]:inline-flex"
+            className="hidden h-10 shrink-0 items-center gap-1.5 rounded-xl border border-aura-line bg-white px-3 text-[12px] font-semibold text-aura-ink hover:bg-aura-mist min-[560px]:inline-flex"
           >
             <FileText className="h-3.5 w-3.5" />
             書類
             {madeTypes.length > 0 && (
-              <span className="rounded-full bg-clinic-tint px-1.5 text-[10px]">
+              <span className="rounded-full bg-aura-mist px-1.5 text-[10px]">
                 {madeTypes.length}
               </span>
             )}
@@ -545,7 +554,7 @@ export function ReviewPhase({
             <button
               type="button"
               onClick={onAppendRecording}
-              className="hidden h-10 shrink-0 items-center gap-1.5 rounded-xl border border-clinic-line bg-white px-3 text-[12px] font-semibold text-clinic-ink hover:bg-clinic-tint min-[760px]:inline-flex"
+              className="hidden h-10 shrink-0 items-center gap-1.5 rounded-xl border border-aura-line bg-white px-3 text-[12px] font-semibold text-aura-ink hover:bg-aura-mist min-[760px]:inline-flex"
               title="採血などで中断したとき、同じ診察の続きを録ります"
             >
               <Mic className="h-3.5 w-3.5" />
@@ -561,7 +570,7 @@ export function ReviewPhase({
               'inline-flex h-11 shrink-0 items-center gap-2.5 rounded-xl px-4 text-[13px] font-semibold shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50',
               copied
                 ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                : 'bg-clinic-ink text-clinic-cream hover:bg-clinic-ink-soft',
+                : 'bg-aura-ink text-white hover:bg-aura-ink-soft',
             )}
           >
             {copied ? <Check className="h-4 w-4" /> : <ClipboardCopy className="h-4 w-4" />}
@@ -633,14 +642,14 @@ export function ReviewPhase({
 
       {/* SOAPを作れなかったときは、4つの空欄を見せるより、何をすればよいかを見せる */}
       {soapIsEmpty && (
-        <div className="mb-5 rounded-3xl border border-clinic-line bg-white p-6 text-center shadow-card">
+        <div className="mb-5 rounded-3xl border border-aura-line bg-white p-6 text-center shadow-card">
           <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
             <AlertTriangle className="h-6 w-6" />
           </span>
-          <p className="mt-3 text-[15px] font-semibold text-clinic-ink">
+          <p className="mt-3 text-[15px] font-semibold text-aura-ink">
             音声からカルテ原稿を作れませんでした
           </p>
-          <p className="mx-auto mt-1.5 max-w-md text-[13px] leading-relaxed text-clinic-ink-muted">
+          <p className="mx-auto mt-1.5 max-w-md text-[13px] leading-relaxed text-aura-ink-muted">
             診察の内容を取り出せなかったため、<strong>あえて空欄にしています</strong>
             。定型文を自動で入れると、診察で確認していない所見が残るためです。マイクに声が届いていたかを確認して、同じ録音から作り直すか、録り直してください。
           </p>
@@ -648,7 +657,7 @@ export function ReviewPhase({
             {onReprocess && !approved && (
               <button
                 type="button"
-                className="rounded-full bg-clinic-ink px-4 py-2 text-[12px] font-semibold text-clinic-cream hover:bg-clinic-ink-soft disabled:opacity-50"
+                className="rounded-full bg-aura-ink px-4 py-2 text-[12px] font-semibold text-white hover:bg-aura-ink-soft disabled:opacity-50"
                 disabled={reprocessing}
                 onClick={onReprocess}
               >
@@ -658,7 +667,7 @@ export function ReviewPhase({
             <button
               type="button"
               onClick={() => openDrawer('source')}
-              className="rounded-full border border-clinic-line bg-white px-4 py-2 text-[12px] font-semibold text-clinic-ink hover:bg-clinic-tint"
+              className="rounded-full border border-aura-line bg-white px-4 py-2 text-[12px] font-semibold text-aura-ink hover:bg-aura-mist"
             >
               原文を見る
             </button>
@@ -667,9 +676,9 @@ export function ReviewPhase({
       )}
 
       {/* カルテ原稿：1枚の紙として、S・O・A・P を上から並べる */}
-      <article className="overflow-hidden rounded-3xl border border-clinic-line bg-white shadow-card">
-        <div className="flex flex-wrap items-center gap-2 border-b border-clinic-line px-5 py-3">
-          <span className="text-[11px] font-semibold tracking-[0.2em] text-clinic-ink-muted">
+      <article className="space-y-1">
+        <div className="flex flex-wrap items-center gap-2 px-1 pb-3">
+          <span className="text-[11px] font-semibold tracking-[0.2em] text-aura-ink-muted">
             カルテ原稿
           </span>
           <button
@@ -679,8 +688,8 @@ export function ReviewPhase({
             className={cn(
               'ml-auto inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition-colors',
               styleOpen
-                ? 'border-clinic-ink bg-clinic-ink text-clinic-cream'
-                : 'border-clinic-line bg-white text-clinic-ink hover:border-clinic-ink/40',
+                ? 'border-aura-ink bg-aura-ink text-white'
+                : 'border-aura-line bg-white text-aura-ink hover:border-aura-ink/40',
             )}
           >
             <Sparkles className="h-3 w-3" />
@@ -692,7 +701,7 @@ export function ReviewPhase({
           <div
             role="group"
             aria-label="貼り付け形式"
-            className="inline-flex rounded-lg bg-clinic-tint p-0.5 text-[11px] font-semibold"
+            className="inline-flex rounded-lg bg-aura-mist p-0.5 text-[11px] font-semibold"
           >
             {(
               [
@@ -708,8 +717,8 @@ export function ReviewPhase({
                 className={cn(
                   'rounded-md px-2.5 py-1 transition-colors',
                   copyStyle === value
-                    ? 'bg-white text-clinic-ink shadow-sm'
-                    : 'text-clinic-ink-muted hover:text-clinic-ink',
+                    ? 'bg-white text-aura-ink shadow-sm'
+                    : 'text-aura-ink-muted hover:text-aura-ink',
                 )}
               >
                 {label}
@@ -720,7 +729,7 @@ export function ReviewPhase({
 
         {/* 書き方：見本を選ぶか、自分の言葉で指示する。事実は変えず、形式・文体・長さだけを変える */}
         {styleOpen && (
-          <div className="space-y-3 border-b border-clinic-line bg-clinic-paper/70 px-5 py-4">
+          <div className="space-y-3 border-b border-aura-line bg-aura-paper/70 px-5 py-4">
             <div className="flex flex-wrap gap-1.5">
               {SUMMARY_PRESETS.map((preset) => (
                 <button
@@ -731,8 +740,8 @@ export function ReviewPhase({
                   className={cn(
                     'rounded-full border px-3 py-1 text-[12px] font-semibold transition-colors',
                     styleChoice === preset.id
-                      ? 'border-clinic-ink bg-clinic-ink text-clinic-cream'
-                      : 'border-clinic-line bg-white text-clinic-ink hover:border-clinic-ink/40',
+                      ? 'border-aura-ink bg-aura-ink text-white'
+                      : 'border-aura-line bg-white text-aura-ink hover:border-aura-ink/40',
                   )}
                 >
                   {preset.label}
@@ -742,8 +751,8 @@ export function ReviewPhase({
                 className={cn(
                   'rounded-full border px-3 py-1 text-[12px] font-semibold',
                   styleChoice === CUSTOM_PRESET_ID
-                    ? 'border-clinic-ink bg-clinic-ink text-clinic-cream'
-                    : 'border-dashed border-clinic-line text-clinic-ink-muted',
+                    ? 'border-aura-ink bg-aura-ink text-white'
+                    : 'border-dashed border-aura-line text-aura-ink-muted',
                 )}
               >
                 自分の指示
@@ -759,14 +768,14 @@ export function ReviewPhase({
               rows={3}
               maxLength={600}
               placeholder="例：Sは患者の言葉に近く、Pは番号をつけて書く。Aは診断名だけにする。"
-              className="w-full resize-y rounded-xl border border-clinic-line bg-white px-3 py-2 text-[13px] leading-relaxed text-clinic-ink outline-none focus:ring-2 focus:ring-clinic-ink/10"
+              className="w-full resize-y rounded-xl border border-aura-line bg-white px-3 py-2 text-[13px] leading-relaxed text-aura-ink outline-none focus:ring-2 focus:ring-aura-ink/10"
             />
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => void restyle()}
                 disabled={styling || soapIsEmpty}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-clinic-ink px-3.5 py-2 text-[12px] font-semibold text-clinic-cream hover:bg-clinic-ink-soft disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-aura-ink px-3.5 py-2 text-[12px] font-semibold text-white hover:bg-aura-ink-soft disabled:opacity-50"
               >
                 <Sparkles className={cn('h-3.5 w-3.5', styling && 'animate-pulse')} />
                 {styling ? '書き直しています…' : 'この書き方で書き直す'}
@@ -774,71 +783,42 @@ export function ReviewPhase({
               <button
                 type="button"
                 onClick={() => void saveDefaultStyle()}
-                className="rounded-xl border border-clinic-line bg-white px-3 py-2 text-[12px] font-semibold text-clinic-ink hover:bg-clinic-tint"
+                className="rounded-xl border border-aura-line bg-white px-3 py-2 text-[12px] font-semibold text-aura-ink hover:bg-aura-mist"
               >
                 いつもこの書き方にする
               </button>
-              {styleMsg && <span className="text-[12px] text-clinic-ink-muted">{styleMsg}</span>}
+              {styleMsg && <span className="text-[12px] text-aura-ink-muted">{styleMsg}</span>}
             </div>
-            <p className="text-[11px] leading-relaxed text-clinic-ink-muted">
+            <p className="text-[11px] leading-relaxed text-aura-ink-muted">
               書き方（形式・文体・長さ）だけを変えます。会話に無いことは足さず、あることは削りません。
             </p>
           </div>
         )}
 
-        {SOAP_FIELDS.map(({ key, label, name }) => (
-          <section
-            key={key}
-            className="group grid grid-cols-[2rem_minmax(0,1fr)] gap-3 border-b border-clinic-line px-5 py-3.5 last:border-b-0"
-          >
-            <span className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-clinic-ink text-[13px] font-bold text-clinic-gold">
-              {label}
-            </span>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-semibold text-clinic-ink-muted">{name}</span>
-                {templatedFields[key] && (
-                  <span className="rounded-full bg-clinic-tint px-2 py-0.5 text-[10px] font-semibold text-clinic-ink-muted">
-                    定型文
-                  </span>
-                )}
-                {!soap[key].trim() && (
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
-                    空欄
-                  </span>
-                )}
-                <button
-                  type="button"
-                  className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-clinic-ink-muted opacity-60 transition-opacity hover:bg-clinic-tint hover:text-clinic-ink group-hover:opacity-100 focus:opacity-100"
-                  onClick={() => void copyField(label, soap[key])}
-                >
-                  {copiedField === label ? (
-                    <Check className="h-3 w-3 text-emerald-600" />
-                  ) : (
-                    <ClipboardCopy className="h-3 w-3" />
-                  )}
-                  {copiedField === label ? 'コピー済み' : 'この欄だけコピー'}
-                </button>
-              </div>
-              <AutoTextarea
-                value={soap[key]}
-                onChange={(v) => changeSoapField(key, v)}
-                className={cn(
-                  '-mx-2 mt-1 block w-[calc(100%+1rem)] resize-none overflow-hidden rounded-xl bg-transparent px-2 py-1.5 text-[14px] leading-relaxed text-clinic-ink outline-none transition-colors hover:bg-clinic-tint/60 focus:bg-clinic-tint focus:ring-2 focus:ring-clinic-ink/10',
-                  templatedFields[key] && 'text-clinic-ink-muted',
-                )}
-              />
-            </div>
-          </section>
-        ))}
+        <div className="space-y-4 px-0 pb-1 pt-2">
+          {SOAP_FIELDS.map(({ key, label, name, english }) => (
+            <SOAPCard
+              key={key}
+              letter={label}
+              english={english}
+              name={name}
+              value={soap[key]}
+              edited={soap[key] !== initialSoap.current[key]}
+              templated={Boolean(templatedFields[key])}
+              copied={copiedField === label}
+              onChange={(v) => changeSoapField(key, v)}
+              onCopy={() => void copyField(label, soap[key])}
+            />
+          ))}
+        </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 border-t border-clinic-line bg-clinic-paper/60 px-5 py-2.5">
-          <span className="text-[11px] text-clinic-ink-muted">定型文</span>
+        <div className="flex flex-wrap items-center gap-1.5 px-2 pt-3">
+          <span className="text-[11px] text-aura-ink-muted">定型文</span>
           {templateTargets(visitType).map((target) => (
             <button
               key={target.label}
               type="button"
-              className="rounded-full border border-clinic-line bg-white px-2.5 py-1 text-[11px] font-medium text-clinic-ink hover:border-clinic-ink disabled:opacity-40"
+              className="rounded-full border border-aura-line bg-white px-2.5 py-1 text-[11px] font-medium text-aura-ink hover:border-aura-ink disabled:opacity-40"
               disabled={copied}
               onClick={() => applyTemplate(target.fields)}
             >
@@ -850,7 +830,7 @@ export function ReviewPhase({
               <button
                 type="button"
                 onClick={onSaveSoap}
-                className="text-[11px] font-semibold text-clinic-ink underline decoration-clinic-line underline-offset-2 hover:decoration-clinic-ink"
+                className="text-[11px] font-semibold text-aura-ink underline decoration-aura-line underline-offset-2 hover:decoration-aura-ink"
               >
                 保存
               </button>
@@ -858,7 +838,7 @@ export function ReviewPhase({
             {onReprocess && !approved && !soapIsEmpty && (
               <button
                 type="button"
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-clinic-ink-muted hover:text-clinic-ink disabled:opacity-40"
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-aura-ink-muted hover:text-aura-ink disabled:opacity-40"
                 disabled={reprocessing}
                 onClick={onReprocess}
               >
@@ -871,20 +851,74 @@ export function ReviewPhase({
       </article>
 
       {visitType === 'CHECKUP' ? (
-        <p className="mt-3 text-[11px] leading-relaxed text-clinic-ink-muted">
+        <p className="mt-3 text-[11px] leading-relaxed text-aura-ink-muted">
           健診定型: O に身体所見・CXR・ECG を含みます。根拠のない A/P は空のままにしてください。
         </p>
       ) : null}
 
+      {/* SOAPを確定。確定したら、次は書類へ */}
+      {!soapIsEmpty && (
+        <div className="no-print mt-8">
+          {approved || copied ? (
+            <div className="animate-fade-in-up rounded-[1.75rem] border border-aura-mint-200 bg-aura-mint-50/80 p-6 text-center shadow-float">
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-aura-teal-500 text-white shadow-glow">
+                <Check className="h-6 w-6" />
+              </span>
+              <p className="mt-3 text-[18px] font-semibold text-aura-ink">SOAPが完成しました</p>
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => openDrawer('docs')}
+                  className="inline-flex h-12 items-center gap-2 rounded-full bg-gradient-to-b from-aura-mint-400 to-aura-teal-500 px-7 text-[15px] font-semibold text-white shadow-glow transition duration-300 hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0"
+                >
+                  <FileText className="h-4 w-4" />
+                  書類を作成する
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void runCopy()}
+                  disabled={copying}
+                  className="inline-flex h-12 items-center gap-2 rounded-full border border-aura-line bg-white px-5 text-[14px] font-medium text-aura-ink-soft transition hover:-translate-y-px hover:shadow-float disabled:opacity-50"
+                >
+                  <ClipboardCopy className="h-4 w-4" />
+                  {copied ? 'もう一度コピー' : '電子カルテへコピー'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                disabled={confirming}
+                onClick={async () => {
+                  setConfirming(true);
+                  try {
+                    if (soapDirty) await onSaveSoap();
+                    await onApprove();
+                  } finally {
+                    setConfirming(false);
+                  }
+                }}
+                className="inline-flex h-14 items-center gap-2.5 rounded-full bg-aura-ink px-10 text-[16px] font-semibold text-white shadow-float-lg transition duration-300 hover:-translate-y-0.5 hover:bg-aura-ink-soft active:translate-y-0 active:scale-[0.99] disabled:opacity-60"
+              >
+                <Check className="h-5 w-5" />
+                {confirming ? '確定しています…' : 'SOAPを確定'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* 貼る前に、実際に貼られる文字を確かめる */}
-      <details className="no-print group/preview mt-4 rounded-2xl border border-dashed border-clinic-line bg-white/70 px-4 py-2.5">
-        <summary className="cursor-pointer list-none text-[11px] font-semibold tracking-[0.18em] text-clinic-ink-muted">
+      <details className="no-print group/preview mt-4 rounded-2xl border border-dashed border-aura-line bg-white/70 px-4 py-2.5">
+        <summary className="cursor-pointer list-none text-[11px] font-semibold tracking-[0.18em] text-aura-ink-muted">
           貼り付けられる内容
-          <span className="ml-2 font-normal tracking-normal text-clinic-ink-muted/70">
+          <span className="ml-2 font-normal tracking-normal text-aura-ink-muted/70">
             （開いて確認）
           </span>
         </summary>
-        <pre className="mt-2 whitespace-pre-wrap font-sans text-[12px] leading-relaxed text-clinic-ink">
+        <pre className="mt-2 whitespace-pre-wrap font-sans text-[12px] leading-relaxed text-aura-ink">
           {pasteText || '（まだ内容がありません）'}
         </pre>
       </details>
@@ -894,13 +928,13 @@ export function ReviewPhase({
         createPortal(
       <aside
         className={cn(
-          'no-print fixed inset-y-0 right-0 z-40 flex w-full max-w-[460px] flex-col border-l border-clinic-line bg-clinic-paper shadow-[-24px_0_48px_-24px_rgba(12,47,44,0.35)] transition-transform duration-200 [transition-property:transform,visibility]',
+          'no-print fixed inset-y-0 right-0 z-40 flex w-full max-w-[460px] flex-col border-l border-aura-line bg-aura-paper shadow-[-24px_0_48px_-24px_rgba(12,47,44,0.35)] transition-transform duration-200 [transition-property:transform,visibility]',
           drawerOpen ? 'translate-x-0' : 'invisible pointer-events-none translate-x-full',
         )}
         aria-hidden={!drawerOpen}
       >
-        <div className="flex items-center gap-2 border-b border-clinic-line px-4 py-3">
-          <div role="tablist" className="flex flex-1 gap-1 rounded-2xl bg-clinic-tint p-1">
+        <div className="flex items-center gap-2 border-b border-aura-line px-4 py-3">
+          <div role="tablist" className="flex flex-1 gap-1 rounded-2xl bg-aura-mist p-1">
             {tabs.map(({ id, label, icon: Icon, count }) => (
               <button
                 key={id}
@@ -911,8 +945,8 @@ export function ReviewPhase({
                 className={cn(
                   'flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-2 py-2 text-[12px] font-semibold transition-colors',
                   tab === id
-                    ? 'bg-clinic-ink text-clinic-cream'
-                    : 'text-clinic-ink-muted hover:bg-white hover:text-clinic-ink',
+                    ? 'bg-aura-ink text-white'
+                    : 'text-aura-ink-muted hover:bg-white hover:text-aura-ink',
                 )}
               >
                 <Icon className="h-3.5 w-3.5" />
@@ -933,7 +967,7 @@ export function ReviewPhase({
           <button
             type="button"
             onClick={() => setDrawerOpen(false)}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-clinic-ink-muted hover:bg-clinic-tint hover:text-clinic-ink"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-aura-ink-muted hover:bg-aura-mist hover:text-aura-ink"
             aria-label="閉じる"
           >
             <X className="h-4 w-4" />
@@ -943,10 +977,10 @@ export function ReviewPhase({
         <div className="flex-1 space-y-3 overflow-y-auto p-4">
           {/* 原文（診察で言ったことと、原稿を見比べる） */}
           <div className={cn('space-y-3', tab !== 'source' && 'hidden')}>
-            <div className="rounded-2xl border border-clinic-line bg-white p-3">
+            <div className="rounded-2xl border border-aura-line bg-white p-3">
               <ul className="max-h-[64vh] space-y-2 overflow-y-auto pr-1">
                 {transcript.length === 0 && (
-                  <li className="px-1 py-6 text-center text-[12px] text-clinic-ink-muted">
+                  <li className="px-1 py-6 text-center text-[12px] text-aura-ink-muted">
                     文字起こしはまだありません
                   </li>
                 )}
@@ -955,7 +989,7 @@ export function ReviewPhase({
                     key={seg.id}
                     className={cn(
                       'space-y-1.5 rounded-xl p-2.5',
-                      seg.speaker === 'PHYSICIAN' ? 'bg-clinic-ink/5' : 'bg-clinic-tint',
+                      seg.speaker === 'PHYSICIAN' ? 'bg-aura-ink/5' : 'bg-aura-mist',
                     )}
                   >
                     <Select
@@ -973,7 +1007,7 @@ export function ReviewPhase({
                       value={seg.text}
                       onChange={(e) => onTranscriptTextChange(seg.id, e.target.value)}
                       rows={2}
-                      className="w-full resize-y rounded-lg bg-white px-2.5 py-2 text-[13px] leading-relaxed text-clinic-ink outline-none"
+                      className="w-full resize-y rounded-lg bg-white px-2.5 py-2 text-[13px] leading-relaxed text-aura-ink outline-none"
                     />
                   </li>
                 ))}
@@ -983,7 +1017,7 @@ export function ReviewPhase({
                   type="button"
                   onClick={onSaveTranscript}
                   disabled={savingTranscript}
-                  className="mt-2 rounded-xl border border-clinic-line px-3 py-1.5 text-[12px] font-semibold text-clinic-ink hover:bg-clinic-tint disabled:opacity-50"
+                  className="mt-2 rounded-xl border border-aura-line px-3 py-1.5 text-[12px] font-semibold text-aura-ink hover:bg-aura-mist disabled:opacity-50"
                 >
                   {savingTranscript ? '保存中…' : '文字起こしを保存'}
                 </button>
@@ -991,14 +1025,14 @@ export function ReviewPhase({
             </div>
 
             {glossarySuggestions && glossarySuggestions.length > 0 && (
-              <div className="space-y-2 rounded-2xl border border-clinic-line bg-white p-3">
-                <p className="text-[12px] font-semibold text-clinic-ink">
+              <div className="space-y-2 rounded-2xl border border-aura-line bg-white p-3">
+                <p className="text-[12px] font-semibold text-aura-ink">
                   直した語を医院の辞書に入れますか
                 </p>
                 {glossarySuggestions.map((item) => {
                   const key = `${item.wrong}→${item.correct}`;
                   return (
-                    <label key={key} className="flex items-center gap-2 text-[12px] text-clinic-ink">
+                    <label key={key} className="flex items-center gap-2 text-[12px] text-aura-ink">
                       <input
                         type="checkbox"
                         checked={selectedSuggestions[key] ?? false}
@@ -1013,7 +1047,7 @@ export function ReviewPhase({
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    className="rounded-xl bg-clinic-ink px-3 py-1.5 text-[12px] font-semibold text-clinic-cream"
+                    className="rounded-xl bg-aura-ink px-3 py-1.5 text-[12px] font-semibold text-white"
                     onClick={() => {
                       const selected = glossarySuggestions.filter(
                         (item) => selectedSuggestions[`${item.wrong}→${item.correct}`],
@@ -1025,7 +1059,7 @@ export function ReviewPhase({
                   </button>
                   <button
                     type="button"
-                    className="rounded-xl px-3 py-1.5 text-[12px] font-semibold text-clinic-ink-muted"
+                    className="rounded-xl px-3 py-1.5 text-[12px] font-semibold text-aura-ink-muted"
                     onClick={onDismissGlossarySuggestions}
                   >
                     後で
@@ -1072,20 +1106,20 @@ export function ReviewPhase({
                 value={note}
                 onChange={(e) => onNoteChange(e.target.value)}
                 rows={10}
-                className="w-full resize-y rounded-xl bg-clinic-tint px-3 py-2.5 text-[13px] leading-relaxed text-clinic-ink outline-none focus:ring-2 focus:ring-clinic-ink/15"
+                className="w-full resize-y rounded-xl bg-aura-mist px-3 py-2.5 text-[13px] leading-relaxed text-aura-ink outline-none focus:ring-2 focus:ring-aura-ink/15"
               />
               <div className="mt-2 flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={onSaveNote}
-                  className="rounded-xl border border-clinic-line px-3 py-1.5 text-[12px] font-semibold text-clinic-ink hover:bg-clinic-tint"
+                  className="rounded-xl border border-aura-line px-3 py-1.5 text-[12px] font-semibold text-aura-ink hover:bg-aura-mist"
                 >
                   保存
                 </button>
                 <button
                   type="button"
                   onClick={onCopyNote}
-                  className="rounded-xl px-3 py-1.5 text-[12px] font-semibold text-clinic-ink-muted hover:bg-clinic-tint"
+                  className="rounded-xl px-3 py-1.5 text-[12px] font-semibold text-aura-ink-muted hover:bg-aura-mist"
                 >
                   コピー
                 </button>
@@ -1104,11 +1138,11 @@ export function ReviewPhase({
               <Section title="編集履歴" count={revisions.length} icon={<History className="h-4 w-4" />}>
                 <ul className="space-y-2">
                   {revisions.map((r) => (
-                    <li key={r.id} className="rounded-xl bg-clinic-tint px-3 py-2 text-[12px]">
-                      <p className="font-semibold text-clinic-ink">{r.fieldName}</p>
-                      <p className="mt-0.5 text-clinic-ink-muted line-through">{r.beforeValue}</p>
-                      <p className="text-clinic-ink">{r.afterValue}</p>
-                      <p className="mt-1 text-[10px] text-clinic-ink-muted">
+                    <li key={r.id} className="rounded-xl bg-aura-mist px-3 py-2 text-[12px]">
+                      <p className="font-semibold text-aura-ink">{r.fieldName}</p>
+                      <p className="mt-0.5 text-aura-ink-muted line-through">{r.beforeValue}</p>
+                      <p className="text-aura-ink">{r.afterValue}</p>
+                      <p className="mt-1 text-[10px] text-aura-ink-muted">
                         {new Date(r.changedAt).toLocaleString('ja-JP')}
                       </p>
                     </li>
