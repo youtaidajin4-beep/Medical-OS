@@ -14,6 +14,13 @@ export type PatientContext = {
   diagnoses?: string[];
 };
 
+/**
+ * 確認に積まない種類。単位（mg）・回数・投与経路・日付・否定は、言い回しをそろえるだけで、
+ * 医師が確かめることではない。「mg→Mg（マグネシウム）」のような的外れな確認が書類作成を止めていた
+ * （2026-10-26、書類の画面に「mg」「20mg」「5mg」が5件並んだ）
+ */
+const REVIEW_EXEMPT_TYPES = new Set(['dosage', 'unit', 'frequency', 'route', 'date', 'negation']);
+
 const STRENGTH_RE = /(\d+(?:\.\d+)?)\s*(ミリグラム|マイクログラム|ミリ|mg|ug|μg|g|％|%)/gi;
 
 /**
@@ -53,7 +60,8 @@ export function correctTranscriptWithKnowledge(
       confidence: ambiguous ? 0.7 : 0.95,
       startPosition: start,
       endPosition: start + full.length,
-      needsReview: true, // dosages always reviewable
+      // 「5ミリ」のように単位が決まらないときだけ確認。「5mg」「5ミリグラム」は単位が決まっている
+      needsReview: ambiguous,
       riskLevel: 'critical',
       candidates: normalized
         ? [{ candidateValue: normalized, score: ambiguous ? 0.7 : 0.95, candidateSource: 'unit_normalizer' }]
@@ -94,6 +102,9 @@ export function correctTranscriptWithKnowledge(
   const replaceOps: Array<{ start: number; end: number; from: string; to: string; corr: AppliedCorrection }> = [];
 
   for (const hit of surfaces) {
+    // 単位だけの語（mg・g・mL…）は辞書の検査名（Mg＝マグネシウム）と大文字小文字で取り違える。
+    // 数字とセットで見る別の処理（strength）があるので、ここでは拾わない
+    if (/^(mg|g|ug|μg|ml|mL|kg|l|mmhg)$/i.test(hit.surface)) continue;
     const ranked = rankHits(hit.hits).map((h) => {
       let score = 0.55 + layerScore(h.layer) / 100 + h.priority / 1000;
       if (patientContext?.medications?.some((m) => normalizeMedicalText(m) === normalizeMedicalText(h.canonicalName))) {
@@ -147,7 +158,11 @@ export function correctTranscriptWithKnowledge(
       // 1回の診療で19件出た。数が多いと医師は中身を見なくなるうえ、高リスクの未承認は
       // 書類作成をブロックするため、**正しく認識できているのに書類が作れない**状態になる。
       // 用語の検出自体は残す（辞書のヒットとして下流で使う）。
-      needsReview: alreadyCanonical ? false : !shouldReplace || isHighRisk,
+      needsReview: REVIEW_EXEMPT_TYPES.has(best.hit.category)
+        ? false
+        : alreadyCanonical
+          ? false
+          : !shouldReplace || isHighRisk,
       riskLevel: best.hit.riskLevel,
       candidates: ranked.slice(0, 5).map((r) => ({
         candidateValue: r.hit.canonicalName,

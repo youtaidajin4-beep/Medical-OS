@@ -23,6 +23,11 @@ import {
   buildUngroundedNumberWarnings,
   findUngroundedNumbers,
 } from '../../providers/ai/soap-number-guard';
+import {
+  buildNegationInversionWarnings,
+  findNegationInversions,
+} from '../../providers/ai/soap-negation-guard';
+import { ensureFollowUp } from '../../providers/ai/soap-followup';
 import { rejectInventedExams } from '../medical-knowledge/invented-exam-guard';
 import {
   numberTranscriptLines,
@@ -558,9 +563,20 @@ export class AiPipelineService {
       }
       // 「いつもの薬を出す」を「定時薬を継続する」へ。先生の書き方に寄せる機械的な置換で、
       // 設定画面の表に足せる（2026-09-26 の直す順の4番目）
-      const soap = applyPhrasingToSoap(floorResult?.soap ?? generatedSoap, physicianRules);
+      const phrased = applyPhrasingToSoap(floorResult?.soap ?? generatedSoap, physicianRules);
+      // 言われた再診の時期は、Pに無ければ足す（書き忘れ対策）
+      const soap = evidence.usable
+        ? { ...phrased, plan: ensureFollowUp(phrased.plan, structured.followUpInterval) }
+        : phrased;
       // 原文を渡した分、言われていない数字が紛れ込む余地も増える。
       // 江口さんの「1か月」が「半年」になった型の事故は、ここで機械的に拾う
+      // 会話で否定されたことが「ある」に反転していないか（徘徊なし→あり、など）
+      const inversions = findNegationInversions(soap, soapSource);
+      if (inversions.length) {
+        await this.prisma.clinicalWarning.createMany({
+          data: buildNegationInversionWarnings(inversions).map((w) => ({ consultationId, ...w })),
+        });
+      }
       const inventedNumbers = findUngroundedNumbers(soap, soapSource);
       if (inventedNumbers.length) {
         await this.prisma.clinicalWarning.createMany({

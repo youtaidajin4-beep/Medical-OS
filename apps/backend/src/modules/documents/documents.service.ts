@@ -54,6 +54,10 @@ export class DocumentsService {
         consultationId,
         needsReview: true,
         riskLevel: { in: [MedicalRiskLevel.high, MedicalRiskLevel.critical] },
+        // 単位・回数・投与経路・日付・否定は、確かめることではない（古い記録に残っていても出さない）
+        entityType: {
+          notIn: ['dosage', 'unit', 'frequency', 'route', 'date', 'negation'] as never[],
+        },
       },
       include: { candidates: { orderBy: { score: 'desc' }, take: 1 } },
     });
