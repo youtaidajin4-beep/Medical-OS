@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Mic, Plus, Save, UserPlus } from 'lucide-react';
+import { ChevronDown, Mic, Plus, Save, UserPlus, X } from 'lucide-react';
 import { api, getToken, isUnauthorizedError } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,9 @@ import { Alert } from '@/components/ui/alert';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import { PatientHistoryPanel } from '@/components/patients/patient-history-panel';
+import { PatientSearch } from '@/components/aura/patient-search';
+import { PatientAvatar, sexLabel as sexJa } from '@/components/aura/patient-card';
+import { PatientJourney } from '@/components/aura/patient-journey';
 
 type PatientRow = {
   id: string;
@@ -85,6 +88,8 @@ export default function PatientsPage() {
   const [saving, setSaving] = useState(false);
   const [startingId, setStartingId] = useState<string | null>(null);
   const [visitType, setVisitType] = useState<'ROUTINE' | 'CHECKUP'>('ROUTINE');
+  const [editOpen, setEditOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
 
   const load = useCallback(async () => {
     const res = await api.patients();
@@ -105,16 +110,20 @@ export default function PatientsPage() {
       .finally(() => setLoading(false));
   }, [router, load]);
 
-  function startCreate() {
+  function startCreate(name = '') {
+    setPanelOpen(true);
+    setEditOpen(true);
     setMode('create');
     setSelectedId(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, name });
     setSuccess('');
     setError('');
   }
 
   function selectPatient(p: PatientRow) {
     if (p.type !== 'patient') return;
+    setPanelOpen(true);
+    setEditOpen(false);
     setMode('edit');
     setSelectedId(p.id);
     setForm({
@@ -182,124 +191,140 @@ export default function PatientsPage() {
     }
   }
 
+  const selected = patients.find((p) => p.id === selectedId) ?? null;
+
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">患者</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            基本情報を登録・編集し、この患者で診療を開始できます。
-          </p>
-        </div>
-        <Button type="button" variant="secondary" icon={<Plus />} onClick={startCreate}>
-          新規登録
-        </Button>
-      </div>
+    <div className="mx-auto w-full max-w-2xl py-4">
+      <p className="text-center text-[12px] font-semibold tracking-[0.3em] text-aura-teal-500">PATIENTS</p>
+      <h1 className="mt-2 text-center text-[32px] font-semibold tracking-tight text-aura-ink">患者をさがす</h1>
+      <p className="mb-8 mt-2 text-center text-[14px] text-aura-ink-soft">診療を始める患者さんを選びます。</p>
 
-      {error && <Alert variant="error">{error}</Alert>}
-      {success && <Alert variant="success">{success}</Alert>}
+      {error && !panelOpen && <Alert variant="error" className="mb-4">{error}</Alert>}
 
-      <div className="grid gap-6 lg:grid-cols-5">
-        <section className="space-y-3 lg:col-span-2">
-          <h2 className="text-sm font-semibold text-slate-800">患者一覧</h2>
-          {loading ? (
-            <p className="flex items-center gap-2 text-sm text-slate-400">
-              <Spinner className="h-4 w-4" />
-              読み込み中…
-            </p>
-          ) : patients.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-400">
-              まだ登録がありません
-            </div>
-          ) : (
-            <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">
-              {patients.map((p) => (
-                <li key={p.id}>
+      <PatientSearch
+        patients={patients.map((p) => ({ ...p, lastVisit: null }))}
+        loading={loading}
+        selectedId={selectedId ?? undefined}
+        onSelect={(p) => {
+          const row = patients.find((x) => x.id === p.id);
+          if (row) selectPatient(row);
+        }}
+        onAddNew={(q) => startCreate(q)}
+        maxHeightClass="max-h-[28rem]"
+      />
+
+      {anonymous.length > 0 && (
+        <p className="mt-6 text-center text-[12px] text-aura-ink-muted">
+          患者を選ばずに記録した診療が{anonymous.length}件あります（「SOAP」から開けます）
+        </p>
+      )}
+
+      {/* 右からすべり出る詳細。患者管理ではなく、SOAPを作るための最小限だけ */}
+      {panelOpen && (
+        <div className="fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-aura-ink/25 backdrop-blur-[2px]" onClick={() => setPanelOpen(false)} />
+          <aside className="absolute right-0 top-0 flex h-full w-full max-w-md animate-fade-in flex-col overflow-y-auto bg-aura-paper p-6 shadow-float-lg min-[640px]:rounded-l-[2rem]">
+            <button
+              type="button"
+              onClick={() => setPanelOpen(false)}
+              aria-label="閉じる"
+              className="absolute right-4 top-4 rounded-full p-2 text-aura-ink-muted transition hover:bg-aura-mist hover:text-aura-ink"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {mode === 'edit' && selected ? (
+              <>
+                <div className="mt-2 flex items-center gap-4">
+                  <PatientAvatar name={selected.name} size="lg" />
+                  <div className="min-w-0">
+                    <p className="truncate text-[22px] font-semibold tracking-tight text-aura-ink">{selected.name}</p>
+                    <p className="text-[13px] text-aura-ink-muted">
+                      {[selected.age != null ? `${selected.age}歳` : '', sexJa(selected.sex), `ID ${selected.code}`]
+                        .filter(Boolean)
+                        .join(' / ')}
+                    </p>
+                  </div>
+                </div>
+
+                <PatientJourney
+                  className="mt-7"
+                  states={[
+                    missingCount === 0 ? 'done' : 'todo',
+                    'current',
+                    (selected.visitCount ?? 0) > 0 ? 'done' : 'todo',
+                    'todo',
+                  ]}
+                />
+
+                <div className="mt-7 space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    {(
+                      [
+                        ['ROUTINE', '通常診察'],
+                        ['CHECKUP', '健診'],
+                      ] as const
+                    ).map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setVisitType(value)}
+                        className={cn(
+                          'rounded-2xl border px-4 py-2.5 text-[13px] font-semibold transition',
+                          visitType === value
+                            ? 'border-aura-mint-300 bg-aura-mint-50 text-aura-ink shadow-float'
+                            : 'border-aura-line bg-white text-aura-ink-soft hover:-translate-y-px',
+                        )}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                   <button
                     type="button"
-                    onClick={() => selectPatient(p)}
-                    className={cn(
-                      'flex w-full items-start gap-3 px-3 py-3 text-left transition hover:bg-slate-50',
-                      selectedId === p.id && 'bg-brand-50',
-                    )}
+                    disabled={startingId === selected.id}
+                    onClick={() => void startConsultation(selected.id)}
+                    className="flex h-14 w-full items-center justify-center gap-2.5 rounded-full bg-gradient-to-b from-aura-mint-400 to-aura-teal-500 text-[16px] font-semibold text-white shadow-glow transition duration-300 hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0 disabled:opacity-60"
                   >
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold text-slate-900">
-                        {p.name}
-                      </span>
-                      <span className="mt-0.5 block text-xs text-slate-500">
-                        {p.code} · {sexLabel(p.sex)}
-                        {p.age != null ? ` · ${p.age}歳` : ''}
-                        {typeof p.visitCount === 'number' ? ` · ${p.visitCount}回` : ''}
-                      </span>
-                    </span>
+                    {startingId === selected.id ? <Spinner className="text-white" /> : <Mic className="h-5 w-5" />}
+                    {startingId === selected.id ? '開始しています…' : 'この患者でSOAPをつくる'}
                   </button>
-                </li>
-              ))}
-            </ul>
-          )}
+                  {missingCount > 0 && (
+                    <p className="text-center text-[12px] text-amber-700">
+                      書類に入る情報があと{missingCount}件、未入力です
+                    </p>
+                  )}
+                  {error && <Alert variant="error">{error}</Alert>}
+                </div>
 
-          {anonymous.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                一時診療（未登録）
-              </h3>
-              <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                {anonymous.map((a) => (
-                  <li key={a.id} className="px-3 py-2.5 text-sm text-slate-600">
-                    <span className="font-medium text-slate-800">{a.name}</span>
-                    <span className="mt-0.5 block text-xs text-slate-400">
-                      {a.code}
-                      {typeof a.visitCount === 'number' ? ` · ${a.visitCount}回` : ''}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </section>
+                <section className="mt-8">
+                  <p className="mb-3 text-[11px] font-semibold tracking-[0.2em] text-aura-ink-muted">これまでの診療・SOAP</p>
+                  <PatientHistoryPanel patientId={selected.id} />
+                </section>
+              </>
+            ) : (
+              <div className="mt-2">
+                <p className="text-[12px] font-semibold tracking-[0.2em] text-aura-teal-500">NEW PATIENT</p>
+                <h2 className="mt-1 text-[22px] font-semibold tracking-tight text-aura-ink">患者を登録</h2>
+              </div>
+            )}
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-3">
-          <div className="mb-4 flex items-center gap-2">
-            <UserPlus className="h-4 w-4 text-brand-600" />
-            <h2 className="text-sm font-semibold text-slate-800">
-              {mode === 'edit' ? '基本情報を編集' : '基本情報を登録'}
-            </h2>
-          </div>
-
-          {/* 紹介状・主治医意見書の患者欄はここが唯一の出どころ。
-              欠けていると紙が空欄のまま出るので、作る前に気づけるようにする */}
-          {mode === 'edit' && (
-            <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-              <p className="text-xs font-semibold text-slate-600">書類に入る情報</p>
-              <ul className="mt-1.5 grid gap-x-4 gap-y-1 text-xs sm:grid-cols-2">
-                {DOCUMENT_FIELDS.map(({ key, label }) => {
-                  const filled = form[key].trim() !== '';
-                  return (
-                    <li key={key} className="flex items-center gap-1.5">
-                      <span
-                        className={cn(
-                          'inline-block h-1.5 w-1.5 shrink-0 rounded-full',
-                          filled ? 'bg-brand-500' : 'bg-amber-400',
-                        )}
-                      />
-                      <span className="text-slate-500">{label}</span>
-                      <span className={cn('truncate', filled ? 'text-slate-800' : 'text-amber-700')}>
-                        {filled ? form[key] : '未入力'}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-              {missingCount > 0 && (
-                <p className="mt-2 text-xs text-amber-700">
-                  {missingCount}件が未入力です。問診票を撮って取り込むか、下の欄に直接入力してください。
-                </p>
-              )}
-            </div>
-          )}
-
-          <form onSubmit={handleSave} className="space-y-3">
+            {/* 基本情報。書類（紹介状・意見書）の患者欄の出どころなので、必要なときだけ開く */}
+            <section className="mt-8 border-t border-aura-line pt-4">
+              <button
+                type="button"
+                onClick={() => setEditOpen((v) => !v)}
+                aria-expanded={editOpen}
+                className="flex w-full items-center justify-between rounded-2xl px-1 py-2 text-left text-[14px] font-semibold text-aura-ink-soft transition hover:text-aura-ink"
+              >
+                {mode === 'edit' ? '基本情報を編集' : '基本情報'}
+                <ChevronDown className={cn('h-4 w-4 transition-transform', editOpen && 'rotate-180')} />
+              </button>
+              {success && <Alert variant="success" className="mt-2">{success}</Alert>}
+              {editOpen && (
+                <div className="mt-3 space-y-4">
+                  {error && panelOpen && mode === 'create' && <Alert variant="error">{error}</Alert>}
+                  <form onSubmit={handleSave} className="space-y-3">
             <div className="space-y-1.5">
               <label htmlFor="name" className="text-sm font-medium text-slate-700">
                 氏名 <span className="text-red-500">*</span>
@@ -425,63 +450,14 @@ export default function PatientsPage() {
               >
                 {saving ? '保存中…' : mode === 'edit' ? '更新する' : '登録する'}
               </Button>
-              {mode === 'edit' && selectedId && (
-                <>
-                  <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-                    <button
-                      type="button"
-                      onClick={() => setVisitType('ROUTINE')}
-                      className={cn(
-                        'rounded-lg border px-2.5 py-1.5 text-xs font-medium',
-                        visitType === 'ROUTINE'
-                          ? 'border-brand-700 bg-brand-700 text-white'
-                          : 'border-slate-200 bg-white text-slate-600',
-                      )}
-                    >
-                      通常診察
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setVisitType('CHECKUP')}
-                      className={cn(
-                        'rounded-lg border px-2.5 py-1.5 text-xs font-medium',
-                        visitType === 'CHECKUP'
-                          ? 'border-brand-700 bg-brand-700 text-white'
-                          : 'border-slate-200 bg-white text-slate-600',
-                      )}
-                    >
-                      健診
-                    </button>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    icon={
-                      startingId === selectedId ? (
-                        <Spinner />
-                      ) : (
-                        <Mic className="h-4 w-4" />
-                      )
-                    }
-                    disabled={startingId === selectedId}
-                    onClick={() => void startConsultation(selectedId)}
-                  >
-                    {startingId === selectedId ? '開始中…' : 'この患者で診療開始'}
-                  </Button>
-                </>
-              )}
             </div>
           </form>
-
-          {/* この患者のSOAPが溜まっていくところ。紹介状を書くときはここを見る */}
-          {selectedId && (
-            <div className="mt-6 border-t border-slate-200 pt-4">
-              <h2 className="mb-3 text-sm font-semibold text-slate-800">これまでの診療</h2>
-              <PatientHistoryPanel patientId={selectedId} />
-            </div>
-          )}
-        </section>
-      </div>
+                </div>
+              )}
+            </section>
+          </aside>
+        </div>
+      )}
     </div>
   );
 }

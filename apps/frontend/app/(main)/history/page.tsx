@@ -36,9 +36,10 @@ export default function HistoryPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">診療履歴</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          過去の診療を確認できます。日常の録音・SOAP は「診療」ホームから始めます。
+        <p className="text-[12px] font-semibold tracking-[0.3em] text-aura-teal-500">SOAP</p>
+        <h1 className="mt-2 text-[32px] font-semibold tracking-tight text-aura-ink">これまでのSOAP</h1>
+        <p className="mt-2 text-[15px] text-aura-ink-soft">
+          過去の診療を開いて、SOAPの確認・修正や書類づくりができます。
         </p>
       </div>
 
