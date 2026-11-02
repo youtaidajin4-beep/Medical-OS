@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Check, ClipboardCopy, Pencil } from 'lucide-react';
+import { Check, ClipboardCopy, Pencil, TextCursorInput } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const TONE: Record<string, string> = {
@@ -27,6 +27,8 @@ export function SOAPCard({
   copied,
   onChange,
   onCopy,
+  onApplyTemplate,
+  templateDisabled,
 }: {
   letter: 'S' | 'O' | 'A' | 'P';
   english: string;
@@ -39,6 +41,9 @@ export function SOAPCard({
   copied?: boolean;
   onChange: (value: string) => void;
   onCopy: () => void;
+  /** この欄だけを定型文にする。渡さない（定型文が無い欄）ときはボタンを出さない */
+  onApplyTemplate?: () => void;
+  templateDisabled?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -133,6 +138,21 @@ export function SOAPCard({
           <span className="whitespace-pre-wrap">{empty ? 'ここをクリックして書く' : value}</span>
           <Pencil className="absolute right-2 top-2 h-3.5 w-3.5 text-aura-ink-muted/0 transition group-hover:text-aura-ink-muted/60" />
         </button>
+      )}
+
+      {onApplyTemplate && !templated && (
+        <div className="mt-2 flex justify-end">
+          <button
+            type="button"
+            onClick={onApplyTemplate}
+            disabled={templateDisabled}
+            aria-label={`${english}を定型文にする`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-aura-line bg-white px-3 py-1.5 text-[12px] font-medium text-aura-ink transition hover:border-aura-ink disabled:opacity-40"
+          >
+            <TextCursorInput className="h-3.5 w-3.5" />
+            {letter}を定型文にする
+          </button>
+        </div>
       )}
     </section>
   );

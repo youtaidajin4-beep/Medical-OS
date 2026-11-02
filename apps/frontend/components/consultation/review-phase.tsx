@@ -808,6 +808,8 @@ export function ReviewPhase({
               copied={copiedField === label}
               onChange={(v) => changeSoapField(key, v)}
               onCopy={() => void copyField(label, soap[key])}
+              onApplyTemplate={SOAP_TEMPLATE_TEXT[visitType][key] ? () => applyTemplate([key]) : undefined}
+              templateDisabled={copied}
             />
           ))}
         </div>
